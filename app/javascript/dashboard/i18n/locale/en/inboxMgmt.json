@@ -346,6 +346,27 @@
           "ERROR_MESSAGE": "We were not able to create the voice channel"
         }
       },
+      "EVOLUTION_WHATSAPP": {
+        "TITLE": "WhatsApp QR (Evolution API)",
+        "DESC": "Connect a WhatsApp number by scanning a QR code using Evolution API.",
+        "INSTANCE_NAME": {
+          "LABEL": "Instance Name",
+          "PLACEHOLDER": "Enter a unique instance name",
+          "ERROR": "Instance name is required"
+        },
+        "PHONE_NUMBER": {
+          "LABEL": "Phone Number",
+          "PLACEHOLDER": "e.g. 5511999999999",
+          "ERROR": "Phone number is required"
+        },
+        "SUBMIT_BUTTON": "Generate QR Code",
+        "QR_INSTRUCTION": "Open WhatsApp on your phone, go to Settings → Linked Devices → Link a Device, then scan the QR code below.",
+        "CONNECTION_STATUS": "Status:",
+        "REFRESH_QR": "Refresh QR Code",
+        "CREATE_ERROR": "Could not create the WhatsApp instance. Please try again.",
+        "SETUP_ERROR": "Could not complete the inbox setup. Please try again.",
+        "QR_REFRESH_ERROR": "Could not refresh the QR code. Please try again."
+      },
       "API_CHANNEL": {
         "TITLE": "API Channel",
         "DESC": "Integrate with API channel and start supporting your customers.",
@@ -474,6 +495,10 @@
           "VOICE": {
             "TITLE": "Voice",
             "DESCRIPTION": "Integrate with Twilio Voice"
+          },
+          "EVOLUTION_WHATSAPP": {
+            "TITLE": "WhatsApp QR",
+            "DESCRIPTION": "Connect WhatsApp by scanning a QR code"
           }
         }
       },

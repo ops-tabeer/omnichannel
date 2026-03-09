@@ -275,6 +275,11 @@ Rails.application.routes.draw do
             resource :authorization, only: [:create]
           end
 
+          post 'evolution/create_instance', to: 'evolution#create_instance'
+          get 'evolution/refresh_qr', to: 'evolution#refresh_qr'
+          get 'evolution/connection_status', to: 'evolution#connection_status'
+          post 'evolution/complete_setup', to: 'evolution#complete_setup'
+
           resources :webhooks, only: [:index, :create, :update, :destroy]
           namespace :integrations do
             resources :apps, only: [:index, :show]

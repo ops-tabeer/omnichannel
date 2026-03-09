@@ -162,6 +162,16 @@ class ActionCableListener < BaseListener
     broadcast(account, [user.pubsub_token], CONVERSATION_MENTIONED, conversation.push_event_data)
   end
 
+  def evolution_connected(event)
+    account = event.data[:account]
+    user = event.data[:user]
+
+    broadcast(account, [user.pubsub_token], EVOLUTION_CONNECTED, {
+                instance_name: event.data[:instance_name],
+                status: 'connected'
+              })
+  end
+
   private
 
   def account_token(account)

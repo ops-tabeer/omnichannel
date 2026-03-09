@@ -48,6 +48,10 @@ const isActive = computed(() => {
     return props.enabledFeatures.channel_voice;
   }
 
+  if (key === 'evolution_whatsapp') {
+    return props.enabledFeatures.channel_evolution_whatsapp;
+  }
+
   return [
     'website',
     'twilio',
