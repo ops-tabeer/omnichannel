@@ -74,7 +74,7 @@ class Api::V1::Accounts::EvolutionController < Api::V1::Accounts::BaseController
         accountId: Current.account.id.to_s,
         token: Current.user.access_token.token,
         url: frontend_url,
-        signMsg: true,
+        signMsg: false,
         reopenConversation: true,
         conversationPending: false,
         nameInbox: @inbox.name,
