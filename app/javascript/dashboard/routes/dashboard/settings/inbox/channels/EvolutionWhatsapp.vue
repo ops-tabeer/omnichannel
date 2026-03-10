@@ -16,6 +16,7 @@ const { t } = useI18n();
 const router = useRouter();
 const instanceName = ref('');
 const phoneNumber = ref('');
+const rejectGroups = ref(true);
 const isCreating = ref(false);
 const qrCodeBase64 = ref('');
 const showQrCode = ref(false);
@@ -41,6 +42,7 @@ async function createInstance() {
     const response = await EvolutionChannel.createInstance({
       instance_name: instanceName.value.trim(),
       phone_number: phoneNumber.value.trim(),
+      groups_ignore: rejectGroups.value,
     });
     qrCodeBase64.value = response.data.qrcode;
     showQrCode.value = true;
@@ -151,6 +153,22 @@ onUnmounted(() => {
             {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.PHONE_NUMBER.ERROR') }}
           </span>
         </label>
+      </div>
+
+      <div class="flex-shrink-0 flex-grow-0 mt-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="rejectGroups"
+            type="checkbox"
+            class="size-4 rounded border-n-slate-7 text-p-600 focus:ring-p-500"
+          />
+          <span class="text-sm text-n-slate-12">
+            {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.REJECT_GROUPS.LABEL') }}
+          </span>
+        </label>
+        <p class="text-xs text-n-slate-10 mt-1 ml-6">
+          {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.REJECT_GROUPS.HELP') }}
+        </p>
       </div>
 
       <div class="w-full mt-4">

@@ -3,7 +3,11 @@ class Api::V1::Accounts::EvolutionController < Api::V1::Accounts::BaseController
 
   def create_instance
     service = EvolutionApi::ManageService.new
-    service.create_instance(params[:instance_name], params[:phone_number])
+    service.create_instance(
+      params[:instance_name],
+      params[:phone_number],
+      groups_ignore: params[:groups_ignore] || false
+    )
     qr_result = service.get_qrcode(params[:instance_name])
 
     EvolutionApi::ConnectionCheckJob.perform_later(

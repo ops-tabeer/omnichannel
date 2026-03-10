@@ -359,6 +359,10 @@
           "PLACEHOLDER": "e.g. 5511999999999",
           "ERROR": "Phone number is required"
         },
+        "REJECT_GROUPS": {
+          "LABEL": "Ignore group chats",
+          "HELP": "When enabled, messages from WhatsApp groups will be ignored"
+        },
         "SUBMIT_BUTTON": "Generate QR Code",
         "QR_INSTRUCTION": "Open WhatsApp on your phone, go to Settings → Linked Devices → Link a Device, then scan the QR code below.",
         "CONNECTION_STATUS": "Status:",

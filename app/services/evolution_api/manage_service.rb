@@ -4,12 +4,13 @@ class EvolutionApi::ManageService
     @api_key = InstallationConfig.find_by(name: 'EVOLUTION_API_KEY')&.value.presence || ''
   end
 
-  def create_instance(instance_name, phone_number)
+  def create_instance(instance_name, phone_number, groups_ignore: false)
     make_request(:post, '/instance/create', {
       instanceName: instance_name,
       number: phone_number,
       qrcode: true,
-      integration: 'WHATSAPP-BAILEYS'
+      integration: 'WHATSAPP-BAILEYS',
+      groupsIgnore: groups_ignore
     })
   end
 
