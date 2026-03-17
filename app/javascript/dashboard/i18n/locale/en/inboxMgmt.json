@@ -349,7 +349,6 @@
       "EVOLUTION_WHATSAPP": {
         "TITLE": "WhatsApp QR (Evolution API)",
         "DESC": "Connect a WhatsApp number by scanning a QR code using Evolution API.",
-        "DEPLOYMENT_TEST": "✅ Deployment Test: Fast assets precompile working!",
         "INSTANCE_NAME": {
           "LABEL": "Instance Name",
           "PLACEHOLDER": "Enter a unique instance name",

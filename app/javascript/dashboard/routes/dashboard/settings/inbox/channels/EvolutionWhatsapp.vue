@@ -113,16 +113,6 @@ onUnmounted(() => {
       :header-content="$t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.DESC')"
     />
 
-    <!-- Test deployment banner -->
-    <div
-      class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"
-      data-test="deployment-test-banner"
-    >
-      <p class="text-blue-800 text-sm font-medium">
-        {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.DEPLOYMENT_TEST') }}
-      </p>
-    </div>
-
     <form
       v-if="!showQrCode"
       class="flex flex-wrap flex-col mx-0"
