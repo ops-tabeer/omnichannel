@@ -94,6 +94,7 @@ yarn-debug.log*
 .vscode
 .claude/settings.local.json
 .cursor
+.codex/
 CLAUDE.local.md
 INFRA.md
 
@@ -102,3 +103,4 @@ INFRA.md
 .histoire
 .pnpm-store/*
 local/
+Procfile.worktree
