@@ -104,3 +104,6 @@ INFRA.md
 .pnpm-store/*
 local/
 Procfile.worktree
+
+# VPS custom docker-compose
+docker-compose.custom.yaml
