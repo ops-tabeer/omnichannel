@@ -89,6 +89,11 @@ class Conversation < ApplicationRecord
 
     open.where('last_activity_at < ?', Time.now.utc - auto_resolve_after.minutes)
   }
+  scope :follow_up_eligible, lambda { |wait_time_minutes|
+    return none if wait_time_minutes.to_i.zero?
+
+    where(status: %i[open pending]).where('last_activity_at < ?', Time.now.utc - wait_time_minutes.minutes)
+  }
 
   scope :last_user_message_at, lambda {
     joins(
@@ -213,6 +218,59 @@ class Conversation < ApplicationRecord
 
   def dispatch_conversation_updated_event(previous_changes = nil)
     dispatcher_dispatch(CONVERSATION_UPDATED, previous_changes)
+  end
+
+  def follow_up_count
+    additional_attributes['follow_up_count'].to_i
+  end
+
+  def increment_follow_up_count!
+    self.additional_attributes = additional_attributes.merge(
+      'follow_up_count' => follow_up_count + 1,
+      'last_follow_up_sent_at' => Time.current.iso8601
+    )
+    save!
+  end
+
+  def reset_follow_up_count!
+    return unless additional_attributes['follow_up_count'].present?
+
+    self.additional_attributes = additional_attributes.except('follow_up_count', 'last_follow_up_sent_at')
+    save!
+  end
+
+  def needs_follow_up?(wait_time_minutes, max_count, after_bot: true, after_agent: false)
+    return false unless open? || pending?
+    return false if follow_up_count >= max_count
+
+    last_non_activity = messages.where.not(message_type: :activity).reorder(created_at: :desc).first
+    return false if last_non_activity.blank?
+    return false unless eligible_follow_up_sender?(last_non_activity, after_bot: after_bot, after_agent: after_agent)
+    return false if last_activity_at > wait_time_minutes.minutes.ago
+
+    last_sent_at = additional_attributes['last_follow_up_sent_at']
+    return true if last_sent_at.blank?
+
+    Time.zone.parse(last_sent_at) <= wait_time_minutes.minutes.ago
+  end
+
+  def eligible_follow_up_sender?(message, after_bot: true, after_agent: false)
+    return false if message.incoming?
+
+    # Previous follow-up messages should not block the next follow-up
+    return true if message.content_attributes&.dig('follow_up_message')
+
+    case message.sender_type
+    when 'AgentBot'
+      after_bot
+    when 'User'
+      after_agent
+    when nil
+      # Messages without sender (e.g. sent via API without sender_type) — treat as agent
+      after_agent
+    else
+      after_bot || after_agent
+    end
   end
 
   private

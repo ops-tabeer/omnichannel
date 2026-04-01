@@ -248,3 +248,6 @@
   display_name: Advanced Assignment
   enabled: false
   premium: true
+- name: conversation_follow_up
+  display_name: Conversation Follow-Up
+  enabled: true

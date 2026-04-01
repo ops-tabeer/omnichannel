@@ -315,10 +315,17 @@ class Message < ApplicationRecord
     send_reply
     execute_message_template_hooks
     update_contact_activity
+    reset_follow_up_count_on_customer_reply
   end
 
   def update_contact_activity
     sender.update(last_activity_at: DateTime.now) if sender.is_a?(Contact)
+  end
+
+  def reset_follow_up_count_on_customer_reply
+    return unless incoming? && !private
+
+    conversation.reset_follow_up_count! if conversation.follow_up_count.positive?
   end
 
   def update_waiting_since

@@ -41,6 +41,11 @@ class Account < ApplicationRecord
         'audio_transcriptions': { 'type': %w[boolean null] },
         'auto_resolve_label': { 'type': %w[string null] },
         'keep_pending_on_bot_failure': { 'type': %w[boolean null] },
+        'conversation_follow_up_wait_time': { 'type': %w[integer null], 'minimum': 5, 'maximum': 10_080 },
+        'conversation_follow_up_message': { 'type': %w[string null] },
+        'conversation_follow_up_max_count': { 'type': %w[integer null], 'minimum': 1, 'maximum': 10 },
+        'conversation_follow_up_after_bot': { 'type': %w[boolean null] },
+        'conversation_follow_up_after_agent': { 'type': %w[boolean null] },
         'conversation_required_attributes': {
           'type': %w[array null],
           'items': { 'type': 'string' }
@@ -90,6 +95,8 @@ class Account < ApplicationRecord
   store_accessor :settings, :audio_transcriptions, :auto_resolve_label
   store_accessor :settings, :captain_models, :captain_features
   store_accessor :settings, :keep_pending_on_bot_failure
+  store_accessor :settings, :conversation_follow_up_wait_time, :conversation_follow_up_message, :conversation_follow_up_max_count,
+                 :conversation_follow_up_after_bot, :conversation_follow_up_after_agent
 
   has_many :account_users, dependent: :destroy_async
   has_many :agent_bot_inboxes, dependent: :destroy_async
@@ -140,6 +147,11 @@ class Account < ApplicationRecord
   enum :status, { active: 0, suspended: 1 }
 
   scope :with_auto_resolve, -> { where("(settings ->> 'auto_resolve_after')::int IS NOT NULL") }
+  scope :with_follow_up_enabled, lambda {
+    where("(settings ->> 'conversation_follow_up_wait_time')::int IS NOT NULL")
+      .where("(settings ->> 'conversation_follow_up_message') IS NOT NULL")
+      .where("(settings ->> 'conversation_follow_up_message') != ''")
+  }
 
   before_validation :validate_limit_keys
   after_create_commit :notify_creation

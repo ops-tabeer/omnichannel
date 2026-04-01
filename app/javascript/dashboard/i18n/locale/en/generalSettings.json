@@ -72,6 +72,34 @@
         },
         "UPDATE_BUTTON": "Save Changes"
       },
+      "FOLLOW_UP": {
+        "TITLE": "Conversation Follow-Up",
+        "NOTE": "Automatically send a follow-up message to customers who stop responding after a period of inactivity.",
+        "DURATION": {
+          "LABEL": "Inactivity duration",
+          "HELP": "Time to wait after last message before sending a follow-up",
+          "ERROR": "Follow-up duration should be between 5 minutes and 7 days"
+        },
+        "MESSAGE": {
+          "LABEL": "Follow-up message",
+          "PLACEHOLDER": "Hi there! Just following up to see if you're still interested. Would you like me to connect you with an agent?",
+          "HELP": "Message sent to the customer when they stop responding"
+        },
+        "MAX_COUNT": {
+          "LABEL": "Maximum follow-ups",
+          "HELP": "Maximum number of follow-up messages per conversation"
+        },
+        "TRIGGER": {
+          "LABEL": "Follow up after",
+          "AFTER_BOT": "Bot messages",
+          "AFTER_AGENT": "Agent messages"
+        },
+        "UPDATE_BUTTON": "Save Changes",
+        "API": {
+          "SUCCESS": "Follow-up settings updated successfully",
+          "ERROR": "Failed to update follow-up settings"
+        }
+      },
       "NAME": {
         "LABEL": "Account name",
         "PLACEHOLDER": "Your account name",
