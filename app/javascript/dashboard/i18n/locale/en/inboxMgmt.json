@@ -795,6 +795,17 @@
       "MAX_ASSIGNMENT_LIMIT_RANGE_ERROR": "Please enter a value greater than 0",
       "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limit the maximum number of conversations from this inbox that can be auto assigned to an agent"
     },
+    "IDLE_REASSIGNMENT": {
+      "TITLE": "Idle Reassignment",
+      "SUB_TITLE": "Automatically reassign conversations when the assigned agent does not respond within a set time",
+      "ENABLE_LABEL": "Enable idle reassignment",
+      "ENABLE_DESCRIPTION": "If the assigned agent does not reply within the threshold, the conversation will be reassigned to another available agent once",
+      "THRESHOLD_LABEL": "No response threshold (minutes)",
+      "THRESHOLD_PLACEHOLDER": "e.g. 15",
+      "THRESHOLD_ERROR": "Please enter a value greater than 0",
+      "UPDATE_SUCCESS": "Idle reassignment settings updated successfully",
+      "UPDATE_ERROR": "Failed to update idle reassignment settings"
+    },
     "ASSIGNMENT": {
       "TITLE": "Conversation Assignment",
       "DESCRIPTION": "Automatically assign incoming conversations to available agents based on assignment policies",
