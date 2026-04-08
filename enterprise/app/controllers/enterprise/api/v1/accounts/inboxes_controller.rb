@@ -4,7 +4,7 @@ module Enterprise::Api::V1::Accounts::InboxesController
   end
 
   def ee_inbox_attributes
-    [auto_assignment_config: [:max_assignment_limit]]
+    [:auto_reassignment_enabled, :auto_reassignment_threshold, auto_assignment_config: [:max_assignment_limit]]
   end
 
   private
