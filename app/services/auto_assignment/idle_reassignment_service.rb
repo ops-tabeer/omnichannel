@@ -15,19 +15,16 @@ class AutoAssignment::IdleReassignmentService
   def idle_conversations
     threshold_time = inbox.auto_reassignment_threshold.minutes.ago
 
-    # Covers two cases:
-    # 1. Bot handoff — agent never replied (first_reply_created_at nil, waiting_since nil)
-    # 2. Mid-conversation — customer replied, agent went silent (waiting_since set)
-    # Reassignment resets last_activity_at, so the timer restarts after each reassign.
-    # first_reply_created_at IS NULL is the permanent stop — once any agent replies, we stop.
+    # Only consider conversations created after the inbox feature was enabled.
+    # This prevents old dormant conversations from being picked up when the feature is first turned on.
+    # taken_at IS NULL is the permanent stop — once an agent clicks "Take", we stop reassigning forever.
     inbox.conversations
          .open
          .assigned
-         .where(first_reply_created_at: nil)
-         .where(
-           '(waiting_since IS NULL AND last_activity_at < :t) OR (waiting_since IS NOT NULL AND waiting_since < :t)',
-           t: threshold_time
-         )
+         .where(taken_at: nil)
+         .where("additional_attributes->>'ai_handoff' = 'true'")
+         .where('created_at > ?', inbox.auto_reassignment_enabled_since)
+         .where('last_activity_at < ?', threshold_time)
   end
 
   def reassign(conversation)
@@ -40,6 +37,7 @@ class AutoAssignment::IdleReassignmentService
     # Reset last_activity_at so the threshold timer restarts for the new agent
     conversation.update!(
       assignee: new_agent,
+      auto_reassigned: true,
       last_activity_at: Time.current,
       additional_attributes: conversation.additional_attributes.merge('auto_reassignment_tried_ids' => tried_ids)
     )

@@ -24,9 +24,26 @@ const [showEmailActionsModal, toggleEmailModal] = useToggle(false);
 const [showActionsDropdown, toggleDropdown] = useToggle(false);
 
 const currentChat = computed(() => store.getters.getSelectedChat);
+const currentUser = computed(() => store.getters.getCurrentUser);
 
 const actionMenuItems = computed(() => {
   const items = [];
+
+  const isAssignedToMe =
+    currentChat.value?.meta?.assignee?.id === currentUser.value?.id;
+
+  if (
+    currentChat.value?.status === 'open' &&
+    isAssignedToMe &&
+    !currentChat.value?.taken_at
+  ) {
+    items.push({
+      icon: 'i-lucide-hand',
+      label: t('CONVERSATION.HEADER.TAKE_ACTION'),
+      action: 'take',
+      value: 'take',
+    });
+  }
 
   if (!currentChat.value.muted) {
     items.push({
@@ -57,7 +74,10 @@ const actionMenuItems = computed(() => {
 const handleActionClick = ({ action }) => {
   toggleDropdown(false);
 
-  if (action === 'mute') {
+  if (action === 'take') {
+    store.dispatch('takeConversation', currentChat.value.id);
+    useAlert(t('CONVERSATION.HEADER.TAKE_ACTION_SUCCESS'));
+  } else if (action === 'mute') {
     store.dispatch('muteConversation', currentChat.value.id);
     useAlert(t('CONTACT_PANEL.MUTED_SUCCESS'));
   } else if (action === 'unmute') {

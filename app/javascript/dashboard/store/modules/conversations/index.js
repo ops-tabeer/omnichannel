@@ -164,6 +164,11 @@ export const mutations = {
     chat.muted = true;
   },
 
+  [types.TAKE_CONVERSATION](_state) {
+    const [chat] = getSelectedChatConversation(_state);
+    if (chat) chat.taken_at = new Date().toISOString();
+  },
+
   [types.UNMUTE_CONVERSATION](_state) {
     const [chat] = getSelectedChatConversation(_state);
     chat.muted = false;

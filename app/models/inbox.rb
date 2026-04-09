@@ -81,6 +81,8 @@ class Inbox < ApplicationRecord
 
   after_destroy :delete_round_robin_agents
 
+  before_save :track_auto_reassignment_enabled_since
+
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
 
@@ -205,7 +207,19 @@ class Inbox < ApplicationRecord
     account.feature_enabled?('assignment_v2')
   end
 
+  def auto_reassignment_enabled_since
+    auto_assignment_config['auto_reassignment_enabled_since']&.then { |t| Time.zone.parse(t) } || created_at
+  end
+
   private
+
+  def track_auto_reassignment_enabled_since
+    return unless will_save_change_to_auto_reassignment_enabled?
+    return unless auto_reassignment_enabled?
+
+    config = auto_assignment_config || {}
+    self.auto_assignment_config = config.merge('auto_reassignment_enabled_since' => Time.current.iso8601)
+  end
 
   def default_name_for_blank_name
     email? ? display_name_from_email : ''

@@ -251,6 +251,7 @@ en:
         assigned: 'Assigned to %{assignee_name} by %{user_name}'
         removed: 'Conversation unassigned by %{user_name}'
         auto_reassigned: 'Conversation auto-reassigned from %{old_agent_name} to %{new_agent_name} due to no response'
+        taken: '%{user_name} took this conversation'
       team:
         assigned: 'Assigned to %{team_name} by %{user_name}'
         assigned_with_assignee: 'Assigned to %{assignee_name} via %{team_name} by %{user_name}'

@@ -247,6 +247,16 @@ export function useConversationFilterContext() {
       filterOperators: dateOperators.value,
       attributeModel: 'standard',
     },
+    {
+      attributeKey: CONVERSATION_ATTRIBUTES.AUTO_REASSIGNED,
+      value: CONVERSATION_ATTRIBUTES.AUTO_REASSIGNED,
+      attributeName: t('FILTER.ATTRIBUTES.AUTO_REASSIGNED'),
+      label: t('FILTER.ATTRIBUTES.AUTO_REASSIGNED'),
+      inputType: 'booleanSelect',
+      dataType: 'boolean',
+      filterOperators: equalityOperators.value,
+      attributeModel: 'standard',
+    },
     ...customFilterTypes.value,
   ]);
 
