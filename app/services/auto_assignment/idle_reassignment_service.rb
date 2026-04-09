@@ -22,7 +22,7 @@ class AutoAssignment::IdleReassignmentService
          .open
          .assigned
          .where(taken_at: nil)
-         .where("additional_attributes->>'ai_handoff' = 'true'")
+         .where("custom_attributes->>'ai_handoff' = 'true'")
          .where('created_at > ?', inbox.auto_reassignment_enabled_since)
          .where('last_activity_at < ?', threshold_time)
   end
