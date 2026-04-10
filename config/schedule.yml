@@ -80,3 +80,10 @@ remove_orphan_conversations_job:
   cron: '0 */12 * * *'
   class: 'Internal::RemoveOrphanConversationsJob'
   queue: housekeeping
+
+# executed every hour
+# to sync Evolution API WhatsApp connection status for all inboxes
+evolution_sync_connection_status_job:
+  cron: '0 * * * *'
+  class: 'EvolutionApi::SyncConnectionStatusJob'
+  queue: scheduled_jobs

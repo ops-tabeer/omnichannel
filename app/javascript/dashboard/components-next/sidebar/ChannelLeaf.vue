@@ -22,6 +22,15 @@ const props = defineProps({
 const reauthorizationRequired = computed(() => {
   return props.inbox.reauthorization_required;
 });
+
+const evolutionConnectionStatus = computed(() => {
+  if (
+    props.inbox.channel_type !== 'Channel::Api' ||
+    !props.inbox.additional_attributes?.evolution_api
+  )
+    return null;
+  return props.inbox.additional_attributes?.evolution_connection_status || null;
+});
 </script>
 
 <template>
@@ -36,4 +45,17 @@ const reauthorizationRequired = computed(() => {
   >
     <Icon icon="i-woot-alert" class="size-3 text-n-ruby-9" />
   </div>
+  <span
+    v-else-if="evolutionConnectionStatus"
+    v-tooltip.top-end="
+      evolutionConnectionStatus === 'connected'
+        ? $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_CONNECTED')
+        : $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_DISCONNECTED')
+    "
+    class="size-2 rounded-full flex-shrink-0"
+    :class="{
+      'bg-n-teal-10': evolutionConnectionStatus === 'connected',
+      'bg-n-ruby-9': evolutionConnectionStatus === 'disconnected',
+    }"
+  />
 </template>

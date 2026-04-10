@@ -48,7 +48,8 @@ class Api::V1::Accounts::EvolutionController < Api::V1::Accounts::BaseController
         additional_attributes: {
           'evolution_api' => true,
           'evolution_instance_name' => params[:instance_name],
-          'evolution_phone_number' => params[:phone_number]
+          'evolution_phone_number' => params[:phone_number],
+          'evolution_connection_status' => 'connected'
         }
       )
 

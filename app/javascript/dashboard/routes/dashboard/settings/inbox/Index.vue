@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import Avatar from 'next/avatar/Avatar.vue';
@@ -14,11 +14,21 @@ import {
 import ChannelName from './components/ChannelName.vue';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import InboxesAPI from 'dashboard/api/inboxes';
 
 const getters = useStoreGetters();
 const store = useStore();
 const { t } = useI18n();
 const { isAdmin } = useAdmin();
+
+onMounted(async () => {
+  try {
+    const response = await InboxesAPI.getFromNetwork();
+    store.commit('inboxes/SET_INBOXES', response.data.payload);
+  } catch {
+    // fallback: use cached store data
+  }
+});
 
 const showDeletePopup = ref(false);
 const selectedInbox = ref({});
@@ -70,6 +80,13 @@ const openDelete = inbox => {
   showDeletePopup.value = true;
   selectedInbox.value = inbox;
 };
+
+const isEvolutionInbox = inbox =>
+  inbox.channel_type === 'Channel::Api' &&
+  inbox.additional_attributes?.evolution_api === true;
+
+const evolutionConnectionStatus = inbox =>
+  inbox.additional_attributes?.evolution_connection_status || null;
 </script>
 
 <template>
@@ -126,6 +143,41 @@ const openDelete = inbox => {
                     :channel-type="inbox.channel_type"
                     :medium="inbox.medium"
                   />
+                  <span
+                    v-if="isEvolutionInbox(inbox)"
+                    class="inline-flex items-center gap-1 mt-1 text-xs font-medium"
+                    :class="{
+                      'text-n-teal-11':
+                        evolutionConnectionStatus(inbox) === 'connected',
+                      'text-n-ruby-11':
+                        evolutionConnectionStatus(inbox) === 'disconnected',
+                      'text-n-slate-9': !evolutionConnectionStatus(inbox),
+                    }"
+                  >
+                    <span
+                      class="size-1.5 rounded-full"
+                      :class="{
+                        'bg-n-teal-10':
+                          evolutionConnectionStatus(inbox) === 'connected',
+                        'bg-n-ruby-9':
+                          evolutionConnectionStatus(inbox) === 'disconnected',
+                        'bg-n-slate-7': !evolutionConnectionStatus(inbox),
+                      }"
+                    />
+                    {{
+                      evolutionConnectionStatus(inbox) === 'connected'
+                        ? $t(
+                            'INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_CONNECTED'
+                          )
+                        : evolutionConnectionStatus(inbox) === 'disconnected'
+                          ? $t(
+                              'INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_DISCONNECTED'
+                            )
+                          : $t(
+                              'INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_UNKNOWN'
+                            )
+                    }}
+                  </span>
                 </div>
               </div>
             </td>

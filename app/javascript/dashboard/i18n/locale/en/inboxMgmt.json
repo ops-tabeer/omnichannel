@@ -376,7 +376,10 @@
         "REFRESH_QR": "Refresh QR Code",
         "CREATE_ERROR": "Could not create the WhatsApp instance. Please try again.",
         "SETUP_ERROR": "Could not complete the inbox setup. Please try again.",
-        "QR_REFRESH_ERROR": "Could not refresh the QR code. Please try again."
+        "QR_REFRESH_ERROR": "Could not refresh the QR code. Please try again.",
+        "STATUS_CONNECTED": "Connected",
+        "STATUS_DISCONNECTED": "Disconnected",
+        "STATUS_UNKNOWN": "Unknown"
       },
       "API_CHANNEL": {
         "TITLE": "API Channel",
