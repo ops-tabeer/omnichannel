@@ -15,6 +15,7 @@ import {
   CMD_SEND_TRANSCRIPT,
   CMD_UNMUTE_CONVERSATION,
 } from 'dashboard/helper/commandbar/events';
+import { useAccount } from 'dashboard/composables/useAccount';
 
 // No props needed as we're getting currentChat from the store directly
 const store = useStore();
@@ -25,6 +26,10 @@ const [showActionsDropdown, toggleDropdown] = useToggle(false);
 
 const currentChat = computed(() => store.getters.getSelectedChat);
 const currentUser = computed(() => store.getters.getCurrentUser);
+const { currentAccount } = useAccount();
+const hideResolveAction = computed(
+  () => currentAccount.value?.custom_attributes?.hide_resolve_action === true
+);
 
 const showTakeButton = computed(() => {
   const isAssignedToMe =
@@ -121,6 +126,7 @@ onUnmounted(() => {
     <ResolveAction
       :conversation-id="currentChat.id"
       :status="currentChat.status"
+      :hide-resolve="hideResolveAction"
     />
     <div
       v-on-clickaway="() => toggleDropdown(false)"

@@ -37,6 +37,7 @@ class SuperAdmin::AccountsController < SuperAdmin::ApplicationController
     permitted_params = super
     permitted_params[:limits] = permitted_params[:limits].to_h.compact
     permitted_params[:selected_feature_flags] = params[:enabled_features].keys.map(&:to_sym) if params[:enabled_features].present?
+    permitted_params[:hide_resolve_action] = params[:account][:hide_resolve_action] if params[:account]&.key?(:hide_resolve_action)
     permitted_params
   end
 

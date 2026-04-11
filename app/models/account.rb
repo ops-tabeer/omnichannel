@@ -31,6 +31,14 @@ class Account < ApplicationRecord
   include CaptainFeaturable
   include AccountEmailRateLimitable
 
+  def hide_resolve_action
+    custom_attributes['hide_resolve_action'] == true
+  end
+
+  def hide_resolve_action=(value)
+    self.custom_attributes = custom_attributes.merge('hide_resolve_action' => ActiveModel::Type::Boolean.new.cast(value))
+  end
+
   SETTINGS_PARAMS_SCHEMA = {
     'type': 'object',
     'properties':
