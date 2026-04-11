@@ -26,24 +26,24 @@ const [showActionsDropdown, toggleDropdown] = useToggle(false);
 const currentChat = computed(() => store.getters.getSelectedChat);
 const currentUser = computed(() => store.getters.getCurrentUser);
 
-const actionMenuItems = computed(() => {
-  const items = [];
-
+const showTakeButton = computed(() => {
   const isAssignedToMe =
     currentChat.value?.meta?.assignee?.id === currentUser.value?.id;
-
-  if (
+  const isAdmin = currentUser.value?.role === 'administrator';
+  return (
     currentChat.value?.status === 'open' &&
-    isAssignedToMe &&
+    (isAssignedToMe || isAdmin) &&
     !currentChat.value?.taken_at
-  ) {
-    items.push({
-      icon: 'i-lucide-hand',
-      label: t('CONVERSATION.HEADER.TAKE_ACTION'),
-      action: 'take',
-      value: 'take',
-    });
-  }
+  );
+});
+
+const handleTake = () => {
+  store.dispatch('takeConversation', currentChat.value.id);
+  useAlert(t('CONVERSATION.HEADER.TAKE_ACTION_SUCCESS'));
+};
+
+const actionMenuItems = computed(() => {
+  const items = [];
 
   if (!currentChat.value.muted) {
     items.push({
@@ -74,10 +74,7 @@ const actionMenuItems = computed(() => {
 const handleActionClick = ({ action }) => {
   toggleDropdown(false);
 
-  if (action === 'take') {
-    store.dispatch('takeConversation', currentChat.value.id);
-    useAlert(t('CONVERSATION.HEADER.TAKE_ACTION_SUCCESS'));
-  } else if (action === 'mute') {
+  if (action === 'mute') {
     store.dispatch('muteConversation', currentChat.value.id);
     useAlert(t('CONTACT_PANEL.MUTED_SUCCESS'));
   } else if (action === 'unmute') {
@@ -112,6 +109,15 @@ onUnmounted(() => {
 
 <template>
   <div class="relative flex items-center gap-2 actions--container">
+    <ButtonV4
+      v-show="showTakeButton"
+      size="sm"
+      variant="ghost"
+      color="slate"
+      icon="i-lucide-hand"
+      :label="$t('CONVERSATION.HEADER.TAKE_ACTION')"
+      @click="handleTake"
+    />
     <ResolveAction
       :conversation-id="currentChat.id"
       :status="currentChat.status"
