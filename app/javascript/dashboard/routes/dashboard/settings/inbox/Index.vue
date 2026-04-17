@@ -15,6 +15,7 @@ import ChannelName from './components/ChannelName.vue';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import InboxesAPI from 'dashboard/api/inboxes';
+import EvolutionReconnectModal from './components/EvolutionReconnectModal.vue';
 
 const getters = useStoreGetters();
 const store = useStore();
@@ -87,6 +88,23 @@ const isEvolutionInbox = inbox =>
 
 const evolutionConnectionStatus = inbox =>
   inbox.additional_attributes?.evolution_connection_status || null;
+
+const showReconnectModal = ref(false);
+const reconnectInbox = ref({});
+
+const openReconnect = inbox => {
+  reconnectInbox.value = inbox;
+  showReconnectModal.value = true;
+};
+
+const onReconnected = async () => {
+  try {
+    const response = await InboxesAPI.getFromNetwork();
+    store.commit('inboxes/SET_INBOXES', response.data.payload);
+  } catch {
+    // fallback: rely on existing store data
+  }
+};
 </script>
 
 <template>
@@ -184,6 +202,24 @@ const evolutionConnectionStatus = inbox =>
 
             <td class="py-4">
               <div class="flex gap-1 justify-end">
+                <Button
+                  v-if="
+                    isAdmin &&
+                    isEvolutionInbox(inbox) &&
+                    evolutionConnectionStatus(inbox) === 'disconnected'
+                  "
+                  v-tooltip.top="
+                    $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.RECONNECT.BUTTON')
+                  "
+                  icon="i-lucide-refresh-cw"
+                  :label="
+                    $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.RECONNECT.BUTTON')
+                  "
+                  xs
+                  amber
+                  faded
+                  @click="openReconnect(inbox)"
+                />
                 <router-link
                   :to="{
                     name: 'settings_inbox_show',
@@ -226,6 +262,13 @@ const evolutionConnectionStatus = inbox =>
       :confirm-place-holder-text="confirmPlaceHolderText"
       @on-confirm="confirmDeletion"
       @on-close="closeDelete"
+    />
+
+    <EvolutionReconnectModal
+      v-if="showReconnectModal"
+      v-model:show="showReconnectModal"
+      :inbox="reconnectInbox"
+      @reconnected="onReconnected"
     />
   </SettingsLayout>
 </template>

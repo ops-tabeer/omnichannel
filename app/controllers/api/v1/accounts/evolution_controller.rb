@@ -40,6 +40,29 @@ class Api::V1::Accounts::EvolutionController < Api::V1::Accounts::BaseController
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  def reconnect
+    inbox = Current.account.inboxes.find(params[:inbox_id])
+    instance_name = inbox.channel.additional_attributes['evolution_instance_name']
+    raise StandardError, 'Instance not found for this inbox' if instance_name.blank?
+
+    service = EvolutionApi::ManageService.new
+    reapply_chatwoot_config(service, inbox, instance_name)
+    qr_result = service.get_qrcode(instance_name)
+
+    EvolutionApi::ConnectionCheckJob.perform_later(
+      account_id: Current.account.id,
+      instance_name: instance_name,
+      user_id: Current.user.id
+    )
+
+    render json: {
+      qrcode: qr_result.dig('base64') || qr_result.dig('qrcode', 'base64'),
+      instance_name: instance_name
+    }
+  rescue StandardError => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
   def complete_setup
     ActiveRecord::Base.transaction do
       evolution_url = InstallationConfig.find_by(name: 'EVOLUTION_API_URL')&.value.presence || ''
@@ -58,7 +81,7 @@ class Api::V1::Accounts::EvolutionController < Api::V1::Accounts::BaseController
         channel: channel
       )
 
-      configure_evolution_webhook(channel)
+      configure_evolution_webhook
     end
 
     render json: { id: @inbox.id, name: @inbox.name }
@@ -68,25 +91,29 @@ class Api::V1::Accounts::EvolutionController < Api::V1::Accounts::BaseController
 
   private
 
-  def configure_evolution_webhook(channel)
-    frontend_url = GlobalConfigService.load('FRONTEND_URL', '')
+  def configure_evolution_webhook
     service = EvolutionApi::ManageService.new
+    service.configure_chatwoot(params[:instance_name], chatwoot_config(@inbox.name, params[:phone_number]))
+  end
 
-    service.configure_chatwoot(
-      params[:instance_name],
-      {
-        enabled: true,
-        accountId: Current.account.id.to_s,
-        token: Current.user.access_token.token,
-        url: frontend_url,
-        signMsg: false,
-        reopenConversation: true,
-        conversationPending: false,
-        nameInbox: @inbox.name,
-        number: params[:phone_number],
-        autoCreate: false
-      }
-    )
+  def reapply_chatwoot_config(service, inbox, instance_name)
+    phone_number = inbox.channel.additional_attributes['evolution_phone_number']
+    service.configure_chatwoot(instance_name, chatwoot_config(inbox.name, phone_number))
+  end
+
+  def chatwoot_config(inbox_name, phone_number)
+    {
+      enabled: true,
+      accountId: Current.account.id.to_s,
+      token: Current.user.access_token.token,
+      url: GlobalConfigService.load('FRONTEND_URL', ''),
+      signMsg: false,
+      reopenConversation: true,
+      conversationPending: false,
+      nameInbox: inbox_name,
+      number: phone_number,
+      autoCreate: false
+    }
   end
 
   def check_authorization

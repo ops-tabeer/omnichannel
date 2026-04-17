@@ -14,6 +14,7 @@ class EvolutionApi::ConnectionCheckJob < ApplicationJob
     state = result.dig('instance', 'state') || result['state']
 
     if state == 'open'
+      mark_channel_connected(account_id, instance_name)
       broadcast_connected(account_id, instance_name, user_id)
     else
       self.class.set(wait: POLL_INTERVAL).perform_later(
@@ -28,6 +29,18 @@ class EvolutionApi::ConnectionCheckJob < ApplicationJob
   end
 
   private
+
+  def mark_channel_connected(account_id, instance_name)
+    channel = Channel::Api
+              .where(account_id: account_id)
+              .where("additional_attributes->>'evolution_instance_name' = ?", instance_name)
+              .first
+    return if channel.blank?
+
+    channel.update!(
+      additional_attributes: channel.additional_attributes.merge('evolution_connection_status' => 'connected')
+    )
+  end
 
   def broadcast_connected(account_id, instance_name, user_id)
     account = Account.find(account_id)

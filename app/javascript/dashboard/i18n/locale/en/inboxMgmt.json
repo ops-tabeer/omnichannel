@@ -379,7 +379,15 @@
         "QR_REFRESH_ERROR": "Could not refresh the QR code. Please try again.",
         "STATUS_CONNECTED": "Connected",
         "STATUS_DISCONNECTED": "Disconnected",
-        "STATUS_UNKNOWN": "Unknown"
+        "STATUS_UNKNOWN": "Unknown",
+        "RECONNECT": {
+          "BUTTON": "Reconnect",
+          "TITLE": "Reconnect WhatsApp",
+          "DESC": "Scan the QR code to reconnect {inboxName}. All existing conversations will be preserved.",
+          "SUCCESS": "WhatsApp reconnected successfully",
+          "ERROR": "Could not start reconnection. Please try again.",
+          "CLOSE": "Close"
+        }
       },
       "API_CHANNEL": {
         "TITLE": "API Channel",
