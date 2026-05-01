@@ -7,6 +7,8 @@
       "EMPTY": "No JIVO assistants yet. Create your first one to get started.",
       "NEW": "New Assistant",
       "INBOXES": "Inboxes",
+      "DOCUMENTS": "Documents",
+      "FAQS": "FAQs",
       "NO_INBOXES": "Not connected to any inbox",
       "DELETE": {
         "TITLE": "Delete JIVO Assistant",
@@ -56,6 +58,65 @@
         "CONNECT": "Connect",
         "DISCONNECT": "Disconnect",
         "CLOSE": "Close"
+      }
+    },
+    "DOCUMENTS": {
+      "TITLE": "Documents - {name}",
+      "DESCRIPTION": "Add web pages as knowledge sources. JIVO will crawl them and auto-generate FAQs.",
+      "LOADING": "Loading documents...",
+      "EMPTY": "No documents yet. Add a URL to give JIVO knowledge to answer from.",
+      "ADD": "Add URL",
+      "BACK": "Back",
+      "RESPONSES_COUNT": "{count} FAQs",
+      "ADDED": "Document queued for crawling",
+      "ADD_FAILED": "Failed to add document",
+      "DELETED": "Document deleted",
+      "DELETE_FAILED": "Failed to delete document",
+      "FORM": {
+        "URL_LABEL": "URL",
+        "URL_PLACEHOLDER": "https://example.com/help/faq",
+        "NAME_LABEL": "Name (optional)",
+        "NAME_PLACEHOLDER": "Auto-detected from page title if blank",
+        "CANCEL": "Cancel",
+        "SUBMIT": "Add"
+      },
+      "DELETE": {
+        "TITLE": "Delete Document",
+        "DESCRIPTION": "This will also remove all FAQs generated from this document.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      }
+    },
+    "FAQS": {
+      "TITLE": "FAQs - {name}",
+      "DESCRIPTION": "Question-and-answer pairs JIVO uses to answer customer questions.",
+      "LOADING": "Loading FAQs...",
+      "EMPTY": "No FAQs yet. Add documents or create FAQs manually.",
+      "ADD": "New FAQ",
+      "BACK": "Back",
+      "AUTO_GENERATED": "auto-generated",
+      "CREATED": "FAQ created",
+      "UPDATED": "FAQ updated",
+      "DELETED": "FAQ deleted",
+      "LOAD_FAILED": "Failed to load FAQs",
+      "SAVE_FAILED": "Failed to save FAQ",
+      "DELETE_FAILED": "Failed to delete FAQ",
+      "FORM": {
+        "CREATE_TITLE": "New FAQ",
+        "EDIT_TITLE": "Edit FAQ",
+        "QUESTION_LABEL": "Question",
+        "QUESTION_PLACEHOLDER": "What does this FAQ answer?",
+        "ANSWER_LABEL": "Answer",
+        "ANSWER_PLACEHOLDER": "Provide a complete, clear answer.",
+        "CANCEL": "Cancel",
+        "CREATE": "Create",
+        "SAVE": "Save"
+      },
+      "DELETE": {
+        "TITLE": "Delete FAQ",
+        "DESCRIPTION": "Are you sure? This cannot be undone.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
       }
     }
   }

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
@@ -12,6 +13,7 @@ import JivoAssistantForm from './components/JivoAssistantForm.vue';
 import JivoInboxManager from './components/JivoInboxManager.vue';
 
 const store = useStore();
+const router = useRouter();
 const { t } = useI18n();
 
 const assistants = useMapGetter('jivoAssistants/getAssistants');
@@ -45,6 +47,17 @@ const openInboxManager = assistant => {
 const openDeleteDialog = assistant => {
   selectedAssistant.value = assistant;
   deleteDialogRef.value.open();
+};
+
+const goToDocuments = assistant => {
+  router.push({
+    name: 'jivo_documents',
+    params: { assistantId: assistant.id },
+  });
+};
+
+const goToFaqs = assistant => {
+  router.push({ name: 'jivo_faqs', params: { assistantId: assistant.id } });
 };
 
 const handleSave = async data => {
@@ -133,6 +146,22 @@ onMounted(() => {
               </div>
             </div>
             <div class="flex gap-2 shrink-0">
+              <Button
+                :label="t('JIVO.ASSISTANTS.DOCUMENTS')"
+                icon="i-lucide-file-text"
+                slate
+                xs
+                faded
+                @click="goToDocuments(assistant)"
+              />
+              <Button
+                :label="t('JIVO.ASSISTANTS.FAQS')"
+                icon="i-lucide-message-circle-question"
+                slate
+                xs
+                faded
+                @click="goToFaqs(assistant)"
+              />
               <Button
                 :label="t('JIVO.ASSISTANTS.INBOXES')"
                 icon="i-lucide-inbox"

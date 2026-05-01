@@ -1045,3 +1045,130 @@ Build in this order to minimize dependencies:
 - **No license enforcement**: Build as fully unlocked feature
 - **No Hub ping**: Skip the Chatwoot Hub integration
 - **MVP first**: Phase 1 alone gives a working autonomous bot. Phases 2-6 add depth.
+
+---
+
+# Phase Implementation Log
+
+This section is the **source of truth** for what was actually built per phase and what was intentionally deferred. Anything deferred MUST be revisited later — it is not a "nice to have", it's a deliberate cut for MVP velocity. Update this log every time a phase is completed.
+
+## Phase 1 — Foundation + MVP Auto-Pilot ✅ COMPLETED
+
+### Implemented
+- ✅ JivoAssistant + JivoInbox models with associations
+- ✅ Migrations + schema with proper indexes
+- ✅ Conversation status detection (`active_jivo_assistant?`)
+- ✅ HookExecutionService trigger + greeting/OOO/email-collect suppression
+- ✅ Jivo::ConversationHandlerService with Captain-equivalent system prompt
+- ✅ Jivo::ProcessConversationJob (async)
+- ✅ Handoff mechanism (`bot_handoff!` → conversation goes from pending to open)
+- ✅ Error handling with ChatwootExceptionTracker
+- ✅ DocumentsController + InboxesController + AssistantsController + Pundit policies
+- ✅ Settings UI (list, create/edit form, inbox connect/disconnect)
+- ✅ Message model — JIVO recognized as bot (excluded from first-reply tracking)
+- ✅ Frontend: Vuex store + API client + i18n
+- ✅ Sidebar entry with sparkles icon
+
+### Deferred — TO BE ADDED LATER
+| Item | Why deferred | Phase to revisit |
+|---|---|---|
+| **Avatar on JivoAssistant** | Captain has `Avatarable` concern with image upload | Phase 6 (UI polish) |
+| **Welcome message** config field | Captain has `welcome_message`; we only have `handoff_message` | Phase 6 |
+| **Resolution message** config field | Captain has `resolution_message` for auto-resolve | Phase 4 (auto-resolution) |
+| **Response guidelines** (jsonb array) | Captain has per-assistant behavioral rules | Phase 6 |
+| **Guardrails** (jsonb array) | Captain has per-assistant constraints | Phase 6 |
+| **Custom instructions** as separate field | Currently uses `system_prompt`; Captain has both | Phase 6 |
+| **Playground UI** | Test conversations without affecting production | Phase 6 |
+| **Push events on assistant create/update** | Captain dispatches WebSocket events | Phase 6 |
+| **Webhook data** for outbound integrations | Captain has `webhook_data` payload | Phase 6 |
+| **Feature flag** (`jivo_integration`) | Skipped because `feature_flags` bigint column is full (65 features) | Add `feature_flags_2` column when needed |
+| **Send OOO message after handoff** | Captain triggers OOO template on handoff (skip for campaign convos) | Phase 4 |
+| **Attachment wait logic** | Captain delays job 1-5s when attachments present | Phase 4 (multimodal) |
+| **`agent_name` tracking** in `additional_attributes` | V2 feature for multi-agent identification | Phase 5 (V2) |
+| **Captain V2 agent runner** | Multi-agent orchestration with handoffs | Phase 5 |
+| **Per-feature model selection** | Captain has separate models for editor/copilot/assistant/etc. | Phase 3+ |
+| **Captain Tasks** flag (always-on inline tools) | Inline rewrite/summarize/etc. | Phase 3 |
+
+---
+
+## Phase 2 — Knowledge Base & RAG ✅ COMPLETED
+
+### Implemented
+- ✅ JivoDocument model (URL-based knowledge sources)
+- ✅ JivoAssistantResponse model with `has_neighbors :embedding`
+- ✅ pgvector embedding column (1536 dim) + IVFFlat index
+- ✅ Polymorphic `documentable` (Document or User-created)
+- ✅ Status enum (`pending`/`approved`)
+- ✅ Jivo::Llm::EmbeddingService (OpenAI text-embedding-3-small)
+- ✅ Jivo::Llm::FaqGeneratorService (LLM-generated Q&As)
+- ✅ Jivo::Llm::UpdateEmbeddingJob (async embedding refresh)
+- ✅ Jivo::Tools::SimplePageCrawlService (HTTP + Nokogiri)
+- ✅ Jivo::Documents::CrawlJob + ResponseBuilderJob
+- ✅ ConversationHandlerService — RAG via pre-search + inject (top-5 cosine similarity)
+- ✅ Knowledge context section in system prompt
+- ✅ DocumentsController + AssistantResponsesController + JBuilder views
+- ✅ Documents UI (list, add URL, delete, status badge)
+- ✅ FAQs UI (list, create/edit, delete, auto-generated badge)
+- ✅ Frontend: jivoDocuments + jivoResponses Vuex stores + API clients
+- ✅ Navigation buttons from assistant index → Documents/FAQs sub-pages
+- ✅ Full i18n coverage
+
+### Deferred — TO BE ADDED LATER
+| Item | Why deferred | Phase to revisit |
+|---|---|---|
+| **PDF upload support** | Captain uses OpenAI Files API + Active Storage attachment | Phase 6 |
+| **Firecrawl integration** | Multi-page async crawling with webhook callbacks | Phase 6 |
+| **Approval workflow UI** | Captain has separate "Pending" tab for review before going live; we auto-approve | Phase 6 |
+| **Bulk actions** (approve/delete multiple) | Captain has bulk action endpoint + bulk select bar | Phase 6 |
+| **Paginated FAQ generation** | For very large PDFs, page-by-page processing | Phase 6 (with PDF) |
+| **OpenAI function calling** for search | Captain uses `search_documentation` tool — LLM decides when to search; we always pre-search and inject | Phase 5 (V2 architecture) |
+| **Query translation** before search | Captain translates query to account locale via TranslateQueryService | Phase 4 (multi-language) |
+| **Citations** `[[n](URL)]` in responses | Captain has `feature_citation` flag; sources cited at sentence end | Phase 3 |
+| **Source URLs returned with FAQs** | Captain returns external_link with each FAQ result | Phase 3 |
+| **Usage limits enforcement** | Captain has document/response quotas with `LimitExceededError` | Skip — self-hosted, no limits needed |
+| **Document description/favicon** in metadata | Captain stores richer page metadata | Phase 6 |
+| **Crawl progress tracking** | Captain has multi-page progress states | Phase 6 (with Firecrawl) |
+| **Conversation FAQ auto-generation** | Captain auto-extracts FAQs from resolved conversations (`feature_faq`) | Phase 4 (memory) |
+| **Contact attribute extraction** | Captain extracts custom attributes from conversations | Phase 4 (memory) |
+| **Auto-translate FAQ for cross-language** | Captain searches in target language even if FAQ is in original language | Phase 4 |
+
+---
+
+## Phase 3 — Inline Agent Tasks (NOT STARTED)
+
+Planned per [Section 7](#7-inline-agent-tasks). Will track here when started.
+
+---
+
+## Phase 4 — Multimodal + Memory + Multi-Language (NOT STARTED)
+
+Planned per Sections 11, 12, 15, 16. Will track here when started.
+
+---
+
+## Phase 5 — Multi-Agent V2 (NOT STARTED)
+
+Planned per Sections 5, 8, 9, 10. Will track here when started.
+
+---
+
+## Phase 6 — Production Polish (NOT STARTED)
+
+Catches everything deferred from Phases 1-5 plus:
+- Section 18 (Instrumentation)
+- Section 19 (Webhooks)
+- Section 20 (Frontend polish — avatars, branding, advanced forms, playground UI)
+- Approval workflows + bulk actions across all features
+
+---
+
+## Conventions for Updating This Log
+
+When completing a phase:
+1. Move the phase from "NOT STARTED" to "✅ COMPLETED" with date
+2. Fill in the **Implemented** section with what actually shipped
+3. Fill in the **Deferred** section with EVERY skipped item — don't quietly drop features
+4. For each deferred item, specify which future phase it will land in
+5. Skipped items that won't ever be added must be marked `Skip — <reason>` with explicit reasoning
+
+This log replaces commit messages or PR descriptions as the canonical record of what's in JIVO vs Captain.

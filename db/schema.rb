@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_01_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_01_000004) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -909,6 +909,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_01_000002) do
     t.jsonb "settings", default: {}
   end
 
+  create_table "jivo_assistant_responses", force: :cascade do |t|
+    t.string "question", null: false
+    t.text "answer", null: false
+    t.vector "embedding", limit: 1536
+    t.bigint "jivo_assistant_id", null: false
+    t.bigint "account_id", null: false
+    t.bigint "documentable_id"
+    t.string "documentable_type"
+    t.integer "status", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_assistant_responses_on_account_id"
+    t.index ["documentable_id", "documentable_type"], name: "idx_jivo_resp_on_documentable"
+    t.index ["embedding"], name: "idx_jivo_resp_embedding", using: :ivfflat
+    t.index ["jivo_assistant_id"], name: "index_jivo_assistant_responses_on_jivo_assistant_id"
+    t.index ["status"], name: "index_jivo_assistant_responses_on_status"
+  end
+
   create_table "jivo_assistants", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -917,6 +935,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_01_000002) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_jivo_assistants_on_account_id"
+  end
+
+  create_table "jivo_documents", force: :cascade do |t|
+    t.string "name"
+    t.string "external_link", null: false
+    t.text "content"
+    t.bigint "jivo_assistant_id", null: false
+    t.bigint "account_id", null: false
+    t.integer "status", default: 0, null: false
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_documents_on_account_id"
+    t.index ["jivo_assistant_id", "external_link"], name: "index_jivo_documents_on_assistant_and_link", unique: true
+    t.index ["jivo_assistant_id"], name: "index_jivo_documents_on_jivo_assistant_id"
+    t.index ["status"], name: "index_jivo_documents_on_status"
   end
 
   create_table "jivo_inboxes", force: :cascade do |t|
@@ -1297,7 +1331,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_01_000002) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "jivo_assistant_responses", "accounts"
+  add_foreign_key "jivo_assistant_responses", "jivo_assistants"
   add_foreign_key "jivo_assistants", "accounts"
+  add_foreign_key "jivo_documents", "accounts"
+  add_foreign_key "jivo_documents", "jivo_assistants"
   add_foreign_key "jivo_inboxes", "accounts"
   add_foreign_key "jivo_inboxes", "inboxes"
   add_foreign_key "jivo_inboxes", "jivo_assistants"

@@ -58,6 +58,8 @@ Rails.application.routes.draw do
           namespace :jivo do
             resources :assistants, only: [:index, :create, :show, :update, :destroy] do
               resources :inboxes, only: [:index, :create, :destroy], param: :inbox_id
+              resources :documents, only: [:index, :show, :create, :destroy]
+              resources :assistant_responses, only: [:index, :show, :create, :update, :destroy]
             end
           end
           namespace :captain do

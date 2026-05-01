@@ -7,6 +7,7 @@ class Jivo::ConversationHandlerService
   pattr_initialize [:conversation!, :assistant!]
 
   def perform
+    @knowledge_context = retrieve_knowledge_context
     raw_response = call_openai(build_messages)
     process_response(raw_response)
   rescue StandardError => e
@@ -18,6 +19,20 @@ class Jivo::ConversationHandlerService
   private
 
   delegate :account, :inbox, to: :conversation
+
+  def retrieve_knowledge_context
+    last_user_message = conversation.messages
+                                    .where(message_type: :incoming, private: false)
+                                    .order(:created_at)
+                                    .last
+    return [] if last_user_message.blank? || last_user_message.content.blank?
+    return [] unless assistant.responses.approved.exists?
+
+    JivoAssistantResponse.search(last_user_message.content, jivo_assistant: assistant).to_a
+  rescue StandardError => e
+    Rails.logger.warn "[JIVO] Knowledge retrieval failed: #{e.message}"
+    []
+  end
 
   def build_messages
     history = conversation.messages
@@ -83,7 +98,24 @@ class Jivo::ConversationHandlerService
       }
       ```
       - If the answer is not provided in context sections, respond to the customer and ask whether they want to talk to another support agent. If they ask to chat with another agent, return `#{HANDOFF_SIGNAL}` as the response in JSON response.
+
+      #{knowledge_context_section}
     PROMPT
+  end
+
+  def knowledge_context_section
+    return '' if @knowledge_context.blank?
+
+    entries = @knowledge_context.map.with_index(1) do |faq, idx|
+      "#{idx}. Q: #{faq.question}\n   A: #{faq.answer}"
+    end.join("\n\n")
+
+    <<~CONTEXT
+      [Knowledge Base Context]
+      The following information is from your knowledge base. Use it to answer the customer's question accurately. Do not invent answers beyond what is provided here.
+
+      #{entries}
+    CONTEXT
   end
 
   def call_openai(messages)

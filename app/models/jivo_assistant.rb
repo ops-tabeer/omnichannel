@@ -16,6 +16,8 @@ class JivoAssistant < ApplicationRecord
   has_many :jivo_inboxes, dependent: :destroy_async
   has_many :inboxes, through: :jivo_inboxes
   has_many :messages, as: :sender, dependent: :nullify
+  has_many :documents, class_name: 'JivoDocument', dependent: :destroy_async
+  has_many :responses, class_name: 'JivoAssistantResponse', dependent: :destroy_async
 
   validates :name, presence: true
   validates :description, presence: true
