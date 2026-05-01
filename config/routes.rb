@@ -55,6 +55,11 @@ Rails.application.routes.draw do
           resources :agents, only: [:index, :create, :update, :destroy] do
             post :bulk_create, on: :collection
           end
+          namespace :jivo do
+            resources :assistants, only: [:index, :create, :show, :update, :destroy] do
+              resources :inboxes, only: [:index, :create, :destroy], param: :inbox_id
+            end
+          end
           namespace :captain do
             resource :preferences, only: [:show, :update]
             resources :assistants do

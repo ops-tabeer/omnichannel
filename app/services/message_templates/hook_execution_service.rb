@@ -17,9 +17,11 @@ class MessageTemplates::HookExecutionService
     ::MessageTemplates::Template::OutOfOffice.new(conversation: conversation).perform if should_send_out_of_office_message?
     ::MessageTemplates::Template::Greeting.new(conversation: conversation).perform if should_send_greeting?
     ::MessageTemplates::Template::EmailCollect.new(conversation: conversation).perform if inbox.enable_email_collect && should_send_email_collect?
+    schedule_jivo_response if should_process_jivo_response?
   end
 
   def should_send_out_of_office_message?
+    return false if jivo_handling_conversation?
     return false if conversation.campaign.present?
     # should not send if its a tweet message
     return false if conversation.tweet?
@@ -37,6 +39,7 @@ class MessageTemplates::HookExecutionService
   end
 
   def should_send_greeting?
+    return false if jivo_handling_conversation?
     return false if conversation.campaign.present?
     # should not send if its a tweet message
     return false if conversation.tweet?
@@ -50,6 +53,7 @@ class MessageTemplates::HookExecutionService
 
   # TODO: we should be able to reduce this logic once we have a toggle for email collect messages
   def should_send_email_collect?
+    return false if jivo_handling_conversation?
     return false if conversation.campaign.present?
 
     !contact_has_email? && inbox.web_widget? && !email_collect_was_sent?
@@ -57,6 +61,18 @@ class MessageTemplates::HookExecutionService
 
   def contact_has_email?
     contact.email
+  end
+
+  def should_process_jivo_response?
+    conversation.pending? && message.incoming? && inbox.active_jivo_assistant?
+  end
+
+  def schedule_jivo_response
+    Jivo::ProcessConversationJob.perform_later(conversation, inbox.jivo_assistant)
+  end
+
+  def jivo_handling_conversation?
+    conversation.pending? && inbox.active_jivo_assistant?
   end
 end
 MessageTemplates::HookExecutionService.prepend_mod_with('MessageTemplates::HookExecutionService')

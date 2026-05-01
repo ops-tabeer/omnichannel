@@ -172,7 +172,13 @@ const variant = computed(() => {
     return MESSAGE_VARIANTS.AGENT;
   }
 
-  const isBot = !props.sender || props.sender.type === SENDER_TYPES.AGENT_BOT;
+  const isBot =
+    !props.sender ||
+    [
+      SENDER_TYPES.AGENT_BOT,
+      SENDER_TYPES.CAPTAIN_ASSISTANT,
+      SENDER_TYPES.JIVO_ASSISTANT,
+    ].includes(props.sender.type);
   if (isBot && props.messageType === MESSAGE_TYPES.OUTGOING) {
     return MESSAGE_VARIANTS.BOT;
   }
@@ -207,9 +213,11 @@ const isBotOrAgentMessage = computed(() => {
   }
 
   if (
-    [SENDER_TYPES.AGENT_BOT, SENDER_TYPES.CAPTAIN_ASSISTANT].includes(
-      senderType
-    )
+    [
+      SENDER_TYPES.AGENT_BOT,
+      SENDER_TYPES.CAPTAIN_ASSISTANT,
+      SENDER_TYPES.JIVO_ASSISTANT,
+    ].includes(senderType)
   ) {
     return true;
   }

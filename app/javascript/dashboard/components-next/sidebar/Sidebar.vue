@@ -638,6 +638,12 @@ const menuItems = computed(() => {
           to: accountScopedRoute('agent_bots'),
         },
         {
+          name: 'Settings Jivo AI',
+          label: 'JIVO AI',
+          icon: 'i-lucide-sparkles',
+          to: accountScopedRoute('jivo_assistants'),
+        },
+        {
           name: 'Settings Macros',
           label: t('SIDEBAR.MACROS'),
           icon: 'i-lucide-toy-brick',

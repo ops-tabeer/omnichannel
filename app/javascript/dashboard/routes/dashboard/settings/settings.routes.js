@@ -26,6 +26,7 @@ import profile from './profile/profile.routes';
 import security from './security/security.routes';
 import conversationWorkflow from './conversationWorkflow/conversationWorkflow.routes';
 import captain from './captain/captain.routes';
+import jivo from './jivo/jivo.routes';
 
 export default {
   routes: [
@@ -50,6 +51,7 @@ export default {
     ...agent.routes,
     ...assignmentPolicy.routes,
     ...agentBot.routes,
+    ...jivo.routes,
     ...attributes.routes,
     ...automation.routes,
     ...auditlogs.routes,

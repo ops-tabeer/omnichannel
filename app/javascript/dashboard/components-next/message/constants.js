@@ -22,6 +22,7 @@ export const SENDER_TYPES = {
   USER: 'User',
   AGENT_BOT: 'agent_bot',
   CAPTAIN_ASSISTANT: 'captain_assistant',
+  JIVO_ASSISTANT: 'jivo_assistant',
 };
 
 export const ORIENTATION = {

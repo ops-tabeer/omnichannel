@@ -1,0 +1,62 @@
+{
+  "JIVO": {
+    "ASSISTANTS": {
+      "TITLE": "JIVO AI",
+      "DESCRIPTION": "Configure AI assistants that automatically handle conversations on your inboxes.",
+      "LOADING": "Loading JIVO assistants...",
+      "EMPTY": "No JIVO assistants yet. Create your first one to get started.",
+      "NEW": "New Assistant",
+      "INBOXES": "Inboxes",
+      "NO_INBOXES": "Not connected to any inbox",
+      "DELETE": {
+        "TITLE": "Delete JIVO Assistant",
+        "DESCRIPTION": "Are you sure you want to delete '{name}'? This cannot be undone.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Create JIVO Assistant",
+        "EDIT_TITLE": "Edit JIVO Assistant",
+        "NAME": {
+          "LABEL": "Name",
+          "PLACEHOLDER": "e.g. Tabeer Support Bot"
+        },
+        "DESCRIPTION": {
+          "LABEL": "Description",
+          "PLACEHOLDER": "What does this assistant do?"
+        },
+        "PRODUCT_NAME": {
+          "LABEL": "Product Name",
+          "PLACEHOLDER": "e.g. Tabeer Tours"
+        },
+        "OPENAI_API_KEY": {
+          "LABEL": "OpenAI API Key",
+          "PLACEHOLDER": "sk-..."
+        },
+        "OPENAI_MODEL": {
+          "LABEL": "OpenAI Model",
+          "PLACEHOLDER": "gpt-4.1-mini"
+        },
+        "TEMPERATURE": "Temperature ({value})",
+        "SYSTEM_PROMPT": {
+          "LABEL": "Custom System Prompt (optional)",
+          "PLACEHOLDER": "Add custom instructions to the AI prompt..."
+        },
+        "HANDOFF_MESSAGE": {
+          "LABEL": "Handoff Message",
+          "PLACEHOLDER": "Connecting you with a human agent..."
+        },
+        "CANCEL": "Cancel",
+        "CREATE": "Create",
+        "SAVE": "Save"
+      },
+      "INBOX_MANAGER": {
+        "TITLE": "Manage Inboxes - {name}",
+        "DESCRIPTION": "Connect this assistant to inboxes. Each inbox can have only one assistant.",
+        "CONNECT": "Connect",
+        "DISCONNECT": "Disconnect",
+        "CLOSE": "Close"
+      }
+    }
+  }
+}

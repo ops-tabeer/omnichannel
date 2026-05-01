@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_09_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_01_000002) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -909,6 +909,27 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_09_000002) do
     t.jsonb "settings", default: {}
   end
 
+  create_table "jivo_assistants", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.jsonb "config", default: {}, null: false
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_assistants_on_account_id"
+  end
+
+  create_table "jivo_inboxes", force: :cascade do |t|
+    t.bigint "jivo_assistant_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_inboxes_on_account_id"
+    t.index ["inbox_id"], name: "index_jivo_inboxes_on_inbox_id", unique: true
+    t.index ["jivo_assistant_id"], name: "index_jivo_inboxes_on_jivo_assistant_id"
+  end
+
   create_table "labels", force: :cascade do |t|
     t.string "title"
     t.text "description"
@@ -1276,6 +1297,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_09_000002) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "jivo_assistants", "accounts"
+  add_foreign_key "jivo_inboxes", "accounts"
+  add_foreign_key "jivo_inboxes", "inboxes"
+  add_foreign_key "jivo_inboxes", "jivo_assistants"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).
