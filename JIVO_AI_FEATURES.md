@@ -1134,9 +1134,44 @@ This section is the **source of truth** for what was actually built per phase an
 
 ---
 
-## Phase 3 — Inline Agent Tasks (NOT STARTED)
+## Phase 3 — Inline Agent Tasks ✅ COMPLETED
 
-Planned per [Section 7](#7-inline-agent-tasks). Will track here when started.
+### Implemented
+- ✅ `Jivo::Tasks::BaseTaskService` — shared OpenAI call + error handling
+- ✅ `Jivo::Tasks::RewriteService` — operations: `fix_spelling_grammar`, `improve`, `casual`, `professional`, `friendly`, `confident`, `straightforward`
+- ✅ `Jivo::Tasks::SummarizeService` — full conversation summary
+- ✅ `Jivo::Tasks::ReplySuggestionService` — AI-drafted reply for agents
+- ✅ `Jivo::Tasks::LabelSuggestionService` — label suggestions from account label list
+- ✅ `Jivo::Tasks::FollowUpService` — multi-turn refinement of any task output
+- ✅ `Api::V1::Accounts::Jivo::TasksController` with 5 POST endpoints
+- ✅ Routes: `/jivo/tasks/rewrite|summarize|reply_suggestion|label_suggestion|follow_up`
+- ✅ Pundit policy expanded to allow agent + administrator
+- ✅ Frontend API client (`jivoTasks.js`)
+- ✅ `JivoAssistantPanel.vue` — modal-based UI with 4 task entry points + follow-up refinement
+- ✅ Integrated into `ConversationHeader.vue` via sparkles icon button
+- ✅ Apply-to-reply via `draftMessages/set` dispatch
+- ✅ Copy-to-clipboard for results
+- ✅ Full i18n coverage under `JIVO.TASKS.*`
+
+### Deferred — TO BE ADDED LATER
+| Item | Why deferred | Phase to revisit |
+|---|---|---|
+| **Liquid prompt templates** | Captain uses `summary.liquid`, `reply.liquid`, etc. We use inline string prompts | Phase 6 |
+| **Per-task model selection** | Captain allows each task to use a different model (e.g. `gpt-4o-mini` for label_suggestion) | Phase 6 |
+| **Redis caching for label suggestions** | Captain caches by `conversation_id + last_activity_at` | Phase 6 |
+| **Auto-trigger label suggestion** | Captain runs label_suggestion automatically on conversation events | Phase 6 |
+| **Token budget enforcement (400K char)** | We limit single-message input only; Captain has full conversation budget tracking | Phase 6 |
+| **Multi-language detection in tasks** | Captain detects language and prompts model accordingly | Phase 4 (multi-language) |
+| **Streaming responses** | Captain streams chunks; we wait for full response | Phase 6 |
+| **Direct editor integration** | Captain integrates rewrite into the WootWriter Editor toolbar; we use a separate modal panel | Phase 6 (deep editor integration) |
+| **Reply-suggestion in reply box dropdown** | Captain adds it as inline option; we apply via "Use as reply" button | Phase 6 |
+| **Reply suggestion FAQ/RAG search tool** | Captain Enterprise can search documentation while drafting replies; JIVO reply suggestion currently uses conversation history only | Phase 6 |
+| **Per-feature model config (CAPTAIN_OPEN_AI_MODEL etc.)** | Captain has installation-level per-feature model config | Phase 6 |
+| **Instrumentation (Langfuse)** | Captain traces every task call | Phase 6 |
+| **Account-level OpenAI config (vs per-assistant)** | Captain has installation config for tasks; we use the assistant's API key | Skip — keeps multi-assistant model consistent |
+| **Usage tracking per task** | Captain increments `responses_usage` per task call | Skip — self-hosted, no limits |
+| **Auto-detect agent signature** | Captain reads `user.message_signature` and includes in reply prompt | Phase 6 |
+| **Channel-specific reply tone** | Captain adapts based on channel (e.g. Twitter has char limits) | Phase 6 |
 
 ---
 

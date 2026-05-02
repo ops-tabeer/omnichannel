@@ -61,6 +61,13 @@ Rails.application.routes.draw do
               resources :documents, only: [:index, :show, :create, :destroy]
               resources :assistant_responses, only: [:index, :show, :create, :update, :destroy]
             end
+            resource :tasks, only: [], controller: 'tasks' do
+              post :rewrite
+              post :summarize
+              post :reply_suggestion
+              post :label_suggestion
+              post :follow_up
+            end
           end
           namespace :captain do
             resource :preferences, only: [:show, :update]

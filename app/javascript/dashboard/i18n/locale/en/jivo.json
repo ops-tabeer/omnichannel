@@ -118,6 +118,48 @@
         "CONFIRM": "Delete",
         "CANCEL": "Cancel"
       }
+    },
+    "TASKS": {
+      "PANEL_TITLE": "JIVO Assistant",
+      "BACK": "Back",
+      "RUN": "Run",
+      "COPY": "Copy",
+      "COPIED": "Copied to clipboard",
+      "COPY_FAILED": "Failed to copy",
+      "APPLY_REPLY": "Use as reply",
+      "REFINE": "Refine",
+      "ERROR": "JIVO task failed. Please try again.",
+      "FOLLOW_UP_LABEL": "Refine the result",
+      "FOLLOW_UP_PLACEHOLDER": "e.g. make it shorter, add a friendly tone",
+      "SUMMARIZE": {
+        "TITLE": "Summarize Conversation",
+        "DESCRIPTION": "Generate a concise summary of the entire conversation.",
+        "RUN": "Generate summary"
+      },
+      "REPLY": {
+        "TITLE": "Suggest a Reply",
+        "DESCRIPTION": "Get an AI-drafted reply for the customer's last message.",
+        "RUN": "Generate reply"
+      },
+      "REWRITE": {
+        "TITLE": "Rewrite Message",
+        "DESCRIPTION": "Fix grammar or change the tone of any text.",
+        "PLACEHOLDER": "Paste or type the message you want to rewrite...",
+        "OPERATIONS": {
+          "FIX_SPELLING_GRAMMAR": "Fix spelling & grammar",
+          "IMPROVE": "Improve",
+          "CASUAL": "Make it casual",
+          "PROFESSIONAL": "Make it professional",
+          "FRIENDLY": "Make it friendly",
+          "CONFIDENT": "Make it confident",
+          "STRAIGHTFORWARD": "Make it straightforward"
+        }
+      },
+      "LABEL": {
+        "TITLE": "Suggest Labels",
+        "DESCRIPTION": "Get label suggestions based on conversation content.",
+        "RUN": "Suggest labels"
+      }
     }
   }
 }

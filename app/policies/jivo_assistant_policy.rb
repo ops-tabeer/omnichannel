@@ -18,4 +18,24 @@ class JivoAssistantPolicy < ApplicationPolicy
   def destroy?
     @account_user.administrator?
   end
+
+  def rewrite?
+    @account_user.administrator? || @account_user.agent?
+  end
+
+  def summarize?
+    @account_user.administrator? || @account_user.agent?
+  end
+
+  def reply_suggestion?
+    @account_user.administrator? || @account_user.agent?
+  end
+
+  def label_suggestion?
+    @account_user.administrator? || @account_user.agent?
+  end
+
+  def follow_up?
+    @account_user.administrator? || @account_user.agent?
+  end
 end
