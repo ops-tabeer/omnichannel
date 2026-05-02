@@ -34,7 +34,10 @@ class JivoAssistantResponse < ApplicationRecord
   enum status: { pending: 0, approved: 1 }
 
   def self.search(query, jivo_assistant:)
-    embedding = Jivo::Llm::EmbeddingService.new(assistant: jivo_assistant).get_embedding(query)
+    translated_query = Jivo::Llm::TranslateQueryService
+                       .new(assistant: jivo_assistant)
+                       .translate(query, target_language: jivo_assistant.account.locale_english_name)
+    embedding = Jivo::Llm::EmbeddingService.new(assistant: jivo_assistant).get_embedding(translated_query)
     return none if embedding.blank?
 
     where(jivo_assistant_id: jivo_assistant.id)

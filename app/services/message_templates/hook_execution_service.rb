@@ -68,7 +68,18 @@ class MessageTemplates::HookExecutionService
   end
 
   def schedule_jivo_response
-    Jivo::ProcessConversationJob.perform_later(conversation, inbox.jivo_assistant)
+    if message.attachments.any?
+      Jivo::ProcessConversationJob.set(wait: jivo_attachment_wait_time).perform_later(conversation, inbox.jivo_assistant)
+    else
+      Jivo::ProcessConversationJob.perform_later(conversation, inbox.jivo_assistant)
+    end
+  end
+
+  def jivo_attachment_wait_time
+    has_audio = message.attachments.where(file_type: :audio).exists?
+    return 8.seconds if has_audio
+
+    [message.attachments.size, 5].min.seconds
   end
 
   def jivo_handling_conversation?

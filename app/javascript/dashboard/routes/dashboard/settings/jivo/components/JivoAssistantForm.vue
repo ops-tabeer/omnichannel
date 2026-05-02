@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
+import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 
 const props = defineProps({
   mode: { type: String, default: 'create' },
@@ -23,6 +24,12 @@ const form = ref({
     handoff_message: props.assistant.config?.handoff_message || '',
     temperature: props.assistant.config?.temperature || 0.7,
     system_prompt: props.assistant.config?.system_prompt || '',
+    feature_memory: props.assistant.config?.feature_memory || false,
+    feature_faq: props.assistant.config?.feature_faq || false,
+    feature_idle_action: props.assistant.config?.feature_idle_action || false,
+    idle_timeout_minutes: props.assistant.config?.idle_timeout_minutes || 60,
+    idle_action: props.assistant.config?.idle_action || 'handoff',
+    idle_message: props.assistant.config?.idle_message || '',
   },
 });
 
@@ -134,6 +141,73 @@ const submit = () => {
             :placeholder="t('JIVO.ASSISTANTS.FORM.HANDOFF_MESSAGE.PLACEHOLDER')"
             class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
           />
+        </div>
+
+        <div class="pt-4 mt-2 space-y-4 border-t border-n-weak">
+          <h3 class="text-sm font-medium text-n-slate-12">
+            {{ t('JIVO.ASSISTANTS.FORM.ADVANCED_FEATURES.TITLE') }}
+          </h3>
+
+          <div class="flex items-center justify-between gap-4">
+            <label class="text-sm text-n-slate-12">
+              {{ t('JIVO.ASSISTANTS.FORM.FEATURE_MEMORY.LABEL') }}
+            </label>
+            <ToggleSwitch v-model="form.config.feature_memory" />
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <label class="text-sm text-n-slate-12">
+              {{ t('JIVO.ASSISTANTS.FORM.FEATURE_FAQ.LABEL') }}
+            </label>
+            <ToggleSwitch v-model="form.config.feature_faq" />
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <label class="text-sm text-n-slate-12">
+              {{ t('JIVO.ASSISTANTS.FORM.FEATURE_IDLE_ACTION.LABEL') }}
+            </label>
+            <ToggleSwitch v-model="form.config.feature_idle_action" />
+          </div>
+
+          <Input
+            v-model="form.config.idle_timeout_minutes"
+            :label="t('JIVO.ASSISTANTS.FORM.IDLE_TIMEOUT.LABEL')"
+            type="number"
+            min="1"
+            :placeholder="t('JIVO.ASSISTANTS.FORM.IDLE_TIMEOUT.PLACEHOLDER')"
+          />
+
+          <div>
+            <label class="block text-sm font-medium text-n-slate-12 mb-1">
+              {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.LABEL') }}
+            </label>
+            <select
+              v-model="form.config.idle_action"
+              class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
+            >
+              <option value="handoff">
+                {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.OPTIONS.HANDOFF') }}
+              </option>
+              <option value="resolve">
+                {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.OPTIONS.RESOLVE') }}
+              </option>
+              <option value="reminder">
+                {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.OPTIONS.REMINDER') }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-n-slate-12 mb-1">
+              {{ t('JIVO.ASSISTANTS.FORM.IDLE_MESSAGE.LABEL') }}
+            </label>
+            <textarea
+              v-model="form.config.idle_message"
+              rows="2"
+              :placeholder="t('JIVO.ASSISTANTS.FORM.IDLE_MESSAGE.PLACEHOLDER')"
+              class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
+            />
+          </div>
         </div>
       </div>
 

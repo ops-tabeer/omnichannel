@@ -48,8 +48,18 @@ class Jivo::ConversationHandlerService
   def message_payload(msg)
     {
       role: msg.message_type == 'incoming' ? 'user' : 'assistant',
-      content: msg.content.to_s.strip[0, MAX_MESSAGE_LENGTH]
+      content: build_content(msg)
     }
+  end
+
+  def build_content(msg)
+    content = Jivo::OpenaiMessageBuilderService.new(message: msg, assistant: assistant).generate_content
+
+    if content.is_a?(String)
+      content.strip[0, MAX_MESSAGE_LENGTH]
+    else
+      content
+    end
   end
 
   def system_message

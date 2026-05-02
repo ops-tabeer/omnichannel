@@ -87,3 +87,10 @@ evolution_sync_connection_status_job:
   cron: '0 * * * *'
   class: 'EvolutionApi::SyncConnectionStatusJob'
   queue: scheduled_jobs
+
+# executed every hour
+# to apply idle handoff/reminder/resolve actions for JIVO-enabled inboxes
+jivo_idle_conversation_action_job:
+  cron: '0 * * * *'
+  class: 'Jivo::IdleConversationActionJob'
+  queue: scheduled_jobs

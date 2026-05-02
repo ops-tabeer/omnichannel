@@ -216,6 +216,10 @@ en:
   conversations:
     captain:
       handoff: 'Transferring to another agent for further assistance.'
+    jivo:
+      handoff: 'Transferring to another agent for further assistance.'
+      idle_reminder: 'Just checking in. Please reply when you are ready to continue.'
+      idle_resolve: 'Resolving the conversation as it has been inactive for a while. Please start a new conversation if you need further assistance.'
     messages:
       instagram_story_content: '%{story_sender} mentioned you in the story: '
       instagram_deleted_story_content: This story is no longer available.

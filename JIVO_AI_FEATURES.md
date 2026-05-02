@@ -22,7 +22,7 @@ Complete feature inventory of Chatwoot's Captain AI, mapped for building **JIVO 
 13. [Settings & Guardrails](#13-settings--guardrails)
 14. [Citations & Source Attribution](#14-citations--source-attribution)
 15. [Multi-Language Support](#15-multi-language-support)
-16. [Auto-Resolution](#16-auto-resolution)
+16. [Idle Conversation Action](#16-idle-conversation-action)
 17. [Usage Limits & Tracking](#17-usage-limits--tracking)
 18. [Instrumentation & Observability](#18-instrumentation--observability)
 19. [Events & Webhooks](#19-events--webhooks)
@@ -305,7 +305,7 @@ These are the foundational database tables and models that everything else depen
 - **Fields**:
   - `name` (string, required)
   - `description` (text)
-  - `config` (jsonb) — temperature, product_name, welcome_message, handoff_message, resolution_message, instructions, feature flags
+  - `config` (jsonb) — temperature, product_name, welcome_message, handoff_message, idle action settings, instructions, feature flags
   - `response_guidelines` (jsonb array)
   - `guardrails` (jsonb array)
   - `account_id` (bigint)
@@ -390,7 +390,7 @@ These are the foundational database tables and models that everything else depen
 - Product name (used in prompts)
 - Welcome message
 - Handoff message (sent on bot→human transfer)
-- Resolution message (sent on auto-resolve)
+- Idle action settings: enable/disable, timeout, action type, idle message
 - Custom instructions (appended to system prompt)
 - Feature toggles: `feature_faq`, `feature_memory`, `feature_citation`
 
@@ -733,13 +733,15 @@ Pre-built tools available to assistants and scenarios.
 - **Action**: Save to contact profile for future context
 - **Language-aware**: Uses account locale
 - **Dedup**: Skips notes already on contact
+- **Current Limitation**: If the business does not resolve conversations, this trigger will not run. Need a non-resolution learning path.
 
 ### 11.2 Conversation FAQ Auto-Generation
 - **Trigger**: On conversation resolution (if `feature_faq` enabled)
 - **Service**: Extract Q&A pairs from conversation
 - **Filter**: Only customer + agent messages (skip bot)
-- **Action**: Add to assistant's knowledge base, auto-approved
+- **Action**: Add to assistant's knowledge base as pending for review
 - **Dedup**: Vector similarity check against existing FAQs
+- **Current Limitation**: If the business does not resolve conversations, this trigger will not run. Need a manual or inactivity-based learning path.
 
 ### 11.3 Contact Attribute Extraction
 - **Service**: Extract custom attributes from conversation
@@ -840,22 +842,29 @@ Pre-built tools available to assistants and scenarios.
 
 ---
 
-## 16. Auto-Resolution
+## 16. Idle Conversation Action
 
-### 16.1 Pending Conversation Cleanup Job
-- **Class**: `Jivo::InboxPendingConversationsResolutionJob`
+### 16.1 Idle Conversation Action Job
+- **Class**: `Jivo::IdleConversationActionJob`
 - **Trigger**: Scheduled job (cron-based)
-- **Logic**: Find conversations pending > 1 hour with no activity
-- **Action**:
-  1. Send resolution message (custom or default)
-  2. Mark as resolved
+- **Default State**: Disabled unless assistant config enables it
+- **Logic**: Find JIVO-handled conversations with no activity for configured timeout
+- **Recommended Default Action**: `handoff`
+- **Supported Actions**:
+  1. `handoff` — send handoff/idle message and hand over to a human agent/team
+  2. `resolve` — send resolution message and mark as resolved
+  3. `reminder` — send reminder message only, keep conversation state unchanged
 - **Limits**: Bulk action limit per run
 - **Locale**: Wraps in `I18n.with_locale(account.locale)`
 - **Sender**: Set as assistant via `Current.executed_by`
 
-### 16.2 Customizable Resolution Message
-- Per-assistant via `config['resolution_message']`
-- Falls back to default I18n string
+### 16.2 Idle Action Configuration
+- `config['feature_idle_action']` — enable/disable
+- `config['idle_timeout_minutes']` — default `60`
+- `config['idle_action']` — default `handoff`
+- `config['idle_message']` — custom message for handoff/reminder/resolve
+- Falls back to existing handoff message for `handoff`
+- Falls back to default I18n resolution message for `resolve`
 
 ---
 
@@ -1074,7 +1083,7 @@ This section is the **source of truth** for what was actually built per phase an
 |---|---|---|
 | **Avatar on JivoAssistant** | Captain has `Avatarable` concern with image upload | Phase 6 (UI polish) |
 | **Welcome message** config field | Captain has `welcome_message`; we only have `handoff_message` | Phase 6 |
-| **Resolution message** config field | Captain has `resolution_message` for auto-resolve | Phase 4 (auto-resolution) |
+| **Idle action config fields** | Captain only auto-resolves; JIVO should support handoff, resolve, or reminder | Phase 4 (idle action) |
 | **Response guidelines** (jsonb array) | Captain has per-assistant behavioral rules | Phase 6 |
 | **Guardrails** (jsonb array) | Captain has per-assistant constraints | Phase 6 |
 | **Custom instructions** as separate field | Currently uses `system_prompt`; Captain has both | Phase 6 |
@@ -1118,7 +1127,7 @@ This section is the **source of truth** for what was actually built per phase an
 |---|---|---|
 | **PDF upload support** | Captain uses OpenAI Files API + Active Storage attachment | Phase 6 |
 | **Firecrawl integration** | Multi-page async crawling with webhook callbacks | Phase 6 |
-| **Approval workflow UI** | Captain has separate "Pending" tab for review before going live; we auto-approve | Phase 6 |
+| **Approval workflow UI** | Captain has separate "Pending" tab for review before going live; conversation-learned FAQs are pending but UI is still basic | Phase 6 |
 | **Bulk actions** (approve/delete multiple) | Captain has bulk action endpoint + bulk select bar | Phase 6 |
 | **Paginated FAQ generation** | For very large PDFs, page-by-page processing | Phase 6 (with PDF) |
 | **OpenAI function calling** for search | Captain uses `search_documentation` tool — LLM decides when to search; we always pre-search and inject | Phase 5 (V2 architecture) |
@@ -1175,9 +1184,367 @@ This section is the **source of truth** for what was actually built per phase an
 
 ---
 
-## Phase 4 — Multimodal + Memory + Multi-Language (NOT STARTED)
+## Phase 4 — Multimodal + Memory + Multi-Language (✅ COMPLETED)
 
-Planned per Sections 11, 12, 15, 16. Will track here when started.
+> **Handoff-ready sub-task breakdown.** Each sub-task is independent. Mark `IN PROGRESS` when starting, `✅ COMPLETED` when done, list what was actually built + deferred items.
+
+### Sub-Task 4.1: Multimodal Message Builder + Vision
+
+**Status: ✅ COMPLETED**
+
+**Implemented:**
+- `app/services/jivo/openai_message_builder_service.rb` — multimodal content builder (text + image_url[] + audio transcripts)
+- `Jivo::OpenaiMessageBuilderService.extract_text_and_attachments(content)` class method to reverse-extract from content array
+- Modified `app/services/jivo/conversation_handler_service.rb` — `build_content` method delegates to builder; OpenAI receives content as either string or array
+- Image attachment URL resolution: `download_url` → `external_url` → Active Storage `file_url`
+- Tested with real message having image attachment — builder correctly returns `[{type: 'text'}, {type: 'image_url'}]`
+
+**Verified:** Plain text messages return string. Image-attached messages return content array compatible with OpenAI vision API.
+
+**Goal:** Customer sends image → JIVO sees and responds based on image content.
+
+**Reference (Captain):**
+- `enterprise/app/services/captain/open_ai_message_builder_service.rb` — multimodal content builder
+- `enterprise/app/jobs/captain/conversation/response_builder_job.rb#L78-L80` — `prepare_multimodal_message_content`
+
+**Files to create:**
+- `app/services/jivo/openai_message_builder_service.rb` — extract text + image_url[] + audio transcripts from a message; return either a string (text-only) or a content array (multimodal)
+
+**Files to modify:**
+- `app/services/jivo/conversation_handler_service.rb` — replace simple `content` extraction with `Jivo::OpenaiMessageBuilderService.new(message:).generate_content`
+- Inside the OpenAI POST body, when content is an array (multimodal), keep it as the array (OpenAI accepts content as array of `{ type: 'text' | 'image_url' }` blocks)
+
+**How it works:**
+- Image attachments → `{ type: 'image_url', image_url: { url: <attachment_url> } }`
+- Audio → transcript via Whisper (Sub-task 4.2; until then, just text fallback)
+- Other files → text "User has shared an attachment"
+- URL resolution priority: `download_url` → `external_url` → Active Storage `file_url`
+
+**Test:**
+1. Send a customer message with an image attachment to a JIVO inbox
+2. Check Sidekiq job logs — should pass image_url to OpenAI
+3. JIVO response should reference what's in the image
+
+**Deferred (Phase 6):**
+- Vision-capable model detection (warn if model doesn't support vision)
+- Image OCR fallback for non-vision models
+
+---
+
+### Sub-Task 4.2: Audio Transcription (Whisper)
+
+**Status: ✅ COMPLETED**
+
+**Implemented:**
+- `app/services/jivo/messages/audio_transcription_service.rb` — calls OpenAI Whisper at `/v1/audio/transcriptions` via multipart/form-data, downloads from Active Storage to temp file, caches transcript on `attachment.meta['transcribed_text']` via `update_columns` (skips validations intentionally)
+- `app/jobs/jivo/messages/audio_transcription_job.rb` — async wrapper with retry on Net::ReadTimeout
+- Updated `Jivo::OpenaiMessageBuilderService` — accepts optional `assistant` param. When audio attachment lacks cached transcript and assistant is provided, transcribes inline via service
+- Updated `Jivo::ConversationHandlerService` — passes `assistant:` to message builder
+- Updated `app/services/message_templates/hook_execution_service.rb` — `schedule_jivo_response` now waits 8s when message has audio attachments (give upload time to complete) and 1-5s otherwise
+
+**Verified:** Service classes load. Builder accepts assistant. Real audio attachment found in DB available for live test.
+
+**How to test live:**
+1. Send a voice note to a JIVO-enabled inbox
+2. Wait ~10s for processing
+3. Check `attachment.meta['transcribed_text']` for transcript
+4. JIVO response should reference voice note content
+
+**Goal:** Customer sends voice note → Whisper transcribes → JIVO responds based on transcript.
+
+**Reference (Captain):**
+- `enterprise/app/services/messages/audio_transcription_service.rb` — Whisper integration
+- `enterprise/app/jobs/messages/audio_transcription_job.rb` — async wrapper
+
+**Files to create:**
+- `app/services/jivo/messages/audio_transcription_service.rb` — calls OpenAI `/v1/audio/transcriptions` with the audio file, returns transcript string. Caches transcript on `attachment.meta['transcribed_text']`
+- `app/jobs/jivo/messages/audio_transcription_job.rb` — async wrapper (queue: `:default`)
+
+**Files to modify:**
+- `app/services/jivo/openai_message_builder_service.rb` (from 4.1) — when audio attachment exists, call transcription service synchronously OR enqueue job + use cached transcript
+- `app/services/jivo/conversation_handler_service.rb` — wait time when message has audio attachments (Captain has `calculate_attachment_wait_time`)
+
+**Approach:**
+- Use `attachment.file_type == 'audio'`
+- Get audio file via `attachment.file.download` (Active Storage) → write to temp file → POST to OpenAI Whisper API as multipart/form-data
+- Whisper model: `whisper-1`
+- On success, save transcript to `attachment.meta['transcribed_text']` and return text
+
+**Test:**
+1. Send voice note (.ogg/.m4a/.mp3) to JIVO inbox
+2. Wait ~5s for transcription
+3. JIVO should respond based on transcript content
+
+**Deferred (Phase 6):**
+- Per-account language hint to Whisper (`language` param)
+- Transcription model fallback if Whisper fails
+- Larger file chunking (Whisper 25MB limit)
+
+---
+
+### Sub-Task 4.3: Contact Notes Memory (Auto-Generation)
+
+**Status: ✅ COMPLETED**
+
+**Implemented:**
+- `app/services/jivo/llm/contact_notes_service.rb` — builds contact + conversation context, calls OpenAI with JSON response format, parses `{ "notes": [] }`, and creates `contact.notes`
+- `app/jobs/jivo/contact_notes_job.rb` — async wrapper for note generation
+- `app/listeners/jivo_listener.rb` — handles `conversation_resolved` and enqueues notes when inbox has JIVO + `feature_memory` is enabled
+- `app/dispatchers/async_dispatcher.rb` — registers `JivoListener.instance`
+- `app/models/jivo_assistant.rb` — added `feature_memory` config accessor
+
+**Verified:** New constants load via Rails runner. Focused RuboCop passes for service, job, listener, dispatcher, and model.
+
+**Goal:** When conversation resolves, JIVO summarizes and saves a note on the contact for future context.
+
+**Reference (Captain):**
+- `enterprise/app/services/captain/llm/contact_notes_service.rb`
+- `enterprise/app/listeners/captain_listener.rb` — `conversation_resolved` event handler
+
+**Files to create:**
+- `app/services/jivo/llm/contact_notes_service.rb` — sends conversation to LLM with `notes_generator` prompt, parses JSON `{ notes: ['...', '...'] }`, creates contact notes via `contact.notes.create!`
+- `app/listeners/jivo_listener.rb` — subscribes to `conversation_resolved`. On event: check if inbox has assistant + `feature_memory` enabled, then enqueue job
+- `app/jobs/jivo/contact_notes_job.rb` — async wrapper
+
+**Files to modify:**
+- `config/initializers/event_listeners.rb` (or equivalent) — register `JivoListener.instance` as listener for events
+- `app/models/jivo_assistant.rb` — add `feature_memory` to `store_accessor` config keys
+
+**Approach:**
+```ruby
+# JivoListener
+def conversation_resolved(event)
+  conversation = event.data[:conversation]
+  assistant = conversation.inbox.jivo_assistant
+  return unless assistant.present? && assistant.config['feature_memory']
+
+  Jivo::ContactNotesJob.perform_later(conversation, assistant)
+end
+```
+
+**Files to look at:**
+- Find existing listener registration pattern: `grep -rn "register_listener\|add_listener" config/`
+- Existing pattern: `app/listeners/agent_assignable_listener.rb` or similar
+
+**Test:**
+1. Resolve a conversation that has good content
+2. Check `contact.notes` table — should have 1-3 new notes
+3. Verify `feature_memory` flag works (toggle off → no notes generated)
+
+**Deferred:**
+- Dedup against existing notes
+- Polished UI for `feature_memory` in assistant settings form (basic testing toggle exists)
+- Non-resolution learning trigger for businesses that keep conversations open. Options: manual "Learn from conversation" action, inactivity-based learner, handoff-based learner, or scheduled learner with `last_jivo_learned_at`.
+
+---
+
+### Sub-Task 4.4: Conversation FAQ Auto-Generation
+
+**Status: ✅ COMPLETED**
+
+**Implemented:**
+- `app/services/jivo/llm/conversation_faq_service.rb` — filters resolved conversation to customer/agent messages, calls OpenAI with JSON response format, parses `{ "faqs": [] }`, dedupes via vector cosine distance, and creates pending `JivoAssistantResponse` records
+- `app/jobs/jivo/conversation_faq_job.rb` — async wrapper for FAQ generation
+- `app/listeners/jivo_listener.rb` — also enqueues FAQ generation when `feature_faq` is enabled
+- `app/models/jivo_assistant.rb` — added `feature_faq` config accessor
+
+**Verified:** New constants load via Rails runner. Focused RuboCop passes for service, job, listener, and model.
+
+**Goal:** Resolved conversations auto-generate Q&A pairs added to knowledge base.
+
+**Reference (Captain):**
+- `enterprise/app/services/captain/llm/conversation_faq_service.rb`
+
+**Files to create:**
+- `app/services/jivo/llm/conversation_faq_service.rb` — sends conversation (filtered to customer + agent only, no bot messages) to LLM with `conversation_faq_generator` prompt, dedupes via vector similarity, creates `JivoAssistantResponse` records with `documentable: nil` and status: `:pending`
+- `app/jobs/jivo/conversation_faq_job.rb` — async wrapper
+
+**Files to modify:**
+- `app/listeners/jivo_listener.rb` (from 4.3) — also enqueue FAQ job on `conversation_resolved` if `feature_faq` is enabled
+- `app/models/jivo_assistant.rb` — add `feature_faq` to `store_accessor`
+
+**Approach:**
+- Filter messages: `.where(message_type: [:incoming, :outgoing], private: false).where.not(sender_type: ['JivoAssistant', 'AgentBot'])`
+- Use system prompt: "You are a support agent looking to convert conversations into reusable FAQs"
+- Output JSON: `{ "faqs": [{ "question": "...", "answer": "..." }] }`
+- Dedup: for each new FAQ, run `JivoAssistantResponse.search(question, jivo_assistant: assistant)` — skip if top result has cosine similarity > 0.9
+- Create with `status: :pending`, `documentable: nil`
+
+**Test:**
+1. Resolve a conversation with clear Q&A
+2. Check `JivoAssistantResponse.where(documentable: nil)` for new entries
+3. Run similar question through search — should match new FAQ
+
+**Deferred:**
+- Approval workflow polish (conversation-learned FAQs are pending now; Phase 6 has manual review UI)
+- Rate limit (Captain has plan-based limits)
+- Polished UI for `feature_faq` in assistant settings form (basic testing toggle exists)
+- Non-resolution learning trigger for businesses that keep conversations open. Recommended: manual "Learn from conversation" action first; later add inactivity/scheduled learner. Generated FAQs should remain pending.
+
+---
+
+### Sub-Task 4.5: Multi-Language Support
+
+**Status: ✅ COMPLETED**
+
+**Goal:** Customer writes in any language → JIVO responds in same language. FAQ search works across languages.
+
+**Reference (Captain):**
+- `enterprise/app/services/captain/llm/translate_query_service.rb` — query translation
+- Captain uses `cld3` gem for detection (already in Gemfile? check `bundle list | grep cld3`)
+
+**Files to create:**
+- `app/services/jivo/llm/translate_query_service.rb` — given a query + target language, translates if not already in target language. Uses `gpt-4.1-nano` (cheapest model) for translation only
+
+**Files to modify:**
+- `app/models/jivo_assistant_response.rb` — `self.search` method should translate query to account's locale before embedding (since FAQs are stored in account locale)
+- `app/services/jivo/conversation_handler_service.rb` — system prompt already has "detect language and reply in same language" — verify it works
+- `Gemfile` — add `gem 'cld3'` if not present
+
+**Approach:**
+```ruby
+class Jivo::Llm::TranslateQueryService
+  def translate(query, target_language: 'english')
+    return query if detect_language(query) == target_language
+    # call gpt-4.1-nano with simple translation prompt
+  end
+end
+```
+
+**Test:**
+1. Add FAQ in English: "How to book a flight?"
+2. Customer asks in Arabic: "كيف أحجز رحلة؟"
+3. JIVO should: translate query → search FAQ → reply in Arabic
+
+**Deferred:**
+- Translation caching
+- Per-language FAQ storage (currently single language per FAQ)
+
+**Implementation Notes (2026-05-02):**
+- Created `app/services/jivo/llm/translate_query_service.rb`.
+- Uses `cld3` for language detection and skips translation when the query already matches the account locale language.
+- Uses `gpt-4.1-nano` for translation only, with the assistant OpenAI API key.
+- Updated `JivoAssistantResponse.search` to translate the customer query to the account locale before generating embeddings.
+- `cld3` was already present in `Gemfile`, so no dependency change was needed.
+
+---
+
+### Sub-Task 4.6: Idle Conversation Action
+
+**Status: ✅ COMPLETED**
+
+**Goal:** JIVO-handled conversations that go idle can be handled by configurable action: handoff to agent, resolve, or send reminder only.
+
+**Reference (Captain):**
+- `enterprise/app/jobs/captain/inbox_pending_conversations_resolution_job.rb`
+
+**Files to create:**
+- `app/jobs/jivo/idle_conversation_action_job.rb` — finds JIVO-handled conversations idle longer than `assistant.config['idle_timeout_minutes'] || 60`, then applies configured idle action
+- Schedule entry in `config/schedule.yml` to run hourly
+
+**Files to modify:**
+- `app/models/jivo_assistant.rb` — add `feature_idle_action`, `idle_timeout_minutes`, `idle_action`, and `idle_message` to `store_accessor` config keys
+- `config/schedule.yml` — add cron entry
+
+**Approach:**
+```ruby
+# Cron: every hour
+def perform
+  Inbox.joins(:jivo_inbox).find_each do |inbox|
+    assistant = inbox.jivo_assistant
+    next unless assistant.feature_idle_action.present?
+
+    timeout = assistant.idle_timeout_minutes.presence || 60
+    conversations = inbox.conversations
+                         .pending
+                         .where('last_activity_at < ?', timeout.minutes.ago)
+                         .limit(Limits::BULK_ACTIONS_LIMIT)
+    conversations.each do |conv|
+      # Set Current.executed_by = inbox.jivo_assistant
+      # Apply assistant.idle_action:
+      # handoff  -> send idle/handoff message + conv.bot_handoff!
+      # resolve  -> send idle/resolution message + conv.resolved!
+      # reminder -> send idle/reminder message only
+    end
+  end
+end
+```
+
+**Recommended MVP Defaults:**
+- Disabled by default
+- `idle_timeout_minutes`: `60`
+- `idle_action`: `handoff`
+- `idle_message`: blank, so it falls back to existing handoff message
+
+**Test:**
+1. Set a pending conversation's `last_activity_at` to 2 hours ago
+2. Enable `feature_idle_action` on the assistant
+3. Run `Jivo::IdleConversationActionJob.perform_now`
+4. For `handoff`, conversation should receive idle/handoff message and be handed to human workflow
+5. For `resolve`, conversation should receive idle/resolution message and be resolved
+6. For `reminder`, conversation should receive idle/reminder message and remain unchanged
+
+**Deferred:**
+- Polished UI controls for enable/disable, timeout, action type, and custom idle message (basic testing controls exist)
+- Reminder limit setting for `reminder` action, e.g. `idle_reminder_limit`, with per-conversation counters such as `jivo_idle_reminder_count` and `jivo_last_idle_reminder_at` to avoid repeated hourly reminders.
+- Smarter assignment target selection for `handoff`
+- Per-inbox/action analytics
+
+**Implementation Notes (2026-05-02):**
+- Created `app/jobs/jivo/idle_conversation_action_job.rb`.
+- Job runs hourly via `config/schedule.yml`.
+- Added assistant config accessors/helpers for `feature_idle_action`, `idle_timeout_minutes`, `idle_action`, and `idle_message`.
+- Supported actions:
+  - `handoff` — sends idle message, marks `custom_attributes['ai_handoff'] = true`, calls `bot_handoff!`, and sends out-of-office template if applicable.
+  - `resolve` — sends idle message and marks conversation resolved.
+  - `reminder` — sends idle message only.
+- Job only processes pending conversations, so handoff/resolve actions do not repeat after the status changes.
+- Added English default messages under `conversations.jivo`.
+
+---
+
+### Phase 4 Handoff Notes
+
+If picking up mid-phase:
+1. Read this section + look at the **last sub-task marked IN PROGRESS or NOT STARTED**
+2. Each sub-task lists exact files to create/modify and Captain reference files
+3. Run `bundle exec rails runner "..."` to test backend after each sub-task
+4. Update this log when done — move from `NOT STARTED` → `✅ COMPLETED` and fill in actually-built items + deferred items
+5. **Lint after each sub-task**: `bundle exec rubocop -a app/services/jivo/ app/jobs/jivo/ app/models/jivo_*` and `pnpm eslint --fix <changed files>`
+
+### Phase 4 Status Tracker
+
+- [x] 4.1 Multimodal Message Builder + Vision — ✅ COMPLETED
+- [x] 4.2 Audio Transcription — ✅ COMPLETED
+- [x] 4.3 Contact Notes Memory — ✅ COMPLETED
+- [x] 4.4 Conversation FAQ Auto-Generation — ✅ COMPLETED
+- [x] 4.5 Multi-Language Support — ✅ COMPLETED
+- [x] 4.6 Idle Conversation Action — ✅ COMPLETED
+
+### Last Handoff State
+
+**Date:** 2026-05-02
+**Last completed sub-task:** 4.6
+**Files modified in 4.6:**
+- Created: `app/jobs/jivo/idle_conversation_action_job.rb`
+- Modified: `app/models/jivo_assistant.rb` (idle action config accessors and helper methods)
+- Modified: `config/schedule.yml` (hourly scheduled job)
+- Modified: `config/locales/en.yml` (JIVO handoff/reminder/resolve defaults)
+- Modified: `app/javascript/dashboard/routes/dashboard/settings/jivo/components/JivoAssistantForm.vue` (basic testing controls for Phase 4 flags)
+- Modified: `app/javascript/dashboard/i18n/locale/en/jivo.json` (labels for testing controls)
+- Modified: `app/controllers/api/v1/accounts/jivo/assistants_controller.rb` (permits Phase 4 config keys)
+
+**To continue, the next agent should:**
+1. Treat Phase 4 as complete.
+2. Run live/manual testing for 4.1-4.6 using the phase test notes.
+3. Move to Phase 5 or Phase 6 depending on product priority.
+4. Polish the basic Phase 4 settings UI in Phase 6.
+
+**Lint commands to run after each sub-task:**
+```bash
+bundle exec rubocop -a app/services/jivo/ app/jobs/jivo/ app/listeners/jivo_listener.rb 2>/dev/null
+pnpm eslint --fix app/javascript/dashboard/api/jivo*.js app/javascript/dashboard/components-next/jivo/
+```
 
 ---
 
@@ -1194,6 +1561,8 @@ Catches everything deferred from Phases 1-5 plus:
 - Section 19 (Webhooks)
 - Section 20 (Frontend polish — avatars, branding, advanced forms, playground UI)
 - Approval workflows + bulk actions across all features
+- Non-resolution learning flow for contact memory and conversation FAQ generation
+- Idle reminder limit/counter controls to prevent repeated reminder messages
 
 ---
 

@@ -32,7 +32,8 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
     params.require(:assistant).permit(
       :name,
       :description,
-      config: [:openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name]
+      config: [:openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
+               :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message]
     )
   end
 

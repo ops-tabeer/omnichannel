@@ -48,6 +48,34 @@
           "LABEL": "Handoff Message",
           "PLACEHOLDER": "Connecting you with a human agent..."
         },
+        "ADVANCED_FEATURES": {
+          "TITLE": "Phase 4 Testing"
+        },
+        "FEATURE_MEMORY": {
+          "LABEL": "Contact notes memory"
+        },
+        "FEATURE_FAQ": {
+          "LABEL": "Auto-generate FAQs"
+        },
+        "FEATURE_IDLE_ACTION": {
+          "LABEL": "Idle conversation action"
+        },
+        "IDLE_TIMEOUT": {
+          "LABEL": "Idle timeout minutes",
+          "PLACEHOLDER": "60"
+        },
+        "IDLE_ACTION": {
+          "LABEL": "Idle action",
+          "OPTIONS": {
+            "HANDOFF": "Handoff to agent",
+            "RESOLVE": "Resolve conversation",
+            "REMINDER": "Send reminder only"
+          }
+        },
+        "IDLE_MESSAGE": {
+          "LABEL": "Idle message",
+          "PLACEHOLDER": "Leave blank to use the default message"
+        },
         "CANCEL": "Cancel",
         "CREATE": "Create",
         "SAVE": "Save"
