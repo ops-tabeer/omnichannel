@@ -55,6 +55,16 @@ class Api::V1::Accounts::Jivo::TasksController < Api::V1::Accounts::BaseControll
     render json: result
   end
 
+  def learn_from_conversation
+    authorize(JivoAssistant, :learn_from_conversation?)
+    conversation = load_conversation!
+
+    Jivo::ContactNotesJob.perform_later(conversation, @assistant)
+    Jivo::ConversationFaqJob.perform_later(conversation, @assistant, force: true)
+
+    render json: { success: true, message: I18n.t('jivo.tasks.learn.queued') }
+  end
+
   private
 
   def load_assistant

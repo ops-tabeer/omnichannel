@@ -110,7 +110,22 @@ class Jivo::ConversationHandlerService
       - If the answer is not provided in context sections, respond to the customer and ask whether they want to talk to another support agent. If they ask to chat with another agent, return `#{HANDOFF_SIGNAL}` as the response in JSON response.
 
       #{knowledge_context_section}
+      #{contact_notes_section}
     PROMPT
+  end
+
+  def contact_notes_section
+    notes = conversation.contact.notes.order(created_at: :desc).limit(10).pluck(:content).reject(&:blank?)
+    return '' if notes.blank?
+
+    entries = notes.map.with_index(1) { |note, idx| "#{idx}. #{note}" }.join("\n")
+
+    <<~CONTEXT
+      [Contact Memory]
+      Saved notes about this contact from past conversations. Use them to personalize your reply when relevant. Do not read them back to the customer verbatim.
+
+      #{entries}
+    CONTEXT
   end
 
   def knowledge_context_section

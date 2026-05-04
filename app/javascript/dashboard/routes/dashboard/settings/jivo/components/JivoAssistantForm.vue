@@ -30,6 +30,7 @@ const form = ref({
     idle_timeout_minutes: props.assistant.config?.idle_timeout_minutes || 60,
     idle_action: props.assistant.config?.idle_action || 'handoff',
     idle_message: props.assistant.config?.idle_message || '',
+    idle_reminder_limit: props.assistant.config?.idle_reminder_limit || 3,
   },
 });
 
@@ -208,6 +209,18 @@ const submit = () => {
               class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
             />
           </div>
+
+          <Input
+            v-if="form.config.idle_action === 'reminder'"
+            v-model="form.config.idle_reminder_limit"
+            :label="t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.LABEL')"
+            type="number"
+            min="1"
+            :placeholder="
+              t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.PLACEHOLDER')
+            "
+            :help-text="t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.HELP_TEXT')"
+          />
         </div>
       </div>
 

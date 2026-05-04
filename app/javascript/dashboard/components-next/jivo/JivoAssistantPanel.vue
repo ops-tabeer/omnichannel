@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import JivoTasksAPI from 'dashboard/api/jivoTasks';
 import Button from 'dashboard/components-next/button/Button.vue';
 
@@ -15,12 +16,14 @@ const props = defineProps({
 const emit = defineEmits(['close', 'applyReply']);
 
 const { t } = useI18n();
+const { isAdmin } = useAdmin();
 
 const activeTask = ref(null);
 const isLoading = ref(false);
 const result = ref('');
 const followUpContext = ref(null);
 const followUpInput = ref('');
+const isLearning = ref(false);
 
 const rewriteText = ref('');
 const rewriteOperation = ref('improve');
@@ -154,6 +157,25 @@ const runFollowUp = async () => {
   }
 };
 
+const runLearnFromConversation = async () => {
+  if (isLearning.value) return;
+  isLearning.value = true;
+  try {
+    const { data } = await JivoTasksAPI.learnFromConversation({
+      conversationDisplayId: props.conversationDisplayId,
+    });
+    if (data.success) {
+      useAlert(data.message || t('JIVO.TASKS.LEARN.QUEUED'));
+    } else {
+      useAlert(data.error || t('JIVO.TASKS.ERROR'));
+    }
+  } catch (error) {
+    useAlert(error.message || t('JIVO.TASKS.ERROR'));
+  } finally {
+    isLearning.value = false;
+  }
+};
+
 const copyResult = async () => {
   if (!result.value) return;
   try {
@@ -247,6 +269,25 @@ const canApplyToReply = computed(
           </div>
           <p class="text-xs text-n-slate-11 mt-1">
             {{ t('JIVO.TASKS.LABEL.DESCRIPTION') }}
+          </p>
+        </button>
+
+        <button
+          v-if="isAdmin"
+          class="p-4 border border-n-weak rounded-lg text-left hover:bg-n-alpha-black2 transition disabled:opacity-50 disabled:cursor-not-allowed col-span-2"
+          :disabled="isLearning"
+          @click="runLearnFromConversation"
+        >
+          <div class="flex items-center gap-2 text-n-slate-12">
+            <span
+              :class="
+                isLearning ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-brain'
+              "
+            />
+            <span class="font-medium">{{ t('JIVO.TASKS.LEARN.TITLE') }}</span>
+          </div>
+          <p class="text-xs text-n-slate-11 mt-1">
+            {{ t('JIVO.TASKS.LEARN.DESCRIPTION') }}
           </p>
         </button>
       </div>

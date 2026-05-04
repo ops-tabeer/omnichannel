@@ -33,7 +33,8 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
       :name,
       :description,
       config: [:openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
-               :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message]
+               :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
+               :idle_reminder_limit]
     )
   end
 

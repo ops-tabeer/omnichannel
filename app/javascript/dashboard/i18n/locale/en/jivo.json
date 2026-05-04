@@ -76,6 +76,11 @@
           "LABEL": "Idle message",
           "PLACEHOLDER": "Leave blank to use the default message"
         },
+        "IDLE_REMINDER_LIMIT": {
+          "LABEL": "Reminder limit",
+          "PLACEHOLDER": "3",
+          "HELP_TEXT": "Maximum number of reminder messages to send per conversation before stopping."
+        },
         "CANCEL": "Cancel",
         "CREATE": "Create",
         "SAVE": "Save"
@@ -187,6 +192,11 @@
         "TITLE": "Suggest Labels",
         "DESCRIPTION": "Get label suggestions based on conversation content.",
         "RUN": "Suggest labels"
+      },
+      "LEARN": {
+        "TITLE": "Learn from this conversation",
+        "DESCRIPTION": "Force-extract contact notes and FAQs from this conversation now (admin only).",
+        "QUEUED": "Learning queued. Notes and FAQs will appear shortly."
       }
     }
   }

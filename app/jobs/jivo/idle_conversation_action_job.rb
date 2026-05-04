@@ -30,6 +30,8 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   end
 
   def apply_idle_action(conversation, assistant)
+    return if reminder_limit_reached?(conversation, assistant)
+
     I18n.with_locale(conversation.account.locale) do
       create_outgoing_message(conversation, assistant)
 
@@ -38,11 +40,27 @@ class Jivo::IdleConversationActionJob < ApplicationJob
         conversation.resolved!
       when JivoAssistant::IDLE_ACTION_HANDOFF
         handoff_to_agent(conversation)
+      when JivoAssistant::IDLE_ACTION_REMINDER
+        increment_reminder_count(conversation)
       end
     end
   rescue StandardError => e
     Rails.logger.error "[JIVO] Idle action failed for conversation #{conversation.id}: #{e.message}"
     ChatwootExceptionTracker.new(e, account: conversation.account).capture_exception
+  end
+
+  def reminder_limit_reached?(conversation, assistant)
+    return false unless assistant.idle_action_value == JivoAssistant::IDLE_ACTION_REMINDER
+
+    sent = conversation.custom_attributes['jivo_idle_reminder_count'].to_i
+    sent >= assistant.idle_reminder_limit_value
+  end
+
+  def increment_reminder_count(conversation)
+    sent = conversation.custom_attributes['jivo_idle_reminder_count'].to_i
+    conversation.update!(
+      custom_attributes: conversation.custom_attributes.merge('jivo_idle_reminder_count' => sent + 1)
+    )
   end
 
   def create_outgoing_message(conversation, assistant)

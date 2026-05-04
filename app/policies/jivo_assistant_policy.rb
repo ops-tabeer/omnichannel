@@ -38,4 +38,8 @@ class JivoAssistantPolicy < ApplicationPolicy
   def follow_up?
     @account_user.administrator? || @account_user.agent?
   end
+
+  def learn_from_conversation?
+    @account_user.administrator?
+  end
 end

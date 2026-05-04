@@ -67,6 +67,7 @@ Rails.application.routes.draw do
               post :reply_suggestion
               post :label_suggestion
               post :follow_up
+              post :learn_from_conversation
             end
           end
           namespace :captain do

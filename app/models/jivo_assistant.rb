@@ -23,13 +23,15 @@ class JivoAssistant < ApplicationRecord
   validates :description, presence: true
 
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
-                 :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message
+                 :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
+                 :idle_reminder_limit
 
   IDLE_ACTION_HANDOFF = 'handoff'.freeze
   IDLE_ACTION_RESOLVE = 'resolve'.freeze
   IDLE_ACTION_REMINDER = 'reminder'.freeze
   IDLE_ACTIONS = [IDLE_ACTION_HANDOFF, IDLE_ACTION_RESOLVE, IDLE_ACTION_REMINDER].freeze
   DEFAULT_IDLE_TIMEOUT_MINUTES = 60
+  DEFAULT_IDLE_REMINDER_LIMIT = 3
 
   def model
     openai_model.presence || 'gpt-4.1-mini'
@@ -57,6 +59,10 @@ class JivoAssistant < ApplicationRecord
 
   def idle_message_text
     idle_message.presence || default_idle_message
+  end
+
+  def idle_reminder_limit_value
+    idle_reminder_limit.to_i.positive? ? idle_reminder_limit.to_i : DEFAULT_IDLE_REMINDER_LIMIT
   end
 
   def available_name

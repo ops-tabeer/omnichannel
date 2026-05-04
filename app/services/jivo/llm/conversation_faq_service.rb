@@ -5,10 +5,10 @@ class Jivo::Llm::ConversationFaqService
   REQUEST_TIMEOUT = 90
   DUPLICATE_DISTANCE_THRESHOLD = 0.1
 
-  pattr_initialize [:assistant!, :conversation!]
+  pattr_initialize [:assistant!, :conversation!, :force]
 
   def generate_and_deduplicate
-    return [] if no_human_interaction?
+    return [] if !force && no_human_interaction?
 
     faqs = generate
     return [] if faqs.blank?

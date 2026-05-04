@@ -38,6 +38,12 @@ class JivoTasksAPI extends ApiClient {
       message,
     });
   }
+
+  learnFromConversation({ conversationDisplayId } = {}) {
+    return axios.post(`${this.url}/learn_from_conversation`, {
+      conversation_display_id: conversationDisplayId,
+    });
+  }
 }
 
 export default new JivoTasksAPI();
