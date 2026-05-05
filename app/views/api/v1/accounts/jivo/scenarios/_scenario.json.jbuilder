@@ -1,0 +1,10 @@
+json.id resource.id
+json.title resource.title
+json.description resource.description
+json.instruction resource.instruction
+json.tools resource.tools
+json.enabled resource.enabled
+json.jivo_assistant_id resource.jivo_assistant_id
+json.account_id resource.account_id
+json.created_at resource.created_at.to_i
+json.updated_at resource.updated_at.to_i

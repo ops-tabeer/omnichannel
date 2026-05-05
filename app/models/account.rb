@@ -106,6 +106,7 @@ class Account < ApplicationRecord
   has_many :jivo_inboxes, dependent: :destroy_async
   has_many :jivo_documents, dependent: :destroy_async
   has_many :jivo_assistant_responses, dependent: :destroy_async
+  has_many :jivo_custom_tools, dependent: :destroy_async
   has_many :api_channels, dependent: :destroy_async, class_name: '::Channel::Api'
   has_many :articles, dependent: :destroy_async, class_name: '::Article'
   has_many :assignment_policies, dependent: :destroy_async

@@ -60,6 +60,17 @@ const goToFaqs = assistant => {
   router.push({ name: 'jivo_faqs', params: { assistantId: assistant.id } });
 };
 
+const goToScenarios = assistant => {
+  router.push({
+    name: 'jivo_scenarios',
+    params: { assistantId: assistant.id },
+  });
+};
+
+const goToCustomTools = () => {
+  router.push({ name: 'jivo_custom_tools' });
+};
+
 const handleSave = async data => {
   try {
     if (formMode.value === 'create') {
@@ -105,6 +116,13 @@ onMounted(() => {
         :description="t('JIVO.ASSISTANTS.DESCRIPTION')"
       >
         <template #actions>
+          <Button
+            icon="i-lucide-wrench"
+            :label="t('JIVO.ASSISTANTS.CUSTOM_TOOLS')"
+            slate
+            faded
+            @click="goToCustomTools"
+          />
           <Button
             icon="i-lucide-circle-plus"
             :label="t('JIVO.ASSISTANTS.NEW')"
@@ -161,6 +179,14 @@ onMounted(() => {
                 xs
                 faded
                 @click="goToFaqs(assistant)"
+              />
+              <Button
+                :label="t('JIVO.ASSISTANTS.SCENARIOS')"
+                icon="i-lucide-route"
+                slate
+                xs
+                faded
+                @click="goToScenarios(assistant)"
               />
               <Button
                 :label="t('JIVO.ASSISTANTS.INBOXES')"

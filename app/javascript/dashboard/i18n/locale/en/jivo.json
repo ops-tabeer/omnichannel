@@ -9,6 +9,8 @@
       "INBOXES": "Inboxes",
       "DOCUMENTS": "Documents",
       "FAQS": "FAQs",
+      "SCENARIOS": "Scenarios",
+      "CUSTOM_TOOLS": "Custom Tools",
       "NO_INBOXES": "Not connected to any inbox",
       "DELETE": {
         "TITLE": "Delete JIVO Assistant",
@@ -56,6 +58,10 @@
         },
         "FEATURE_FAQ": {
           "LABEL": "Auto-generate FAQs"
+        },
+        "FEATURE_V2_AGENT": {
+          "LABEL": "Use V2 multi-agent runner",
+          "HELP": "Routes replies through the agent runner with built-in tools (FAQ lookup, handoff, notes, labels). Off = legacy direct OpenAI path."
         },
         "FEATURE_IDLE_ACTION": {
           "LABEL": "Idle conversation action"
@@ -197,6 +203,134 @@
         "TITLE": "Learn from this conversation",
         "DESCRIPTION": "Force-extract contact notes and FAQs from this conversation now (admin only).",
         "QUEUED": "Learning queued. Notes and FAQs will appear shortly."
+      }
+    },
+    "SCENARIOS": {
+      "TITLE": "Scenarios for {name}",
+      "DESCRIPTION": "Specialised sub-agents that the main assistant can hand off to for narrow workflows. Reference tools in the instruction with [Label](tool://tool_id).",
+      "LOADING": "Loading scenarios...",
+      "EMPTY": "No scenarios yet. Create one to add a specialist sub-agent.",
+      "NEW": "New Scenario",
+      "BACK": "Back to Assistants",
+      "DISABLED": "Disabled",
+      "CREATED": "Scenario created",
+      "UPDATED": "Scenario updated",
+      "DELETED": "Scenario deleted",
+      "SAVE_FAILED": "Failed to save scenario",
+      "DELETE_FAILED": "Failed to delete scenario",
+      "FORM": {
+        "CREATE_TITLE": "New Scenario",
+        "EDIT_TITLE": "Edit Scenario",
+        "TITLE": {
+          "LABEL": "Title",
+          "PLACEHOLDER": "Visa Specialist"
+        },
+        "DESCRIPTION": {
+          "LABEL": "Description",
+          "PLACEHOLDER": "Handles UAE visa questions including extensions and tourist visas."
+        },
+        "INSTRUCTION": {
+          "LABEL": "Instruction",
+          "PLACEHOLDER": "You handle all visa-related questions for Tabeer Tours. When the customer asks about availability, use [FAQ Lookup](tool://faq_lookup).",
+          "HELP": "Reference tools using [Label](tool://tool_id) syntax. Tool IDs are auto-extracted into the scenario's allowed tool list on save."
+        },
+        "ENABLED": {
+          "LABEL": "Enabled"
+        },
+        "CANCEL": "Cancel",
+        "CREATE": "Create",
+        "SAVE": "Save"
+      },
+      "DELETE": {
+        "TITLE": "Delete Scenario",
+        "DESCRIPTION": "Delete '{title}'? This cannot be undone.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      }
+    },
+    "CUSTOM_TOOLS": {
+      "TITLE": "Custom Tools",
+      "DESCRIPTION": "HTTP-based tools your assistants can call. Account-wide; reference by slug in scenario instructions.",
+      "LOADING": "Loading custom tools...",
+      "EMPTY": "No custom tools yet. Add one to let assistants call your APIs.",
+      "NEW": "New Custom Tool",
+      "DISABLED": "Disabled",
+      "CREATED": "Custom tool created",
+      "UPDATED": "Custom tool updated",
+      "DELETED": "Custom tool deleted",
+      "SAVE_FAILED": "Failed to save custom tool",
+      "DELETE_FAILED": "Failed to delete custom tool",
+      "AUTH_LABEL": "Auth:",
+      "FORM": {
+        "CREATE_TITLE": "New Custom Tool",
+        "EDIT_TITLE": "Edit Custom Tool",
+        "TITLE": {
+          "LABEL": "Title",
+          "PLACEHOLDER": "Order Lookup"
+        },
+        "DESCRIPTION": {
+          "LABEL": "Description",
+          "PLACEHOLDER": "Fetches order details from our backend"
+        },
+        "ENDPOINT_URL": {
+          "LABEL": "Endpoint URL",
+          "PLACEHOLDER": "https://api.example.com/orders/{{order_id}}",
+          "HELP": "Must use HTTPS. Use {{var}} placeholders for parameter substitution."
+        },
+        "HTTP_METHOD": {
+          "LABEL": "HTTP Method",
+          "GET": "GET",
+          "POST": "POST"
+        },
+        "AUTH_TYPE": {
+          "LABEL": "Authentication",
+          "NONE": "None",
+          "BEARER": "Bearer Token",
+          "BASIC": "Basic Auth",
+          "API_KEY": "API Key (header)"
+        },
+        "AUTH_CONFIG": {
+          "BEARER_TOKEN": "Bearer Token",
+          "USERNAME": "Username",
+          "PASSWORD": "Password",
+          "HEADER_NAME": "Header Name",
+          "HEADER_VALUE": "Header Value",
+          "HEADER_NOTE": "API key is sent as a request header."
+        },
+        "PARAMS": {
+          "LABEL": "Parameters",
+          "ADD": "Add Parameter",
+          "NAME": "Name",
+          "DESCRIPTION": "Description",
+          "REQUIRED": "Required",
+          "TYPES": {
+            "STRING": "string",
+            "NUMBER": "number",
+            "BOOLEAN": "boolean"
+          }
+        },
+        "REQUEST_TEMPLATE": {
+          "LABEL": "Request Body Template (Liquid)",
+          "PLACEHOLDER": "{ \"order_id\": \"{{order_id}}\" }",
+          "HELP": "Optional. Used for POST requests. Liquid syntax with parameters."
+        },
+        "RESPONSE_TEMPLATE": {
+          "LABEL": "Response Template (Liquid)",
+          "PLACEHOLDER": "Order {{ r.id }} status: {{ r.status }}",
+          "HELP": "Optional. Format the API response before passing to the LLM. Use {{ r }} or {{ response }} to access the parsed response body."
+        },
+        "ENABLED": {
+          "LABEL": "Enabled"
+        },
+        "CANCEL": "Cancel",
+        "CREATE": "Create",
+        "SAVE": "Save"
+      },
+      "DELETE": {
+        "TITLE": "Delete Custom Tool",
+        "DESCRIPTION": "Delete '{title}'? Scenarios still referencing this tool will fail to validate.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
       }
     }
   }

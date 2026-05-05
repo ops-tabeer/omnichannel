@@ -60,7 +60,9 @@ Rails.application.routes.draw do
               resources :inboxes, only: [:index, :create, :destroy], param: :inbox_id
               resources :documents, only: [:index, :show, :create, :destroy]
               resources :assistant_responses, only: [:index, :show, :create, :update, :destroy]
+              resources :scenarios, only: [:index, :show, :create, :update, :destroy]
             end
+            resources :custom_tools, only: [:index, :show, :create, :update, :destroy]
             resource :tasks, only: [], controller: 'tasks' do
               post :rewrite
               post :summarize

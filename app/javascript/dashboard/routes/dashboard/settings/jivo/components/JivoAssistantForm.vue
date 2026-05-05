@@ -26,6 +26,7 @@ const form = ref({
     system_prompt: props.assistant.config?.system_prompt || '',
     feature_memory: props.assistant.config?.feature_memory || false,
     feature_faq: props.assistant.config?.feature_faq || false,
+    feature_v2_agent: props.assistant.config?.feature_v2_agent || false,
     feature_idle_action: props.assistant.config?.feature_idle_action || false,
     idle_timeout_minutes: props.assistant.config?.idle_timeout_minutes || 60,
     idle_action: props.assistant.config?.idle_action || 'handoff',
@@ -161,6 +162,18 @@ const submit = () => {
               {{ t('JIVO.ASSISTANTS.FORM.FEATURE_FAQ.LABEL') }}
             </label>
             <ToggleSwitch v-model="form.config.feature_faq" />
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <label class="text-sm text-n-slate-12">
+                {{ t('JIVO.ASSISTANTS.FORM.FEATURE_V2_AGENT.LABEL') }}
+              </label>
+              <p class="text-xs text-n-slate-11 mt-0.5">
+                {{ t('JIVO.ASSISTANTS.FORM.FEATURE_V2_AGENT.HELP') }}
+              </p>
+            </div>
+            <ToggleSwitch v-model="form.config.feature_v2_agent" />
           </div>
 
           <div class="flex items-center justify-between gap-4">

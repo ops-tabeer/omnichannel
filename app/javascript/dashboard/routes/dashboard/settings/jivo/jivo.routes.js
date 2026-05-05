@@ -1,6 +1,8 @@
 import Index from './Index.vue';
 import Documents from './Documents.vue';
 import Faqs from './Faqs.vue';
+import Scenarios from './Scenarios.vue';
+import CustomTools from './CustomTools.vue';
 import { frontendURL } from '../../../../helper/URLHelper';
 import SettingsWrapper from '../SettingsWrapper.vue';
 
@@ -22,6 +24,14 @@ export default {
           },
         },
         {
+          path: 'custom_tools',
+          name: 'jivo_custom_tools',
+          component: CustomTools,
+          meta: {
+            permissions: ['administrator'],
+          },
+        },
+        {
           path: ':assistantId/documents',
           name: 'jivo_documents',
           component: Documents,
@@ -33,6 +43,14 @@ export default {
           path: ':assistantId/faqs',
           name: 'jivo_faqs',
           component: Faqs,
+          meta: {
+            permissions: ['administrator'],
+          },
+        },
+        {
+          path: ':assistantId/scenarios',
+          name: 'jivo_scenarios',
+          component: Scenarios,
           meta: {
             permissions: ['administrator'],
           },

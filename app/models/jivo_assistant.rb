@@ -12,19 +12,23 @@
 #
 
 class JivoAssistant < ApplicationRecord
+  include JivoToolsHelpers
+  include JivoAgentable
+
   belongs_to :account
   has_many :jivo_inboxes, dependent: :destroy_async
   has_many :inboxes, through: :jivo_inboxes
   has_many :messages, as: :sender, dependent: :nullify
   has_many :documents, class_name: 'JivoDocument', dependent: :destroy_async
   has_many :responses, class_name: 'JivoAssistantResponse', dependent: :destroy_async
+  has_many :scenarios, class_name: 'JivoScenario', dependent: :destroy_async
 
   validates :name, presence: true
   validates :description, presence: true
 
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                  :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
-                 :idle_reminder_limit
+                 :idle_reminder_limit, :feature_v2_agent
 
   IDLE_ACTION_HANDOFF = 'handoff'.freeze
   IDLE_ACTION_RESOLVE = 'resolve'.freeze
@@ -49,6 +53,10 @@ class JivoAssistant < ApplicationRecord
     ActiveModel::Type::Boolean.new.cast(feature_idle_action)
   end
 
+  def feature_v2_agent_enabled?
+    ActiveModel::Type::Boolean.new.cast(feature_v2_agent)
+  end
+
   def idle_timeout_minutes_value
     idle_timeout_minutes.to_i.positive? ? idle_timeout_minutes.to_i : DEFAULT_IDLE_TIMEOUT_MINUTES
   end
@@ -67,6 +75,36 @@ class JivoAssistant < ApplicationRecord
 
   def available_name
     name
+  end
+
+  def available_agent_tools
+    tools = self.class.built_in_agent_tools.dup
+    tools.concat(account.jivo_custom_tools.enabled.map(&:to_tool_metadata))
+    tools
+  end
+
+  def available_tool_ids
+    available_agent_tools.pluck(:id)
+  end
+
+  def agent_name
+    name.presence || 'JIVO Assistant'
+  end
+
+  def agent_tool_instances
+    available_tool_ids.filter_map { |tool_id| resolve_tool_instance(tool_id, self) }
+  end
+
+  def agent_model
+    model
+  end
+
+  def agent_instructions(context = nil)
+    state = context&.context&.dig(:state) || {}
+    Jivo::Prompts::AssistantPrompt.new(
+      assistant: self,
+      state: state
+    ).render
   end
 
   def push_event_data

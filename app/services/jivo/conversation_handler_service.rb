@@ -7,6 +7,8 @@ class Jivo::ConversationHandlerService
   pattr_initialize [:conversation!, :assistant!]
 
   def perform
+    return Jivo::ConversationV2HandlerService.new(conversation: conversation, assistant: assistant).perform if assistant.feature_v2_agent_enabled?
+
     @knowledge_context = retrieve_knowledge_context
     raw_response = call_openai(build_messages)
     process_response(raw_response)
