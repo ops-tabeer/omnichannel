@@ -1,6 +1,9 @@
 require 'agents'
+require 'agents/instrumentation'
 
 class Jivo::Assistant::AgentRunnerService
+  include Integrations::LlmInstrumentationConstants
+
   CONVERSATION_STATE_ATTRIBUTES = %i[
     id display_id inbox_id contact_id status priority
     label_list custom_attributes additional_attributes
@@ -14,16 +17,18 @@ class Jivo::Assistant::AgentRunnerService
   pattr_initialize [:assistant!, :conversation]
 
   def generate_response(message_history: [])
-    configure_agents_for_assistant
-    agents = build_and_wire_agents
-    current_message, prior_history = split_current_user_message(message_history)
-    context = build_context(prior_history)
-    last_user_message = message_input(current_message)
+    Jivo::Runtime::ApiKeyLock.with_assistant_key(assistant) do
+      agents = build_and_wire_agents
+      current_message, prior_history = split_current_user_message(message_history)
+      context = build_context(prior_history)
+      last_user_message = message_input(current_message)
 
-    runner = Agents::Runner.with_agents(*agents)
-    result = runner.run(last_user_message, context: context, max_turns: 100)
+      runner = Agents::Runner.with_agents(*agents)
+      install_instrumentation(runner)
+      result = runner.run(last_user_message, context: context, max_turns: 100)
 
-    process_agent_result(result)
+      process_agent_result(result)
+    end
   rescue StandardError => e
     Rails.logger.error "[JIVO V2] AgentRunnerService error: #{e.message}"
     Rails.logger.error e.backtrace.first(10).join("\n")
@@ -34,11 +39,27 @@ class Jivo::Assistant::AgentRunnerService
 
   private
 
-  def configure_agents_for_assistant
-    Agents.configure do |config|
-      config.openai_api_key = assistant.openai_api_key
-      config.default_model = assistant.model
-    end
+  def install_instrumentation(runner)
+    return unless ChatwootApp.otel_enabled?
+
+    Agents::Instrumentation.install(
+      runner,
+      tracer: OpentelemetryConfig.tracer,
+      trace_name: 'llm.jivo_v2',
+      span_attributes: { ATTR_LANGFUSE_TAGS => ['jivo_v2'].to_json },
+      attribute_provider: ->(context_wrapper) { dynamic_trace_attributes(context_wrapper) }
+    )
+  end
+
+  def dynamic_trace_attributes(context_wrapper)
+    state = context_wrapper&.context&.dig(:state) || {}
+    conversation_state = state[:conversation] || {}
+    {
+      ATTR_LANGFUSE_USER_ID => state[:account_id],
+      format(ATTR_LANGFUSE_METADATA, 'assistant_id') => state[:assistant_id],
+      format(ATTR_LANGFUSE_METADATA, 'conversation_id') => conversation_state[:id],
+      format(ATTR_LANGFUSE_METADATA, 'conversation_display_id') => conversation_state[:display_id]
+    }.compact.transform_values(&:to_s)
   end
 
   def build_and_wire_agents
@@ -78,9 +99,15 @@ class Jivo::Assistant::AgentRunnerService
     if conversation
       state[:conversation] = conversation.attributes.symbolize_keys.slice(*CONVERSATION_STATE_ATTRIBUTES)
       state[:contact] = conversation.contact.attributes.symbolize_keys.slice(*CONTACT_STATE_ATTRIBUTES) if conversation.contact
+      state[:preloaded_knowledge] = preloaded_knowledge_payload
     end
 
     state
+  end
+
+  def preloaded_knowledge_payload
+    Jivo::Knowledge::FaqContextService.new(assistant: assistant, conversation: conversation).fetch
+                                      .map { |faq| { question: faq.question, answer: faq.answer } }
   end
 
   def extract_text_from_content(content)
@@ -121,7 +148,10 @@ class Jivo::Assistant::AgentRunnerService
 
   def process_agent_result(result)
     Rails.logger.info "[JIVO V2] Agent result class=#{result.output.class}, preview=#{result.output.inspect[0, 300]}"
-    normalize_output(result.output)
+    payload = normalize_output(result.output)
+    current_agent = result.context&.dig(:current_agent)
+    payload['agent_name'] = current_agent if current_agent.present?
+    payload
   end
 
   def normalize_output(output)

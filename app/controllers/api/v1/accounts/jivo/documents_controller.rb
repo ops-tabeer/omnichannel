@@ -2,7 +2,7 @@ class Api::V1::Accounts::Jivo::DocumentsController < Api::V1::Accounts::BaseCont
   before_action :current_account
   before_action :check_authorization
   before_action :assistant
-  before_action :document, only: [:show, :destroy]
+  before_action :document, only: [:show, :destroy, :recrawl]
 
   def index
     @documents = @assistant.documents.order(created_at: :desc)
@@ -19,6 +19,13 @@ class Api::V1::Accounts::Jivo::DocumentsController < Api::V1::Accounts::BaseCont
     head :ok
   end
 
+  def recrawl
+    @document.jivo_assistant_responses.destroy_all
+    @document.update!(status: :in_progress)
+    Jivo::Documents::CrawlJob.perform_later(@document)
+    render :show
+  end
+
   private
 
   def assistant
@@ -30,7 +37,7 @@ class Api::V1::Accounts::Jivo::DocumentsController < Api::V1::Accounts::BaseCont
   end
 
   def permitted_params
-    params.require(:document).permit(:name, :external_link)
+    params.require(:document).permit(:name, :external_link, :file)
   end
 
   def check_authorization

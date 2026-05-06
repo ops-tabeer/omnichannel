@@ -22,9 +22,13 @@ class JivoAssistant < ApplicationRecord
   has_many :documents, class_name: 'JivoDocument', dependent: :destroy_async
   has_many :responses, class_name: 'JivoAssistantResponse', dependent: :destroy_async
   has_many :scenarios, class_name: 'JivoScenario', dependent: :destroy_async
+  has_one_attached :avatar
+
+  AVATAR_MAX_BYTES = 2.megabytes
 
   validates :name, presence: true
   validates :description, presence: true
+  validate :avatar_size_within_limit
 
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                  :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
@@ -54,7 +58,8 @@ class JivoAssistant < ApplicationRecord
   end
 
   def feature_v2_agent_enabled?
-    ActiveModel::Type::Boolean.new.cast(feature_v2_agent)
+    ActiveModel::Type::Boolean.new.cast(account.jivo_v2_agent) ||
+      ActiveModel::Type::Boolean.new.cast(feature_v2_agent)
   end
 
   def idle_timeout_minutes_value
@@ -116,6 +121,13 @@ class JivoAssistant < ApplicationRecord
   end
 
   private
+
+  def avatar_size_within_limit
+    return unless avatar.attached?
+    return if avatar.byte_size <= AVATAR_MAX_BYTES
+
+    errors.add(:avatar, "is too large (max #{AVATAR_MAX_BYTES / 1.megabyte} MB)")
+  end
 
   def default_idle_message
     case idle_action_value

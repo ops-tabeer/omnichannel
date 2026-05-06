@@ -7,6 +7,7 @@ class Api::V1::Accounts::Jivo::AssistantResponsesController < Api::V1::Accounts:
   def index
     scope = @assistant.responses.ordered
     scope = scope.where(status: params[:status]) if params[:status].present?
+    scope = search_scope(scope) if params[:query].present?
     @responses = scope
   end
 
@@ -37,6 +38,11 @@ class Api::V1::Accounts::Jivo::AssistantResponsesController < Api::V1::Accounts:
 
   def permitted_params
     params.require(:assistant_response).permit(:question, :answer, :status)
+  end
+
+  def search_scope(scope)
+    query = "%#{ActiveRecord::Base.sanitize_sql_like(params[:query].to_s.strip)}%"
+    scope.where('question ILIKE :query OR answer ILIKE :query', query: query)
   end
 
   def check_authorization

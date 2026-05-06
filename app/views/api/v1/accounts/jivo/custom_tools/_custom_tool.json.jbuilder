@@ -10,6 +10,7 @@ json.param_schema resource.param_schema
 json.request_template resource.request_template
 json.response_template resource.response_template
 json.enabled resource.enabled
+json.rate_limit_per_minute resource.rate_limit_per_minute
 json.account_id resource.account_id
 json.created_at resource.created_at.to_i
 json.updated_at resource.updated_at.to_i

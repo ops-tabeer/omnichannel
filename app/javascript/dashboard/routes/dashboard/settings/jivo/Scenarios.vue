@@ -9,7 +9,7 @@ import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import JivoScenarioForm from './components/JivoScenarioForm.vue';
+import JivoToolIcon from 'dashboard/components-next/jivo/JivoToolIcon.vue';
 
 const store = useStore();
 const route = useRoute();
@@ -23,48 +23,26 @@ const assistant = computed(() =>
   store.getters['jivoAssistants/getAssistant'](assistantId.value)
 );
 
-const formMode = ref('create');
 const selectedScenario = ref({});
-const showForm = ref(false);
 const deleteDialogRef = ref(null);
 
 const openCreate = () => {
-  formMode.value = 'create';
-  selectedScenario.value = {};
-  showForm.value = true;
+  router.push({
+    name: 'jivo_scenario_new',
+    params: { assistantId: assistantId.value },
+  });
 };
 
 const openEdit = scenario => {
-  formMode.value = 'edit';
-  selectedScenario.value = scenario;
-  showForm.value = true;
+  router.push({
+    name: 'jivo_scenario_edit',
+    params: { assistantId: assistantId.value, scenarioId: scenario.id },
+  });
 };
 
 const openDelete = scenario => {
   selectedScenario.value = scenario;
   deleteDialogRef.value.open();
-};
-
-const handleSave = async data => {
-  try {
-    if (formMode.value === 'create') {
-      await store.dispatch('jivoScenarios/create', {
-        assistantId: assistantId.value,
-        ...data,
-      });
-      useAlert(t('JIVO.SCENARIOS.CREATED'));
-    } else {
-      await store.dispatch('jivoScenarios/update', {
-        assistantId: assistantId.value,
-        id: selectedScenario.value.id,
-        ...data,
-      });
-      useAlert(t('JIVO.SCENARIOS.UPDATED'));
-    }
-    showForm.value = false;
-  } catch (error) {
-    useAlert(error.message || t('JIVO.SCENARIOS.SAVE_FAILED'));
-  }
 };
 
 const confirmDelete = async () => {
@@ -76,8 +54,20 @@ const confirmDelete = async () => {
     useAlert(t('JIVO.SCENARIOS.DELETED'));
   } catch (error) {
     useAlert(error.message || t('JIVO.SCENARIOS.DELETE_FAILED'));
+  } finally {
+    deleteDialogRef.value?.close();
   }
 };
+
+const toolMetaById = computed(() => {
+  const tools = assistant.value?.available_tools || [];
+  return tools.reduce((acc, tool) => {
+    acc[tool.id] = tool;
+    return acc;
+  }, {});
+});
+
+const lookupTool = id => toolMetaById.value[id] || null;
 
 const goBack = () => router.push({ name: 'jivo_assistants' });
 
@@ -149,9 +139,15 @@ onMounted(async () => {
                 <span
                   v-for="tool in scenario.tools"
                   :key="tool"
-                  class="text-xs bg-n-blue-3 text-n-blue-text px-2 py-0.5 rounded font-mono"
+                  class="text-xs bg-n-blue-3 text-n-blue-text px-2 py-0.5 rounded inline-flex items-center gap-1"
                 >
-                  {{ tool }}
+                  <JivoToolIcon
+                    :icon="lookupTool(tool)?.icon"
+                    :custom="!!lookupTool(tool)?.custom"
+                  />
+                  <span class="font-mono">{{
+                    lookupTool(tool)?.title || tool
+                  }}</span>
                 </span>
               </div>
             </div>
@@ -175,15 +171,6 @@ onMounted(async () => {
         </div>
       </div>
     </template>
-
-    <JivoScenarioForm
-      v-if="showForm"
-      :mode="formMode"
-      :scenario="selectedScenario"
-      :is-loading="uiFlags.isCreating || uiFlags.isUpdating"
-      @save="handleSave"
-      @close="showForm = false"
-    />
 
     <Dialog
       ref="deleteDialogRef"

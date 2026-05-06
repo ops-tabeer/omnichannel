@@ -204,6 +204,11 @@
   description: 'The FireCrawl API key for the Captain AI service'
   locked: false
   type: secret
+- name: JIVO_FIRECRAWL_API_KEY
+  display_title: 'JIVO FireCrawl API Key (optional)'
+  description: 'The FireCrawl API key for JIVO multi-page knowledge base crawling. Falls back to single-page crawler if unset.'
+  locked: false
+  type: secret
 - name: CAPTAIN_CLOUD_PLAN_LIMITS
   display_title: 'Captain Cloud Plan Limits'
   description: 'The limits for the Captain AI service for different plans'

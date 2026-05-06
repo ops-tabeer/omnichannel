@@ -8,11 +8,17 @@ class Jivo::Llm::ContactNotesService
 
   def generate_and_update_notes
     generate_notes.each do |note|
+      next if recent_duplicate_note?(note)
+
       conversation.contact.notes.create!(content: note)
     end
   end
 
   private
+
+  def recent_duplicate_note?(content)
+    conversation.contact.notes.exists?(content: content, created_at: 7.days.ago..)
+  end
 
   def generate_notes
     raise 'OpenAI API key not configured for assistant' if assistant.openai_api_key.blank?

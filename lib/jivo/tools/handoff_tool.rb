@@ -1,5 +1,5 @@
 class Jivo::Tools::HandoffTool < Jivo::Tools::BasePublicTool
-  description 'Hand off the conversation to a human agent when unable to assist further'
+  description 'Hand off the conversation to a human agent when instructions, guardrails, or the customer request require escalation'
   param :reason, type: 'string', desc: 'The reason why handoff is needed (optional)', required: false
 
   def perform(tool_context, reason: nil)

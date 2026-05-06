@@ -11,6 +11,14 @@ class JivoDocumentsAPI extends ApiClient {
   }
 
   create(assistantId, data) {
+    if (data.file) {
+      const formData = new FormData();
+      formData.append('document[file]', data.file);
+      if (data.name) formData.append('document[name]', data.name);
+      return axios.post(`${this.url}/${assistantId}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
     return axios.post(`${this.url}/${assistantId}/documents`, {
       document: data,
     });
@@ -18,6 +26,12 @@ class JivoDocumentsAPI extends ApiClient {
 
   delete(assistantId, documentId) {
     return axios.delete(`${this.url}/${assistantId}/documents/${documentId}`);
+  }
+
+  recrawl(assistantId, documentId) {
+    return axios.post(
+      `${this.url}/${assistantId}/documents/${documentId}/recrawl`
+    );
   }
 }
 

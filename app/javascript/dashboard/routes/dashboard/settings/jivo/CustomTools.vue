@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
@@ -8,52 +9,31 @@ import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import JivoCustomToolForm from './components/JivoCustomToolForm.vue';
 
 const store = useStore();
+const router = useRouter();
 const { t } = useI18n();
 
 const customTools = useMapGetter('jivoCustomTools/getCustomTools');
 const uiFlags = useMapGetter('jivoCustomTools/getUIFlags');
 
-const formMode = ref('create');
 const selectedTool = ref({});
-const showForm = ref(false);
 const deleteDialogRef = ref(null);
 
 const openCreate = () => {
-  formMode.value = 'create';
-  selectedTool.value = {};
-  showForm.value = true;
+  router.push({ name: 'jivo_custom_tool_new' });
 };
 
 const openEdit = tool => {
-  formMode.value = 'edit';
-  selectedTool.value = tool;
-  showForm.value = true;
+  router.push({
+    name: 'jivo_custom_tool_edit',
+    params: { id: tool.id },
+  });
 };
 
 const openDelete = tool => {
   selectedTool.value = tool;
   deleteDialogRef.value.open();
-};
-
-const handleSave = async data => {
-  try {
-    if (formMode.value === 'create') {
-      await store.dispatch('jivoCustomTools/create', data);
-      useAlert(t('JIVO.CUSTOM_TOOLS.CREATED'));
-    } else {
-      await store.dispatch('jivoCustomTools/update', {
-        id: selectedTool.value.id,
-        ...data,
-      });
-      useAlert(t('JIVO.CUSTOM_TOOLS.UPDATED'));
-    }
-    showForm.value = false;
-  } catch (error) {
-    useAlert(error.message || t('JIVO.CUSTOM_TOOLS.SAVE_FAILED'));
-  }
 };
 
 const confirmDelete = async () => {
@@ -62,6 +42,8 @@ const confirmDelete = async () => {
     useAlert(t('JIVO.CUSTOM_TOOLS.DELETED'));
   } catch (error) {
     useAlert(error.message || t('JIVO.CUSTOM_TOOLS.DELETE_FAILED'));
+  } finally {
+    deleteDialogRef.value?.close();
   }
 };
 
@@ -149,15 +131,6 @@ onMounted(refresh);
         </div>
       </div>
     </template>
-
-    <JivoCustomToolForm
-      v-if="showForm"
-      :mode="formMode"
-      :custom-tool="selectedTool"
-      :is-loading="uiFlags.isCreating || uiFlags.isUpdating"
-      @save="handleSave"
-      @close="showForm = false"
-    />
 
     <Dialog
       ref="deleteDialogRef"

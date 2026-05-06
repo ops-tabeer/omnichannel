@@ -22,6 +22,19 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
     head :ok
   end
 
+  def avatar
+    return head :unprocessable_entity if params[:avatar].blank?
+
+    @assistant.avatar.attach(params[:avatar])
+    @assistant.save!
+    render :show
+  end
+
+  def remove_avatar
+    @assistant.avatar.purge if @assistant.avatar.attached?
+    render :show
+  end
+
   private
 
   def assistant
@@ -32,6 +45,8 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
     params.require(:assistant).permit(
       :name,
       :description,
+      response_guidelines: [],
+      guardrails: [],
       config: [:openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
                :idle_reminder_limit, :feature_v2_agent]

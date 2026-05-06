@@ -12,6 +12,13 @@
       "SCENARIOS": "Scenarios",
       "CUSTOM_TOOLS": "Custom Tools",
       "NO_INBOXES": "Not connected to any inbox",
+      "ACCOUNT_V2_OVERRIDE": {
+        "LABEL": "Force V2 multi-agent runner for all assistants",
+        "HELP": "Account-wide override. When on, every JIVO assistant uses the V2 runner regardless of its individual setting.",
+        "ENABLED": "V2 runner now forced on for all assistants in this account.",
+        "DISABLED": "V2 runner is no longer forced. Per-assistant settings apply.",
+        "ERROR": "Could not update account-wide V2 setting."
+      },
       "DELETE": {
         "TITLE": "Delete JIVO Assistant",
         "DESCRIPTION": "Are you sure you want to delete '{name}'? This cannot be undone.",
@@ -50,8 +57,38 @@
           "LABEL": "Handoff Message",
           "PLACEHOLDER": "Connecting you with a human agent..."
         },
-        "ADVANCED_FEATURES": {
-          "TITLE": "Phase 4 Testing"
+        "AVATAR": {
+          "UPLOAD": "Upload avatar",
+          "REPLACE": "Replace",
+          "REMOVE": "Remove",
+          "HELP": "PNG, JPG, or WEBP up to 2 MB. Square images render best.",
+          "SAVE_FIRST": "Save the assistant before uploading an avatar.",
+          "INVALID_TYPE": "Please choose a PNG, JPG, or WEBP image.",
+          "TOO_LARGE": "Image is larger than 2 MB.",
+          "UPLOADED": "Avatar updated.",
+          "REMOVED": "Avatar removed.",
+          "FAILED": "Could not update avatar."
+        },
+        "RESPONSE_GUIDELINES": {
+          "LABEL": "Response guidelines (one per line)",
+          "PLACEHOLDER": "Always greet the customer by name\nCite specific pricing when discussing packages",
+          "HELP": "Each non-blank line is appended as a bullet under [Custom Response Guidelines] in the V2 system prompt."
+        },
+        "GUARDRAILS": {
+          "LABEL": "Guardrails (one per line)",
+          "PLACEHOLDER": "Never share competitor pricing\nDo not provide medical or legal advice",
+          "HELP": "Each non-blank line is appended as a bullet under [Guardrails] in the V2 system prompt."
+        },
+        "TABS": {
+          "BASIC": "Basic",
+          "AI": "AI",
+          "BEHAVIOR": "Behavior",
+          "ADVANCED": "Advanced"
+        },
+        "GROUPS": {
+          "LEARNING": "Learning",
+          "RUNNER": "Runner",
+          "IDLE": "Idle conversation handling"
         },
         "FEATURE_MEMORY": {
           "LABEL": "Contact notes memory"
@@ -111,11 +148,20 @@
       "ADD_FAILED": "Failed to add document",
       "DELETED": "Document deleted",
       "DELETE_FAILED": "Failed to delete document",
+      "RECRAWL": "Re-crawl this document",
+      "RECRAWL_QUEUED": "Re-crawl queued. Existing FAQs cleared.",
+      "RECRAWL_FAILED": "Failed to re-crawl document",
       "FORM": {
+        "MODE_URL": "URL",
+        "MODE_PDF": "PDF",
         "URL_LABEL": "URL",
         "URL_PLACEHOLDER": "https://example.com/help/faq",
+        "PDF_LABEL": "PDF file",
+        "PDF_HELP": "Up to 10 MB. JIVO will extract the text and generate FAQs from it.",
+        "PDF_INVALID": "Please choose a PDF file.",
+        "PDF_TOO_LARGE": "File is larger than 10 MB. Please split it into smaller PDFs.",
         "NAME_LABEL": "Name (optional)",
-        "NAME_PLACEHOLDER": "Auto-detected from page title if blank",
+        "NAME_PLACEHOLDER": "Auto-detected from page title or file name if blank",
         "CANCEL": "Cancel",
         "SUBMIT": "Add"
       },
@@ -131,15 +177,50 @@
       "DESCRIPTION": "Question-and-answer pairs JIVO uses to answer customer questions.",
       "LOADING": "Loading FAQs...",
       "EMPTY": "No FAQs yet. Add documents or create FAQs manually.",
+      "EMPTY_PENDING": "No pending FAQs to review.",
+      "EMPTY_SEARCH": "No FAQs match your search.",
       "ADD": "New FAQ",
       "BACK": "Back",
       "AUTO_GENERATED": "auto-generated",
+      "APPROVE": "Approve FAQ",
+      "REJECT": "Reject FAQ",
+      "EDIT": "Edit FAQ",
+      "DELETE_ACTION": "Delete FAQ",
+      "SELECT_ALL": "Select all FAQs",
+      "SELECT_ROW": "Select FAQ",
       "CREATED": "FAQ created",
       "UPDATED": "FAQ updated",
       "DELETED": "FAQ deleted",
       "LOAD_FAILED": "Failed to load FAQs",
       "SAVE_FAILED": "Failed to save FAQ",
       "DELETE_FAILED": "Failed to delete FAQ",
+      "STATUS": {
+        "APPROVED": "approved",
+        "PENDING": "pending"
+      },
+      "FILTERS": {
+        "STATUS_LABEL": "Status",
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "ALL": "All"
+      },
+      "SEARCH": {
+        "PLACEHOLDER": "Search FAQs...",
+        "PENDING_PLACEHOLDER": "Search pending FAQs...",
+        "SUBMIT": "Search",
+        "CLEAR": "Clear"
+      },
+      "BULK": {
+        "SELECTED": "{count} selected",
+        "APPROVE": "Approve",
+        "REJECT": "Reject",
+        "DELETE": "Delete",
+        "CLEAR": "Clear",
+        "APPROVED": "Selected FAQs approved",
+        "REJECTED": "Selected FAQs rejected",
+        "DELETED": "Selected FAQs deleted",
+        "FAILED": "Failed to update selected FAQs"
+      },
       "FORM": {
         "CREATE_TITLE": "New FAQ",
         "EDIT_TITLE": "Edit FAQ",
@@ -156,7 +237,28 @@
         "DESCRIPTION": "Are you sure? This cannot be undone.",
         "CONFIRM": "Delete",
         "CANCEL": "Cancel"
+      },
+      "CONFIRM": {
+        "CANCEL": "Cancel",
+        "APPROVE": {
+          "TITLE": "Approve selected FAQs",
+          "DESCRIPTION": "This will approve {count} FAQ(s). Approved FAQs become available to JIVO for retrieval.",
+          "CONFIRM": "Approve"
+        },
+        "REJECT": {
+          "TITLE": "Reject selected FAQs",
+          "DESCRIPTION": "This will reject {count} FAQ(s). Rejected FAQs are removed from review and will not be used by JIVO.",
+          "CONFIRM": "Reject"
+        },
+        "DELETE": {
+          "TITLE": "Delete selected FAQs",
+          "DESCRIPTION": "This will permanently delete {count} FAQ(s). This cannot be undone.",
+          "CONFIRM": "Delete"
+        }
       }
+    },
+    "MESSAGE": {
+      "AGENT_BADGE": "via {name}"
     },
     "TASKS": {
       "PANEL_TITLE": "JIVO Assistant",
@@ -166,10 +268,17 @@
       "COPIED": "Copied to clipboard",
       "COPY_FAILED": "Failed to copy",
       "APPLY_REPLY": "Use as reply",
+      "REPLACE_SELECTION": "Replace selection",
       "REFINE": "Refine",
       "ERROR": "JIVO task failed. Please try again.",
       "FOLLOW_UP_LABEL": "Refine the result",
       "FOLLOW_UP_PLACEHOLDER": "e.g. make it shorter, add a friendly tone",
+      "CONTACT_MEMORY": {
+        "TITLE": "Contact memory",
+        "HELP": "Notes saved from past conversations. JIVO uses these to personalize replies.",
+        "EMPTY": "No saved notes for this contact yet.",
+        "LOADING": "Loading notes..."
+      },
       "SUMMARIZE": {
         "TITLE": "Summarize Conversation",
         "DESCRIPTION": "Generate a concise summary of the entire conversation.",
@@ -184,6 +293,7 @@
         "TITLE": "Rewrite Message",
         "DESCRIPTION": "Fix grammar or change the tone of any text.",
         "PLACEHOLDER": "Paste or type the message you want to rewrite...",
+        "SELECTION_NOTICE": "Rewriting the text you selected in the reply box. The result will replace the selection.",
         "OPERATIONS": {
           "FIX_SPELLING_GRAMMAR": "Fix spelling & grammar",
           "IMPROVE": "Improve",
@@ -234,6 +344,13 @@
           "PLACEHOLDER": "You handle all visa-related questions for Tabeer Tours. When the customer asks about availability, use [FAQ Lookup](tool://faq_lookup).",
           "HELP": "Reference tools using [Label](tool://tool_id) syntax. Tool IDs are auto-extracted into the scenario's allowed tool list on save."
         },
+        "TOOLS": {
+          "LABEL": "Allowed tools",
+          "HELP": "Pick which tools this scenario agent can use. Tools referenced in the instruction with [Label](tool://id) syntax are merged in automatically.",
+          "BUILT_IN": "Built-in",
+          "CUSTOM": "Custom",
+          "EMPTY": "No tools available. Open the parent assistant's Custom Tools page to add some."
+        },
         "ENABLED": {
           "LABEL": "Enabled"
         },
@@ -264,6 +381,7 @@
       "FORM": {
         "CREATE_TITLE": "New Custom Tool",
         "EDIT_TITLE": "Edit Custom Tool",
+        "HEADER_HINT": "Define an HTTP-based tool your assistants can call.",
         "TITLE": {
           "LABEL": "Title",
           "PLACEHOLDER": "Order Lookup"
@@ -321,6 +439,11 @@
         },
         "ENABLED": {
           "LABEL": "Enabled"
+        },
+        "RATE_LIMIT": {
+          "LABEL": "Rate limit (calls per minute)",
+          "PLACEHOLDER": "Leave empty for no limit",
+          "HELP": "Per-account cap. The agent gets a friendly message when this tool exceeds the limit."
         },
         "CANCEL": "Cancel",
         "CREATE": "Create",

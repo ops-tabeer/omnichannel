@@ -22,6 +22,7 @@ import { useEmitter } from 'dashboard/composables/emitter';
 import { useI18n } from 'vue-i18n';
 import { useCaptain } from 'dashboard/composables/useCaptain';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
+import { setEditorSelection } from 'dashboard/composables/useEditorSelection';
 import { useTrack } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAlert } from 'dashboard/composables';
@@ -500,9 +501,16 @@ function setMenubarPosition({ selection } = {}) {
   wrapper.style.setProperty('--selection-top', `${top}px`);
 }
 
+function publishEditorSelection(editorState) {
+  const { from, to } = editorState.selection;
+  const text = from !== to ? editorState.doc.textBetween(from, to, '\n') : '';
+  setEditorSelection({ from, to, text });
+}
+
 function checkSelection(editorState) {
   showSelectionMenu.value = false;
   const hasSelection = editorState.selection.from !== editorState.selection.to;
+  publishEditorSelection(editorState);
   if (hasSelection === isTextSelected.value) return;
 
   isTextSelected.value = hasSelection;
@@ -652,6 +660,17 @@ function insertContentIntoEditor(content, defaultFrom = 0) {
   );
 
   insertNodeIntoEditor(node, from, undefined);
+}
+
+function replaceSelectionInEditor(content) {
+  if (!editorView) return;
+  const { from, to } = editorView.state.selection;
+  const currentSchema = editorView.state.schema;
+  const sanitizedContent = stripUnsupportedFormatting(content, currentSchema);
+  const node = new MessageMarkdownTransformer(currentSchema).parse(
+    sanitizedContent
+  );
+  insertNodeIntoEditor(node, from, to);
 }
 
 /**
@@ -827,6 +846,7 @@ onMounted(() => {
 // Components using this
 // 1. SearchPopover.vue
 useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
+useEmitter(BUS_EVENTS.REPLACE_RICH_EDITOR_SELECTION, replaceSelectionInEditor);
 </script>
 
 <template>

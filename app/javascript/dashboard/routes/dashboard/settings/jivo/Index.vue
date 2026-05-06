@@ -9,7 +9,7 @@ import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import JivoAssistantForm from './components/JivoAssistantForm.vue';
+import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 import JivoInboxManager from './components/JivoInboxManager.vue';
 
 const store = useStore();
@@ -18,25 +18,44 @@ const { t } = useI18n();
 
 const assistants = useMapGetter('jivoAssistants/getAssistants');
 const uiFlags = useMapGetter('jivoAssistants/getUIFlags');
+const currentAccountId = useMapGetter('getCurrentAccountId');
+const accountsGetter = useMapGetter('accounts/getAccount');
+const currentAccount = computed(() =>
+  accountsGetter.value(currentAccountId.value)
+);
+const updateAccountV2Override = async value => {
+  try {
+    await store.dispatch('accounts/update', { jivo_v2_agent: value });
+    useAlert(
+      value
+        ? t('JIVO.ASSISTANTS.ACCOUNT_V2_OVERRIDE.ENABLED')
+        : t('JIVO.ASSISTANTS.ACCOUNT_V2_OVERRIDE.DISABLED')
+    );
+  } catch (error) {
+    useAlert(error.message || t('JIVO.ASSISTANTS.ACCOUNT_V2_OVERRIDE.ERROR'));
+  }
+};
 
-const formMode = ref('create');
+const accountV2Override = computed({
+  get: () => Boolean(currentAccount.value?.settings?.jivo_v2_agent),
+  set: value => updateAccountV2Override(value),
+});
+
 const selectedAssistant = ref({});
-const showForm = ref(false);
 const showInboxManager = ref(false);
 const deleteDialogRef = ref(null);
 
 const isLoading = computed(() => uiFlags.value.isFetching);
 
 const openCreateForm = () => {
-  formMode.value = 'create';
-  selectedAssistant.value = {};
-  showForm.value = true;
+  router.push({ name: 'jivo_assistant_new' });
 };
 
 const openEditForm = assistant => {
-  formMode.value = 'edit';
-  selectedAssistant.value = { ...assistant };
-  showForm.value = true;
+  router.push({
+    name: 'jivo_assistant_edit',
+    params: { assistantId: assistant.id },
+  });
 };
 
 const openInboxManager = assistant => {
@@ -71,30 +90,14 @@ const goToCustomTools = () => {
   router.push({ name: 'jivo_custom_tools' });
 };
 
-const handleSave = async data => {
-  try {
-    if (formMode.value === 'create') {
-      await store.dispatch('jivoAssistants/create', data);
-      useAlert('JIVO Assistant created successfully');
-    } else {
-      await store.dispatch('jivoAssistants/update', {
-        id: selectedAssistant.value.id,
-        ...data,
-      });
-      useAlert('JIVO Assistant updated successfully');
-    }
-    showForm.value = false;
-  } catch (error) {
-    useAlert(error.message || 'Failed to save assistant');
-  }
-};
-
 const confirmDelete = async () => {
   try {
     await store.dispatch('jivoAssistants/delete', selectedAssistant.value.id);
     useAlert('JIVO Assistant deleted');
   } catch (error) {
     useAlert(error.message || 'Failed to delete assistant');
+  } finally {
+    deleteDialogRef.value?.close();
   }
 };
 
@@ -135,11 +138,38 @@ onMounted(() => {
     <template #body>
       <div class="space-y-4">
         <div
+          class="p-4 bg-n-solid-1 border border-n-weak rounded-lg flex items-center justify-between gap-4"
+        >
+          <div>
+            <h4 class="text-sm font-medium text-n-slate-12">
+              {{ t('JIVO.ASSISTANTS.ACCOUNT_V2_OVERRIDE.LABEL') }}
+            </h4>
+            <p class="text-xs text-n-slate-11 mt-0.5">
+              {{ t('JIVO.ASSISTANTS.ACCOUNT_V2_OVERRIDE.HELP') }}
+            </p>
+          </div>
+          <ToggleSwitch v-model="accountV2Override" />
+        </div>
+        <div
           v-for="assistant in assistants"
           :key="assistant.id"
           class="p-4 bg-n-solid-1 border border-n-weak rounded-lg"
         >
           <div class="flex justify-between items-start gap-4">
+            <div
+              class="w-10 h-10 rounded-full bg-n-alpha-black2 border border-n-weak overflow-hidden flex items-center justify-center shrink-0"
+            >
+              <img
+                v-if="assistant.avatar_url"
+                :src="assistant.avatar_url"
+                :alt="assistant.name"
+                class="w-full h-full object-cover"
+              />
+              <span
+                v-else
+                class="i-lucide-sparkles text-base text-n-slate-11"
+              />
+            </div>
             <div class="flex-1">
               <h3 class="text-base font-medium text-n-slate-12">
                 {{ assistant.name }}
@@ -215,15 +245,6 @@ onMounted(() => {
         </div>
       </div>
     </template>
-
-    <JivoAssistantForm
-      v-if="showForm"
-      :mode="formMode"
-      :assistant="selectedAssistant"
-      :is-loading="uiFlags.isCreating || uiFlags.isUpdating"
-      @save="handleSave"
-      @close="showForm = false"
-    />
 
     <JivoInboxManager
       v-if="showInboxManager"

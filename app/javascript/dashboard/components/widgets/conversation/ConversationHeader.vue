@@ -44,6 +44,10 @@ const handleJivoApplyReply = content => {
   emitter.emit(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, content);
 };
 
+const handleJivoReplaceSelection = content => {
+  emitter.emit(BUS_EVENTS.REPLACE_RICH_EDITOR_SELECTION, content);
+};
+
 const chatMetadata = computed(() => props.chat.meta);
 
 const backButtonUrl = computed(() => {
@@ -189,8 +193,10 @@ onMounted(() => {
     <JivoAssistantPanel
       v-if="showJivoPanel"
       :conversation-display-id="currentChat.id"
+      :contact-id="chatMetadata.sender && chatMetadata.sender.id"
       @close="showJivoPanel = false"
       @apply-reply="handleJivoApplyReply"
+      @replace-selection="handleJivoReplaceSelection"
     />
   </div>
 </template>

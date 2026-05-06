@@ -19,6 +19,18 @@ class JivoAssistantsAPI extends ApiClient {
   disconnectInbox(assistantId, inboxId) {
     return axios.delete(`${this.url}/${assistantId}/inboxes/${inboxId}`);
   }
+
+  uploadAvatar(assistantId, file) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return axios.post(`${this.url}/${assistantId}/avatar`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  }
+
+  removeAvatar(assistantId) {
+    return axios.delete(`${this.url}/${assistantId}/avatar`);
+  }
 }
 
 export default new JivoAssistantsAPI();

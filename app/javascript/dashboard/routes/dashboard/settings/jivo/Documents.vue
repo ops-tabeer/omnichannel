@@ -24,26 +24,54 @@ const assistant = computed(() =>
   store.getters['jivoAssistants/getAssistant'](assistantId.value)
 );
 
+const PDF_MAX_BYTES = 10 * 1024 * 1024;
+
 const showAddForm = ref(false);
+const addMode = ref('url');
 const newDocLink = ref('');
 const newDocName = ref('');
+const newDocFile = ref(null);
 const deleteDialogRef = ref(null);
 const selectedDoc = ref({});
+const recrawlingDocId = ref(null);
 
 const openAddForm = () => {
   newDocLink.value = '';
   newDocName.value = '';
+  newDocFile.value = null;
+  addMode.value = 'url';
   showAddForm.value = true;
 };
 
+const handleFileChange = event => {
+  const [file] = event.target.files || [];
+  newDocFile.value = file || null;
+};
+
+const isAddValid = computed(() => {
+  if (addMode.value === 'pdf') {
+    return (
+      !!newDocFile.value &&
+      newDocFile.value.size <= PDF_MAX_BYTES &&
+      newDocFile.value.type === 'application/pdf'
+    );
+  }
+  return !!newDocLink.value.trim();
+});
+
 const submitAdd = async () => {
-  if (!newDocLink.value.trim()) return;
+  if (!isAddValid.value) return;
   try {
-    await store.dispatch('jivoDocuments/create', {
+    const payload = {
       assistantId: assistantId.value,
-      external_link: newDocLink.value.trim(),
       name: newDocName.value.trim(),
-    });
+    };
+    if (addMode.value === 'pdf') {
+      payload.file = newDocFile.value;
+    } else {
+      payload.external_link = newDocLink.value.trim();
+    }
+    await store.dispatch('jivoDocuments/create', payload);
     useAlert(t('JIVO.DOCUMENTS.ADDED'));
     showAddForm.value = false;
   } catch (error) {
@@ -65,6 +93,23 @@ const confirmDelete = async () => {
     useAlert(t('JIVO.DOCUMENTS.DELETED'));
   } catch (error) {
     useAlert(error.message || t('JIVO.DOCUMENTS.DELETE_FAILED'));
+  } finally {
+    deleteDialogRef.value?.close();
+  }
+};
+
+const recrawl = async doc => {
+  recrawlingDocId.value = doc.id;
+  try {
+    await store.dispatch('jivoDocuments/recrawl', {
+      assistantId: assistantId.value,
+      id: doc.id,
+    });
+    useAlert(t('JIVO.DOCUMENTS.RECRAWL_QUEUED'));
+  } catch (error) {
+    useAlert(error.message || t('JIVO.DOCUMENTS.RECRAWL_FAILED'));
+  } finally {
+    recrawlingDocId.value = null;
   }
 };
 
@@ -114,11 +159,54 @@ onMounted(async () => {
           v-if="showAddForm"
           class="p-4 bg-n-solid-1 border border-n-weak rounded-lg space-y-3"
         >
+          <div class="flex gap-2">
+            <Button
+              :label="t('JIVO.DOCUMENTS.FORM.MODE_URL')"
+              :slate="addMode !== 'url'"
+              :faded="addMode !== 'url'"
+              xs
+              @click="addMode = 'url'"
+            />
+            <Button
+              :label="t('JIVO.DOCUMENTS.FORM.MODE_PDF')"
+              :slate="addMode !== 'pdf'"
+              :faded="addMode !== 'pdf'"
+              xs
+              @click="addMode = 'pdf'"
+            />
+          </div>
           <Input
+            v-if="addMode === 'url'"
             v-model="newDocLink"
             :label="t('JIVO.DOCUMENTS.FORM.URL_LABEL')"
             :placeholder="t('JIVO.DOCUMENTS.FORM.URL_PLACEHOLDER')"
           />
+          <div v-else>
+            <label class="block text-sm font-medium text-n-slate-12 mb-1">
+              {{ t('JIVO.DOCUMENTS.FORM.PDF_LABEL') }}
+            </label>
+            <input
+              type="file"
+              accept="application/pdf"
+              class="block w-full text-sm text-n-slate-12 file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-n-blue-3 file:text-n-blue-text"
+              @change="handleFileChange"
+            />
+            <p class="text-xs text-n-slate-11 mt-1">
+              {{ t('JIVO.DOCUMENTS.FORM.PDF_HELP') }}
+            </p>
+            <p
+              v-if="newDocFile && newDocFile.type !== 'application/pdf'"
+              class="text-xs text-n-ruby-text mt-1"
+            >
+              {{ t('JIVO.DOCUMENTS.FORM.PDF_INVALID') }}
+            </p>
+            <p
+              v-else-if="newDocFile && newDocFile.size > PDF_MAX_BYTES"
+              class="text-xs text-n-ruby-text mt-1"
+            >
+              {{ t('JIVO.DOCUMENTS.FORM.PDF_TOO_LARGE') }}
+            </p>
+          </div>
           <Input
             v-model="newDocName"
             :label="t('JIVO.DOCUMENTS.FORM.NAME_LABEL')"
@@ -134,7 +222,7 @@ onMounted(async () => {
             <Button
               :label="t('JIVO.DOCUMENTS.FORM.SUBMIT')"
               :is-loading="uiFlags.isCreating"
-              :disabled="!newDocLink.trim()"
+              :disabled="!isAddValid"
               @click="submitAdd"
             />
           </div>
@@ -148,9 +236,10 @@ onMounted(async () => {
           <div class="flex justify-between items-start gap-4">
             <div class="flex-1 min-w-0">
               <h3 class="text-base font-medium text-n-slate-12 truncate">
-                {{ doc.name || doc.external_link }}
+                {{ doc.name || doc.external_link || doc.file_name }}
               </h3>
               <a
+                v-if="doc.external_link"
                 :href="doc.external_link"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -158,6 +247,13 @@ onMounted(async () => {
               >
                 {{ doc.external_link }}
               </a>
+              <span
+                v-else-if="doc.file_attached"
+                class="text-sm text-n-slate-11 inline-flex items-center gap-1"
+              >
+                <span class="i-lucide-file-text" />
+                {{ doc.file_name }}
+              </span>
               <div class="flex flex-wrap gap-2 mt-2">
                 <span
                   class="text-xs px-2 py-1 rounded"
@@ -179,6 +275,19 @@ onMounted(async () => {
               </div>
             </div>
             <div class="flex gap-2 shrink-0">
+              <Button
+                v-if="doc.external_link"
+                icon="i-lucide-refresh-cw"
+                slate
+                xs
+                faded
+                :is-loading="recrawlingDocId === doc.id"
+                :disabled="
+                  doc.status === 'in_progress' || recrawlingDocId === doc.id
+                "
+                :title="t('JIVO.DOCUMENTS.RECRAWL')"
+                @click="recrawl(doc)"
+              />
               <Button
                 icon="i-lucide-trash-2"
                 ruby

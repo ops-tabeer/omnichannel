@@ -22,6 +22,8 @@ export const state = {
 
 export const getters = {
   getCustomTools: $state => $state.records,
+  getCustomTool: $state => id =>
+    $state.records.find(record => record.id === id),
   getUIFlags: $state => $state.uiFlags,
 };
 

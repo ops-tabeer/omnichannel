@@ -6,8 +6,11 @@ class JivoResponsesAPI extends ApiClient {
     super('jivo/assistants', { accountScoped: true });
   }
 
-  list(assistantId, { status } = {}) {
-    const params = status ? { status } : {};
+  list(assistantId, { status, query } = {}) {
+    const params = {
+      ...(status ? { status } : {}),
+      ...(query ? { query } : {}),
+    };
     return axios.get(`${this.url}/${assistantId}/assistant_responses`, {
       params,
     });
@@ -30,6 +33,25 @@ class JivoResponsesAPI extends ApiClient {
     return axios.delete(
       `${this.url}/${assistantId}/assistant_responses/${responseId}`
     );
+  }
+
+  bulkAction(assistantId, ids, status) {
+    return axios.post(`${this.url}/${assistantId}/bulk_actions`, {
+      ids,
+      fields: { status },
+    });
+  }
+
+  bulkApprove(assistantId, ids) {
+    return this.bulkAction(assistantId, ids, 'approve');
+  }
+
+  bulkReject(assistantId, ids) {
+    return this.bulkAction(assistantId, ids, 'reject');
+  }
+
+  bulkDelete(assistantId, ids) {
+    return this.bulkAction(assistantId, ids, 'delete');
   }
 }
 

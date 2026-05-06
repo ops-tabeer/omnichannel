@@ -57,9 +57,16 @@ Rails.application.routes.draw do
           end
           namespace :jivo do
             resources :assistants, only: [:index, :create, :show, :update, :destroy] do
+              member do
+                post :avatar
+                delete :avatar, action: :remove_avatar
+              end
               resources :inboxes, only: [:index, :create, :destroy], param: :inbox_id
-              resources :documents, only: [:index, :show, :create, :destroy]
+              resources :documents, only: [:index, :show, :create, :destroy] do
+                post :recrawl, on: :member
+              end
               resources :assistant_responses, only: [:index, :show, :create, :update, :destroy]
+              resources :bulk_actions, only: [:create]
               resources :scenarios, only: [:index, :show, :create, :update, :destroy]
             end
             resources :custom_tools, only: [:index, :show, :create, :update, :destroy]
@@ -589,6 +596,7 @@ Rails.application.routes.draw do
   post 'webhooks/instagram', to: 'webhooks/instagram#events'
   post 'webhooks/tiktok', to: 'webhooks/tiktok#events'
   post 'webhooks/shopify', to: 'webhooks/shopify#events'
+  post 'webhooks/jivo_firecrawl', to: 'webhooks/jivo_firecrawl#process_payload'
 
   namespace :twitter do
     resource :callback, only: [:show]

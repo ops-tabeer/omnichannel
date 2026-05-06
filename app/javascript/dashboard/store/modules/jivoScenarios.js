@@ -22,6 +22,7 @@ export const state = {
 
 export const getters = {
   getScenarios: $state => $state.records,
+  getScenario: $state => id => $state.records.find(record => record.id === id),
   getUIFlags: $state => $state.uiFlags,
 };
 

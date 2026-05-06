@@ -54,9 +54,8 @@ class JivoScenario < ApplicationRecord
   private
 
   def extract_tool_refs
-    return if instruction.blank?
-
-    self.tools = instruction.scan(TOOL_REFERENCE_REGEX).flatten.uniq
+    extracted = instruction.to_s.scan(TOOL_REFERENCE_REGEX).flatten
+    self.tools = (Array(tools) + extracted).map(&:to_s).reject(&:blank?).uniq
   end
 
   def validate_instruction_tools

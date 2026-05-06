@@ -79,6 +79,26 @@ export const actions = {
     }
   },
 
+  uploadAvatar: async ({ commit }, { id, file }) => {
+    try {
+      const response = await JivoAssistantsAPI.uploadAvatar(id, file);
+      commit(types.EDIT_RECORD, response.data);
+      return response.data;
+    } catch (error) {
+      throwErrorMessage(error);
+    }
+    return null;
+  },
+
+  removeAvatar: async ({ commit }, id) => {
+    try {
+      const response = await JivoAssistantsAPI.removeAvatar(id);
+      commit(types.EDIT_RECORD, response.data);
+    } catch (error) {
+      throwErrorMessage(error);
+    }
+  },
+
   connectInbox: async ({ dispatch }, { assistantId, inboxId }) => {
     try {
       await JivoAssistantsAPI.connectInbox(assistantId, inboxId);

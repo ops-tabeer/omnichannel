@@ -19,6 +19,14 @@ class JivoAssistantPolicy < ApplicationPolicy
     @account_user.administrator?
   end
 
+  def avatar?
+    @account_user.administrator?
+  end
+
+  def remove_avatar?
+    @account_user.administrator?
+  end
+
   def rewrite?
     @account_user.administrator? || @account_user.agent?
   end

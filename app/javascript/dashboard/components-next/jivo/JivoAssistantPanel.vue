@@ -3,20 +3,27 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useAdmin } from 'dashboard/composables/useAdmin';
+import { useEditorSelection } from 'dashboard/composables/useEditorSelection';
 import JivoTasksAPI from 'dashboard/api/jivoTasks';
 import Button from 'dashboard/components-next/button/Button.vue';
+import JivoContactMemoryPanel from 'dashboard/components-next/jivo/JivoContactMemoryPanel.vue';
 
 const props = defineProps({
   conversationDisplayId: {
     type: [Number, String],
     required: true,
   },
+  contactId: {
+    type: [Number, String],
+    default: null,
+  },
 });
 
-const emit = defineEmits(['close', 'applyReply']);
+const emit = defineEmits(['close', 'applyReply', 'replaceSelection']);
 
 const { t } = useI18n();
 const { isAdmin } = useAdmin();
+const editorSelection = useEditorSelection();
 
 const activeTask = ref(null);
 const isLoading = ref(false);
@@ -27,6 +34,7 @@ const isLearning = ref(false);
 
 const rewriteText = ref('');
 const rewriteOperation = ref('improve');
+const hasInitialSelection = ref(false);
 
 const rewriteOperations = computed(() => [
   {
@@ -56,6 +64,17 @@ const resetState = () => {
 const setActive = task => {
   activeTask.value = task;
   resetState();
+  if (task === 'rewrite') {
+    const selectedText = editorSelection.text || '';
+    if (selectedText.trim()) {
+      rewriteText.value = selectedText;
+      hasInitialSelection.value = true;
+    } else {
+      hasInitialSelection.value = false;
+    }
+  } else {
+    hasInitialSelection.value = false;
+  }
 };
 
 const handleResponse = (response, eventName) => {
@@ -186,9 +205,26 @@ const copyResult = async () => {
   }
 };
 
+const canReplaceSelection = computed(
+  () =>
+    activeTask.value === 'rewrite' &&
+    hasInitialSelection.value &&
+    !!result.value
+);
+
+const applyButtonLabel = computed(() =>
+  canReplaceSelection.value
+    ? t('JIVO.TASKS.REPLACE_SELECTION')
+    : t('JIVO.TASKS.APPLY_REPLY')
+);
+
 const useAsReply = () => {
   if (!result.value) return;
-  emit('applyReply', result.value);
+  if (canReplaceSelection.value) {
+    emit('replaceSelection', result.value);
+  } else {
+    emit('applyReply', result.value);
+  }
   emit('close');
 };
 
@@ -215,6 +251,10 @@ const canApplyToReply = computed(
           {{ t('JIVO.TASKS.PANEL_TITLE') }}
         </h2>
         <Button icon="i-lucide-x" slate xs faded @click="emit('close')" />
+      </div>
+
+      <div v-if="!activeTask && contactId" class="px-6 pt-4">
+        <JivoContactMemoryPanel :contact-id="contactId" />
       </div>
 
       <div v-if="!activeTask" class="p-6 grid grid-cols-2 gap-3">
@@ -305,6 +345,12 @@ const canApplyToReply = computed(
           <h3 class="text-base font-medium text-n-slate-12">
             {{ t('JIVO.TASKS.REWRITE.TITLE') }}
           </h3>
+          <p
+            v-if="hasInitialSelection"
+            class="text-xs text-n-blue-text bg-n-blue-3 border border-n-blue-7 rounded-md px-2 py-1"
+          >
+            {{ t('JIVO.TASKS.REWRITE.SELECTION_NOTICE') }}
+          </p>
           <textarea
             v-model="rewriteText"
             rows="4"
@@ -385,7 +431,7 @@ const canApplyToReply = computed(
             />
             <Button
               v-if="canApplyToReply"
-              :label="t('JIVO.TASKS.APPLY_REPLY')"
+              :label="applyButtonLabel"
               icon="i-lucide-arrow-right"
               xs
               @click="useAsReply"

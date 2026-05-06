@@ -1,17 +1,6 @@
 require 'agents'
 
 class Jivo::Tools::HttpTool < Agents::Tool
-  PRIVATE_IP_RANGES = [
-    IPAddr.new('127.0.0.0/8'),
-    IPAddr.new('10.0.0.0/8'),
-    IPAddr.new('172.16.0.0/12'),
-    IPAddr.new('192.168.0.0/16'),
-    IPAddr.new('169.254.0.0/16'),
-    IPAddr.new('::1'),
-    IPAddr.new('fc00::/7'),
-    IPAddr.new('fe80::/10')
-  ].freeze
-
   MAX_RESPONSE_SIZE = 1.megabyte
 
   def initialize(assistant, custom_tool)
@@ -25,11 +14,16 @@ class Jivo::Tools::HttpTool < Agents::Tool
   end
 
   def perform(tool_context, **params)
+    Jivo::Tools::RateLimiter.new(custom_tool: @custom_tool).check!
+
     url = @custom_tool.build_request_url(params)
     body = @custom_tool.build_request_body(params)
 
     response = execute_http_request(url, body, tool_context)
     @custom_tool.format_response(response.body)
+  rescue Jivo::Tools::RateLimiter::RateLimitExceeded => e
+    Rails.logger.warn("Jivo::Tools::HttpTool rate limit hit for #{@custom_tool.slug}: #{e.message}")
+    "Rate limit reached for #{@custom_tool.slug}. Please try again in a minute."
   rescue StandardError => e
     Rails.logger.error("Jivo::Tools::HttpTool execution error for #{@custom_tool.slug}: #{e.class} - #{e.message}")
     'An error occurred while executing the request'
@@ -39,7 +33,7 @@ class Jivo::Tools::HttpTool < Agents::Tool
 
   def execute_http_request(url, body, tool_context)
     uri = URI.parse(url)
-    check_private_ip!(uri.host)
+    dns_validator = Jivo::Tools::DnsValidator.new(uri.host).validate!
 
     http = build_http_client(uri)
 
@@ -47,6 +41,7 @@ class Jivo::Tools::HttpTool < Agents::Tool
     apply_authentication(request)
     apply_metadata_headers(request, tool_context)
 
+    dns_validator.reverify!
     response = http.request(request)
     raise "HTTP request failed with status #{response.code}" unless response.is_a?(Net::HTTPSuccess)
 
@@ -61,14 +56,6 @@ class Jivo::Tools::HttpTool < Agents::Tool
     http.open_timeout = 10
     http.max_retries = 0
     http
-  end
-
-  def check_private_ip!(hostname)
-    ip_address = IPAddr.new(Resolv.getaddress(hostname))
-
-    raise 'Request blocked: hostname resolves to private IP address' if PRIVATE_IP_RANGES.any? { |range| range.include?(ip_address) }
-  rescue Resolv::ResolvError, SocketError => e
-    raise "DNS resolution failed: #{e.message}"
   end
 
   def validate_response!(response)

@@ -55,21 +55,30 @@ class Jivo::ConversationV2HandlerService
     if reply == HANDOFF_SIGNAL
       perform_handoff(assistant.handoff_message_text)
     elsif reply.present?
-      create_outgoing_message(reply)
+      create_outgoing_message(reply, scenario_label_for(result['agent_name']))
     else
       raise 'JIVO V2 agent returned blank response'
     end
   end
 
-  def create_outgoing_message(content)
-    conversation.messages.create!(
+  def scenario_label_for(agent_name)
+    return nil if agent_name.blank?
+    return nil if agent_name == assistant.agent_name
+
+    assistant.scenarios.enabled.find { |s| s.agent_name == agent_name }&.title
+  end
+
+  def create_outgoing_message(content, scenario_label = nil)
+    attrs = {
       message_type: :outgoing,
       account_id: account.id,
       inbox_id: inbox.id,
       sender: assistant,
       content: content,
       private: false
-    )
+    }
+    attrs[:content_attributes] = { jivo_scenario: scenario_label } if scenario_label.present?
+    conversation.messages.create!(attrs)
   end
 
   def perform_handoff(message_content)

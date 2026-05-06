@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import BaseBubble from 'next/message/bubbles/Base.vue';
 import FormattedContent from './FormattedContent.vue';
 import AttachmentChips from 'next/message/chips/AttachmentChips.vue';
@@ -8,8 +9,13 @@ import { MESSAGE_TYPES } from '../../constants';
 import { useMessageContext } from '../../provider.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
 
+const { t } = useI18n();
 const { content, attachments, contentAttributes, messageType } =
   useMessageContext();
+
+const jivoScenarioLabel = computed(
+  () => contentAttributes.value?.jivoScenario || ''
+);
 
 const { hasTranslations, translationContent } =
   useTranslations(contentAttributes);
@@ -44,6 +50,13 @@ const handleSeeOriginal = () => {
 <template>
   <BaseBubble class="px-4 py-3" data-bubble-name="text">
     <div class="gap-3 flex flex-col">
+      <span
+        v-if="jivoScenarioLabel"
+        class="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-n-slate-11"
+      >
+        <span class="i-lucide-sparkles size-3" />
+        {{ t('JIVO.MESSAGE.AGENT_BADGE', { name: jivoScenarioLabel }) }}
+      </span>
       <span v-if="isEmpty" class="text-n-slate-11">
         {{ $t('CONVERSATION.NO_CONTENT') }}
       </span>

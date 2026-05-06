@@ -34,7 +34,7 @@ class Api::V1::Accounts::Jivo::ScenariosController < Api::V1::Accounts::BaseCont
   end
 
   def permitted_params
-    params.require(:scenario).permit(:title, :description, :instruction, :enabled)
+    params.require(:scenario).permit(:title, :description, :instruction, :enabled, tools: [])
   end
 
   def check_authorization

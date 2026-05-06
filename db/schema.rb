@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_04_202648) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_06_140757) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -934,6 +934,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_04_202648) do
     t.bigint "account_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "response_guidelines", default: []
+    t.jsonb "guardrails", default: []
     t.index ["account_id"], name: "index_jivo_assistants_on_account_id"
   end
 
@@ -952,13 +954,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_04_202648) do
     t.boolean "enabled", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "rate_limit_per_minute"
     t.index ["account_id", "slug"], name: "index_jivo_custom_tools_on_account_id_and_slug", unique: true
     t.index ["account_id"], name: "index_jivo_custom_tools_on_account_id"
   end
 
   create_table "jivo_documents", force: :cascade do |t|
     t.string "name"
-    t.string "external_link", null: false
+    t.string "external_link"
     t.text "content"
     t.bigint "jivo_assistant_id", null: false
     t.bigint "account_id", null: false

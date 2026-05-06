@@ -8,6 +8,7 @@ const types = {
   ADD_RECORD: 'ADD_JIVO_RESPONSE',
   EDIT_RECORD: 'EDIT_JIVO_RESPONSE',
   DELETE_RECORD: 'DELETE_JIVO_RESPONSE',
+  DELETE_RECORDS: 'DELETE_JIVO_RESPONSES',
 };
 
 export const state = {
@@ -17,6 +18,7 @@ export const state = {
     isCreating: false,
     isUpdating: false,
     isDeleting: false,
+    isBulkUpdating: false,
   },
 };
 
@@ -26,10 +28,13 @@ export const getters = {
 };
 
 export const actions = {
-  get: async ({ commit }, { assistantId, status }) => {
+  get: async ({ commit }, { assistantId, status, query }) => {
     commit(types.SET_UI_FLAG, { isFetching: true });
     try {
-      const response = await JivoResponsesAPI.list(assistantId, { status });
+      const response = await JivoResponsesAPI.list(assistantId, {
+        status,
+        query,
+      });
       commit(types.SET_RECORDS, response.data);
     } catch (error) {
       throwErrorMessage(error);
@@ -75,6 +80,44 @@ export const actions = {
       commit(types.SET_UI_FLAG, { isDeleting: false });
     }
   },
+
+  bulkApprove: async ({ commit }, { assistantId, ids }) => {
+    commit(types.SET_UI_FLAG, { isBulkUpdating: true });
+    try {
+      const response = await JivoResponsesAPI.bulkApprove(assistantId, ids);
+      response.data.forEach(record => commit(types.EDIT_RECORD, record));
+      return response.data;
+    } catch (error) {
+      throwErrorMessage(error);
+    } finally {
+      commit(types.SET_UI_FLAG, { isBulkUpdating: false });
+    }
+    return [];
+  },
+
+  bulkReject: async ({ commit }, { assistantId, ids }) => {
+    commit(types.SET_UI_FLAG, { isBulkUpdating: true });
+    try {
+      await JivoResponsesAPI.bulkReject(assistantId, ids);
+      commit(types.DELETE_RECORDS, ids);
+    } catch (error) {
+      throwErrorMessage(error);
+    } finally {
+      commit(types.SET_UI_FLAG, { isBulkUpdating: false });
+    }
+  },
+
+  bulkDelete: async ({ commit }, { assistantId, ids }) => {
+    commit(types.SET_UI_FLAG, { isBulkUpdating: true });
+    try {
+      await JivoResponsesAPI.bulkDelete(assistantId, ids);
+      commit(types.DELETE_RECORDS, ids);
+    } catch (error) {
+      throwErrorMessage(error);
+    } finally {
+      commit(types.SET_UI_FLAG, { isBulkUpdating: false });
+    }
+  },
 };
 
 export const mutations = {
@@ -85,6 +128,9 @@ export const mutations = {
   [types.ADD_RECORD]: MutationHelpers.create,
   [types.EDIT_RECORD]: MutationHelpers.update,
   [types.DELETE_RECORD]: MutationHelpers.destroy,
+  [types.DELETE_RECORDS]($state, ids) {
+    $state.records = $state.records.filter(record => !ids.includes(record.id));
+  },
 };
 
 export default {

@@ -38,6 +38,7 @@ class Api::V1::Accounts::Jivo::CustomToolsController < Api::V1::Accounts::BaseCo
       :response_template,
       :auth_type,
       :enabled,
+      :rate_limit_per_minute,
       auth_config: {},
       param_schema: [:name, :type, :description, :required]
     )
