@@ -1,12 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 
-import SettingsLayout from '../SettingsLayout.vue';
-import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
+import JivoPageLayout from 'dashboard/components-next/jivo/layout/JivoPageLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 
@@ -33,7 +32,7 @@ const openEdit = tool => {
 
 const openDelete = tool => {
   selectedTool.value = tool;
-  deleteDialogRef.value.open();
+  nextTick(() => deleteDialogRef.value?.open());
 };
 
 const confirmDelete = async () => {
@@ -47,36 +46,29 @@ const confirmDelete = async () => {
   }
 };
 
-const refresh = () => store.dispatch('jivoCustomTools/get');
-
-onMounted(refresh);
+onMounted(() => store.dispatch('jivoCustomTools/get'));
 </script>
 
 <template>
-  <SettingsLayout
-    :is-loading="uiFlags.isFetching"
-    :loading-message="t('JIVO.CUSTOM_TOOLS.LOADING')"
-    :no-records-found="!customTools.length"
-    :no-records-message="t('JIVO.CUSTOM_TOOLS.EMPTY')"
+  <JivoPageLayout
+    :header-title="t('JIVO.CUSTOM_TOOLS.HEADER')"
+    :show-assistant-switcher="false"
+    :button-label="t('JIVO.CUSTOM_TOOLS.ADD_NEW')"
+    :is-fetching="uiFlags.isFetching"
+    :is-empty="!customTools.length"
+    @click="openCreate"
   >
-    <template #header>
-      <BaseSettingsHeader
-        :title="t('JIVO.CUSTOM_TOOLS.TITLE')"
-        :description="t('JIVO.CUSTOM_TOOLS.DESCRIPTION')"
+    <template #emptyState>
+      <div
+        class="flex flex-col items-center justify-center py-20 text-n-slate-11"
       >
-        <template #actions>
-          <Button icon="i-lucide-refresh-cw" slate faded @click="refresh" />
-          <Button
-            icon="i-lucide-circle-plus"
-            :label="t('JIVO.CUSTOM_TOOLS.NEW')"
-            @click="openCreate"
-          />
-        </template>
-      </BaseSettingsHeader>
+        <span class="i-lucide-wrench text-3xl mb-2" />
+        <p class="text-sm">{{ t('JIVO.CUSTOM_TOOLS.EMPTY') }}</p>
+      </div>
     </template>
 
     <template #body>
-      <div class="space-y-3">
+      <div class="flex flex-col gap-3">
         <div
           v-for="tool in customTools"
           :key="tool.id"
@@ -130,21 +122,21 @@ onMounted(refresh);
           </div>
         </div>
       </div>
-    </template>
 
-    <Dialog
-      ref="deleteDialogRef"
-      type="alert"
-      :title="t('JIVO.CUSTOM_TOOLS.DELETE.TITLE')"
-      :description="
-        t('JIVO.CUSTOM_TOOLS.DELETE.DESCRIPTION', {
-          title: selectedTool.title || '',
-        })
-      "
-      :is-loading="uiFlags.isDeleting"
-      :confirm-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CONFIRM')"
-      :cancel-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CANCEL')"
-      @confirm="confirmDelete"
-    />
-  </SettingsLayout>
+      <Dialog
+        ref="deleteDialogRef"
+        type="alert"
+        :title="t('JIVO.CUSTOM_TOOLS.DELETE.TITLE')"
+        :description="
+          t('JIVO.CUSTOM_TOOLS.DELETE.DESCRIPTION', {
+            title: selectedTool.title || '',
+          })
+        "
+        :is-loading="uiFlags.isDeleting"
+        :confirm-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CONFIRM')"
+        :cancel-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CANCEL')"
+        @confirm="confirmDelete"
+      />
+    </template>
+  </JivoPageLayout>
 </template>

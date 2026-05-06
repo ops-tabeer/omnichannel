@@ -1,9 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { OnClickOutside } from '@vueuse/components';
 import { useRoute } from 'vue-router';
 import { useMapGetter } from 'dashboard/composables/store.js';
+import { useUISettings } from 'dashboard/composables/useUISettings';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import BackButton from 'dashboard/components/widgets/BackButton.vue';
 import JivoAssistantSwitcher from './JivoAssistantSwitcher.vue';
 
@@ -20,9 +22,24 @@ defineProps({
     type: Boolean,
     default: true,
   },
+  buttonLabel: {
+    type: String,
+    default: '',
+  },
+  isFetching: {
+    type: Boolean,
+    default: false,
+  },
+  isEmpty: {
+    type: Boolean,
+    default: false,
+  },
 });
 
+defineEmits(['click']);
+
 const route = useRoute();
+const { uiSettings, updateUISettings } = useUISettings();
 
 const showSwitcherDropdown = ref(false);
 
@@ -42,6 +59,22 @@ const activeAssistantName = computed(
 const toggleSwitcher = () => {
   showSwitcherDropdown.value = !showSwitcherDropdown.value;
 };
+
+watch(
+  currentAssistantId,
+  newAssistantId => {
+    if (
+      newAssistantId &&
+      newAssistantId !==
+        String(uiSettings.value?.last_active_jivo_assistant_id || '')
+    ) {
+      updateUISettings({
+        last_active_jivo_assistant_id: Number(newAssistantId),
+      });
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -90,15 +123,33 @@ const toggleSwitcher = () => {
               </span>
             </div>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2 items-center">
+            <slot name="search" />
             <slot name="actions" />
+            <Button
+              v-if="buttonLabel"
+              :label="buttonLabel"
+              icon="i-lucide-plus"
+              size="sm"
+              @click="$emit('click')"
+            />
           </div>
         </div>
+        <slot name="subHeader" />
       </div>
     </header>
     <main class="flex-1 px-6 overflow-y-auto">
       <div class="w-full max-w-[60rem] h-full mx-auto py-4">
-        <slot name="body" />
+        <div
+          v-if="isFetching"
+          class="flex items-center justify-center py-10 text-n-slate-11"
+        >
+          <Spinner />
+        </div>
+        <div v-else-if="isEmpty">
+          <slot name="emptyState" />
+        </div>
+        <slot v-else name="body" />
       </div>
     </main>
   </section>

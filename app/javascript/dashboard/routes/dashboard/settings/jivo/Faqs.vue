@@ -1,12 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, computed, nextTick, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 
-import SettingsLayout from '../SettingsLayout.vue';
-import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
+import JivoPageLayout from 'dashboard/components-next/jivo/layout/JivoPageLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -14,25 +13,21 @@ import JivoFaqApprovalRow from './components/JivoFaqApprovalRow.vue';
 
 const store = useStore();
 const route = useRoute();
-const router = useRouter();
 const { t } = useI18n();
 
 const assistantId = computed(() => Number(route.params.assistantId));
 
 const responses = useMapGetter('jivoResponses/getResponses');
 const uiFlags = useMapGetter('jivoResponses/getUIFlags');
-const assistant = computed(() =>
-  store.getters['jivoAssistants/getAssistant'](assistantId.value)
-);
 
-const showForm = ref(false);
+const formDialogRef = ref(null);
+const confirmDialogRef = ref(null);
+
 const formMode = ref('create');
 const formData = ref({ id: null, question: '', answer: '' });
 const selectedIds = ref([]);
 const statusFilter = ref('pending');
 const searchQuery = ref('');
-
-const confirmDialogRef = ref(null);
 const pendingAction = ref(null);
 
 const statusOptions = computed(() => [
@@ -56,8 +51,6 @@ const emptyMessage = computed(() => {
   return t('JIVO.FAQS.EMPTY');
 });
 
-const hasSearchQuery = computed(() => searchQuery.value.trim().length > 0);
-
 const searchPlaceholder = computed(() =>
   statusFilter.value === 'pending'
     ? t('JIVO.FAQS.SEARCH.PENDING_PLACEHOLDER')
@@ -66,12 +59,7 @@ const searchPlaceholder = computed(() =>
 
 const confirmDialogProps = computed(() => {
   if (!pendingAction.value) {
-    return {
-      type: 'alert',
-      title: '',
-      description: '',
-      confirmLabel: '',
-    };
+    return { type: 'alert', title: '', description: '', confirmLabel: '' };
   }
   const { kind, count } = pendingAction.value;
   const ctx = { count };
@@ -108,16 +96,29 @@ const isConfirming = computed(
     uiFlags.value.isUpdating
 );
 
+const refresh = async () => {
+  try {
+    selectedIds.value = [];
+    await store.dispatch('jivoResponses/get', {
+      assistantId: assistantId.value,
+      status: statusFilter.value === 'all' ? undefined : statusFilter.value,
+      query: searchQuery.value.trim() || undefined,
+    });
+  } catch (error) {
+    useAlert(error.message || t('JIVO.FAQS.LOAD_FAILED'));
+  }
+};
+
 const openCreateForm = () => {
   formMode.value = 'create';
   formData.value = { id: null, question: '', answer: '' };
-  showForm.value = true;
+  nextTick(() => formDialogRef.value?.open());
 };
 
 const openEditForm = faq => {
   formMode.value = 'edit';
   formData.value = { id: faq.id, question: faq.question, answer: faq.answer };
-  showForm.value = true;
+  nextTick(() => formDialogRef.value?.open());
 };
 
 const submit = async () => {
@@ -139,7 +140,7 @@ const submit = async () => {
       });
       useAlert(t('JIVO.FAQS.UPDATED'));
     }
-    showForm.value = false;
+    formDialogRef.value?.close();
   } catch (error) {
     useAlert(error.message || t('JIVO.FAQS.SAVE_FAILED'));
   }
@@ -148,7 +149,7 @@ const submit = async () => {
 const requestConfirm = (kind, ids) => {
   if (!ids.length) return;
   pendingAction.value = { kind, ids, count: ids.length };
-  confirmDialogRef.value?.open();
+  nextTick(() => confirmDialogRef.value?.open());
 };
 
 const approveFaq = faq => requestConfirm('approve', [faq.id]);
@@ -158,19 +159,6 @@ const deleteFaq = faq => requestConfirm('delete', [faq.id]);
 const bulkApprove = () => requestConfirm('approve', selectedIds.value);
 const bulkReject = () => requestConfirm('reject', selectedIds.value);
 const bulkDelete = () => requestConfirm('delete', selectedIds.value);
-
-const refresh = async () => {
-  try {
-    selectedIds.value = [];
-    await store.dispatch('jivoResponses/get', {
-      assistantId: assistantId.value,
-      status: statusFilter.value === 'all' ? undefined : statusFilter.value,
-      query: searchQuery.value.trim() || undefined,
-    });
-  } catch (error) {
-    useAlert(error.message || t('JIVO.FAQS.LOAD_FAILED'));
-  }
-};
 
 const handleConfirm = async () => {
   if (!pendingAction.value) return;
@@ -186,13 +174,9 @@ const handleConfirm = async () => {
       ids,
     });
     await refresh();
-    if (kind === 'approve') {
-      useAlert(t('JIVO.FAQS.BULK.APPROVED'));
-    } else if (kind === 'reject') {
-      useAlert(t('JIVO.FAQS.BULK.REJECTED'));
-    } else {
-      useAlert(t('JIVO.FAQS.BULK.DELETED'));
-    }
+    if (kind === 'approve') useAlert(t('JIVO.FAQS.BULK.APPROVED'));
+    else if (kind === 'reject') useAlert(t('JIVO.FAQS.BULK.REJECTED'));
+    else useAlert(t('JIVO.FAQS.BULK.DELETED'));
   } catch (error) {
     useAlert(error.message || t('JIVO.FAQS.BULK.FAILED'));
   } finally {
@@ -215,177 +199,166 @@ const clearSelection = () => {
   selectedIds.value = [];
 };
 
-const goBack = () => router.push({ name: 'jivo_assistants' });
-
 const onStatusFilterChange = () => refresh();
-const onSearch = () => refresh();
 
-const clearSearch = () => {
-  searchQuery.value = '';
-  refresh();
+let searchTimer;
+const onSearchInput = () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(refresh, 400);
 };
+
+watch(assistantId, id => {
+  if (id) refresh();
+});
 
 onMounted(async () => {
   await store.dispatch('jivoAssistants/get');
-  await refresh();
+  if (assistantId.value) await refresh();
 });
 </script>
 
 <template>
-  <SettingsLayout
-    :is-loading="uiFlags.isFetching"
-    :loading-message="t('JIVO.FAQS.LOADING')"
-    :no-records-found="false"
-    :no-records-message="emptyMessage"
+  <JivoPageLayout
+    :header-title="t('JIVO.FAQS.HEADER')"
+    :button-label="t('JIVO.FAQS.ADD_NEW')"
+    :is-fetching="uiFlags.isFetching"
+    :is-empty="!responses.length"
+    @click="openCreateForm"
   >
-    <template #header>
-      <BaseSettingsHeader
-        :title="t('JIVO.FAQS.TITLE', { name: assistant.name || '' })"
-        :description="t('JIVO.FAQS.DESCRIPTION')"
+    <template #search>
+      <Input
+        v-model="searchQuery"
+        :placeholder="searchPlaceholder"
+        class="w-64"
+        size="sm"
+        type="search"
+        @input="onSearchInput"
+      />
+    </template>
+
+    <template #subHeader>
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3">
+        <label class="flex items-center gap-2 text-sm text-n-slate-11">
+          {{ t('JIVO.FAQS.FILTERS.STATUS_LABEL') }}
+          <select
+            v-model="statusFilter"
+            class="rounded-md border border-n-weak bg-n-alpha-black2 px-3 py-1.5 text-sm text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
+            @change="onStatusFilterChange"
+          >
+            <option
+              v-for="option in statusOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+
+        <label
+          v-if="responses.length"
+          class="flex items-center gap-2 text-sm text-n-slate-11 cursor-pointer"
+        >
+          <input
+            type="checkbox"
+            :checked="allRowsSelected"
+            :aria-label="t('JIVO.FAQS.SELECT_ALL')"
+            @change="toggleSelectAll"
+          />
+          {{ t('JIVO.FAQS.SELECT_ALL') }}
+        </label>
+      </div>
+
+      <Transition
+        enter-active-class="transition-all duration-150"
+        enter-from-class="opacity-0 -translate-y-1"
+        leave-active-class="transition-all duration-100"
+        leave-to-class="opacity-0 -translate-y-1"
       >
-        <template #actions>
-          <Button
-            icon="i-lucide-arrow-left"
-            :label="t('JIVO.FAQS.BACK')"
-            slate
-            faded
-            @click="goBack"
-          />
-          <Button icon="i-lucide-refresh-cw" slate faded @click="refresh" />
-          <Button
-            icon="i-lucide-circle-plus"
-            :label="t('JIVO.FAQS.ADD')"
-            @click="openCreateForm"
-          />
-        </template>
-      </BaseSettingsHeader>
+        <div
+          v-if="selectionActive"
+          class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 mb-3 bg-n-alpha-3 backdrop-blur-md border border-n-brand/40 rounded-xl shadow-sm"
+        >
+          <div class="flex items-center gap-2 text-sm text-n-slate-12">
+            <span class="i-lucide-check-square text-n-brand" />
+            {{ t('JIVO.FAQS.BULK.SELECTED', { count: selectedCount }) }}
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <Button
+              icon="i-lucide-check"
+              teal
+              sm
+              :label="t('JIVO.FAQS.BULK.APPROVE')"
+              :is-loading="uiFlags.isBulkUpdating"
+              @click="bulkApprove"
+            />
+            <Button
+              icon="i-lucide-x"
+              ruby
+              sm
+              faded
+              :label="t('JIVO.FAQS.BULK.REJECT')"
+              :is-loading="uiFlags.isBulkUpdating"
+              @click="bulkReject"
+            />
+            <Button
+              icon="i-lucide-trash-2"
+              ruby
+              sm
+              faded
+              :label="t('JIVO.FAQS.BULK.DELETE')"
+              :is-loading="uiFlags.isBulkUpdating"
+              @click="bulkDelete"
+            />
+            <Button
+              slate
+              sm
+              faded
+              :label="t('JIVO.FAQS.BULK.CLEAR')"
+              @click="clearSelection"
+            />
+          </div>
+        </div>
+      </Transition>
+    </template>
+
+    <template #emptyState>
+      <div
+        class="flex flex-col items-center justify-center py-20 text-n-slate-11"
+      >
+        <span class="i-lucide-message-circle-question text-3xl mb-2" />
+        <p class="text-sm">{{ emptyMessage }}</p>
+      </div>
     </template>
 
     <template #body>
-      <div class="space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-3 px-1">
-          <div class="flex flex-wrap items-center gap-3">
-            <label class="flex items-center gap-3 text-sm text-n-slate-11">
-              {{ t('JIVO.FAQS.FILTERS.STATUS_LABEL') }}
-              <select
-                v-model="statusFilter"
-                class="rounded-md border border-n-weak bg-n-alpha-black2 px-3 py-1.5 text-sm text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
-                @change="onStatusFilterChange"
-              >
-                <option
-                  v-for="option in statusOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-            </label>
+      <div class="flex flex-col gap-3">
+        <JivoFaqApprovalRow
+          v-for="faq in responses"
+          :key="faq.id"
+          :faq="faq"
+          :selected="selectedIds.includes(faq.id)"
+          :selection-active="selectionActive"
+          :disabled="isConfirming"
+          @approve="approveFaq"
+          @reject="rejectFaq"
+          @edit="openEditForm"
+          @delete="deleteFaq"
+          @toggle-selection="toggleSelection"
+        />
+      </div>
 
-            <form class="flex items-center gap-2" @submit.prevent="onSearch">
-              <input
-                v-model="searchQuery"
-                type="search"
-                class="w-64 rounded-md border border-n-weak bg-n-alpha-black2 px-3 py-1.5 text-sm text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
-                :placeholder="searchPlaceholder"
-              />
-              <Button
-                icon="i-lucide-search"
-                slate
-                sm
-                faded
-                :label="t('JIVO.FAQS.SEARCH.SUBMIT')"
-                type="submit"
-              />
-              <Button
-                v-if="hasSearchQuery"
-                icon="i-lucide-x"
-                slate
-                sm
-                faded
-                :label="t('JIVO.FAQS.SEARCH.CLEAR')"
-                @click="clearSearch"
-              />
-            </form>
-          </div>
-
-          <label
-            v-if="responses.length"
-            class="flex items-center gap-2 text-sm text-n-slate-11 cursor-pointer"
-          >
-            <input
-              type="checkbox"
-              :checked="allRowsSelected"
-              :aria-label="t('JIVO.FAQS.SELECT_ALL')"
-              @change="toggleSelectAll"
-            />
-            {{ t('JIVO.FAQS.SELECT_ALL') }}
-          </label>
-        </div>
-
-        <Transition
-          enter-active-class="transition-all duration-150"
-          enter-from-class="opacity-0 -translate-y-1"
-          leave-active-class="transition-all duration-100"
-          leave-to-class="opacity-0 -translate-y-1"
-        >
-          <div
-            v-if="selectionActive"
-            class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-n-alpha-3 backdrop-blur-md border border-n-brand/40 rounded-xl shadow-sm"
-          >
-            <div class="flex items-center gap-2 text-sm text-n-slate-12">
-              <span class="i-lucide-check-square text-n-brand" />
-              {{ t('JIVO.FAQS.BULK.SELECTED', { count: selectedCount }) }}
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <Button
-                icon="i-lucide-check"
-                teal
-                sm
-                :label="t('JIVO.FAQS.BULK.APPROVE')"
-                :is-loading="uiFlags.isBulkUpdating"
-                @click="bulkApprove"
-              />
-              <Button
-                icon="i-lucide-x"
-                ruby
-                sm
-                faded
-                :label="t('JIVO.FAQS.BULK.REJECT')"
-                :is-loading="uiFlags.isBulkUpdating"
-                @click="bulkReject"
-              />
-              <Button
-                icon="i-lucide-trash-2"
-                ruby
-                sm
-                faded
-                :label="t('JIVO.FAQS.BULK.DELETE')"
-                :is-loading="uiFlags.isBulkUpdating"
-                @click="bulkDelete"
-              />
-              <Button
-                slate
-                sm
-                faded
-                :label="t('JIVO.FAQS.BULK.CLEAR')"
-                @click="clearSelection"
-              />
-            </div>
-          </div>
-        </Transition>
-
-        <div
-          v-if="showForm"
-          class="p-4 bg-n-solid-1 border border-n-weak rounded-xl space-y-3"
-        >
-          <h4 class="text-sm font-medium text-n-slate-12">
-            {{
-              formMode === 'create'
-                ? t('JIVO.FAQS.FORM.CREATE_TITLE')
-                : t('JIVO.FAQS.FORM.EDIT_TITLE')
-            }}
-          </h4>
+      <Dialog
+        ref="formDialogRef"
+        :title="
+          formMode === 'create'
+            ? t('JIVO.FAQS.FORM.CREATE_TITLE')
+            : t('JIVO.FAQS.FORM.EDIT_TITLE')
+        "
+        :show-cancel-button="false"
+        :show-confirm-button="false"
+      >
+        <div class="space-y-3">
           <Input
             v-model="formData.question"
             :label="t('JIVO.FAQS.FORM.QUESTION_LABEL')"
@@ -402,12 +375,14 @@ onMounted(async () => {
               class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
             />
           </div>
+        </div>
+        <template #footer>
           <div class="flex justify-end gap-2">
             <Button
               :label="t('JIVO.FAQS.FORM.CANCEL')"
               slate
               faded
-              @click="showForm = false"
+              @click="formDialogRef?.close()"
             />
             <Button
               :label="
@@ -420,41 +395,20 @@ onMounted(async () => {
               @click="submit"
             />
           </div>
-        </div>
+        </template>
+      </Dialog>
 
-        <JivoFaqApprovalRow
-          v-for="faq in responses"
-          :key="faq.id"
-          :faq="faq"
-          :selected="selectedIds.includes(faq.id)"
-          :selection-active="selectionActive"
-          :disabled="isConfirming"
-          @approve="approveFaq"
-          @reject="rejectFaq"
-          @edit="openEditForm"
-          @delete="deleteFaq"
-          @toggle-selection="toggleSelection"
-        />
-
-        <p
-          v-if="!responses.length && !showForm"
-          class="flex-1 py-20 text-n-slate-11 flex items-center justify-center text-base"
-        >
-          {{ emptyMessage }}
-        </p>
-      </div>
+      <Dialog
+        ref="confirmDialogRef"
+        :type="confirmDialogProps.type"
+        :title="confirmDialogProps.title"
+        :description="confirmDialogProps.description"
+        :is-loading="isConfirming"
+        :confirm-button-label="confirmDialogProps.confirmLabel"
+        :cancel-button-label="t('JIVO.FAQS.CONFIRM.CANCEL')"
+        @confirm="handleConfirm"
+        @close="pendingAction = null"
+      />
     </template>
-
-    <Dialog
-      ref="confirmDialogRef"
-      :type="confirmDialogProps.type"
-      :title="confirmDialogProps.title"
-      :description="confirmDialogProps.description"
-      :is-loading="isConfirming"
-      :confirm-button-label="confirmDialogProps.confirmLabel"
-      :cancel-button-label="t('JIVO.FAQS.CONFIRM.CANCEL')"
-      @confirm="handleConfirm"
-      @close="pendingAction = null"
-    />
-  </SettingsLayout>
+  </JivoPageLayout>
 </template>

@@ -5,12 +5,11 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 
-import SettingsLayout from '../SettingsLayout.vue';
-import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
+import JivoPageLayout from 'dashboard/components-next/jivo/layout/JivoPageLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
-import JivoInboxManager from './components/JivoInboxManager.vue';
+import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 
 const store = useStore();
 const router = useRouter();
@@ -42,7 +41,6 @@ const accountV2Override = computed({
 });
 
 const selectedAssistant = ref({});
-const showInboxManager = ref(false);
 const deleteDialogRef = ref(null);
 
 const isLoading = computed(() => uiFlags.value.isFetching);
@@ -58,39 +56,9 @@ const openEditForm = assistant => {
   });
 };
 
-const openInboxManager = assistant => {
-  selectedAssistant.value = assistant;
-  showInboxManager.value = true;
-};
-
 const openDeleteDialog = assistant => {
   selectedAssistant.value = assistant;
   deleteDialogRef.value.open();
-};
-
-const goToDocuments = assistant => {
-  router.push({
-    name: 'jivo_documents',
-    params: { assistantId: assistant.id },
-  });
-};
-
-const goToFaqs = assistant => {
-  router.push({ name: 'jivo_faqs', params: { assistantId: assistant.id } });
-};
-
-const goToScenarios = assistant => {
-  router.push({
-    name: 'jivo_scenarios',
-    params: { assistantId: assistant.id },
-  });
-};
-
-const goToPlayground = assistant => {
-  router.push({
-    name: 'jivo_playground',
-    params: { assistantId: assistant.id },
-  });
 };
 
 const goToCustomTools = () => {
@@ -114,36 +82,42 @@ onMounted(() => {
 </script>
 
 <template>
-  <SettingsLayout
-    :is-loading="isLoading"
-    :loading-message="t('JIVO.ASSISTANTS.LOADING')"
-    :no-records-found="!assistants.length"
-    :no-records-message="t('JIVO.ASSISTANTS.EMPTY')"
+  <JivoPageLayout
+    :header-title="t('JIVO.ASSISTANTS.TITLE')"
+    :show-assistant-switcher="false"
   >
-    <template #header>
-      <BaseSettingsHeader
-        :title="t('JIVO.ASSISTANTS.TITLE')"
-        :description="t('JIVO.ASSISTANTS.DESCRIPTION')"
-      >
-        <template #actions>
-          <Button
-            icon="i-lucide-wrench"
-            :label="t('JIVO.ASSISTANTS.CUSTOM_TOOLS')"
-            slate
-            faded
-            @click="goToCustomTools"
-          />
-          <Button
-            icon="i-lucide-circle-plus"
-            :label="t('JIVO.ASSISTANTS.NEW')"
-            @click="openCreateForm"
-          />
-        </template>
-      </BaseSettingsHeader>
+    <template #actions>
+      <Button
+        icon="i-lucide-wrench"
+        :label="t('JIVO.ASSISTANTS.CUSTOM_TOOLS')"
+        slate
+        faded
+        @click="goToCustomTools"
+      />
+      <Button
+        icon="i-lucide-circle-plus"
+        :label="t('JIVO.ASSISTANTS.NEW')"
+        @click="openCreateForm"
+      />
     </template>
 
     <template #body>
-      <div class="space-y-4">
+      <p class="text-sm text-n-slate-11 -mt-2 mb-4">
+        {{ t('JIVO.ASSISTANTS.DESCRIPTION') }}
+      </p>
+      <div
+        v-if="isLoading"
+        class="flex items-center justify-center py-12 text-n-slate-11"
+      >
+        <Spinner />
+      </div>
+      <div
+        v-else-if="!assistants.length"
+        class="flex items-center justify-center py-12 text-sm text-n-slate-11"
+      >
+        {{ t('JIVO.ASSISTANTS.EMPTY') }}
+      </div>
+      <div v-else class="space-y-4">
         <div
           class="p-4 bg-n-solid-1 border border-n-weak rounded-lg flex items-center justify-between gap-4"
         >
@@ -202,46 +176,6 @@ onMounted(() => {
             </div>
             <div class="flex gap-2 shrink-0">
               <Button
-                :label="t('JIVO.ASSISTANTS.DOCUMENTS')"
-                icon="i-lucide-file-text"
-                slate
-                xs
-                faded
-                @click="goToDocuments(assistant)"
-              />
-              <Button
-                :label="t('JIVO.ASSISTANTS.FAQS')"
-                icon="i-lucide-message-circle-question"
-                slate
-                xs
-                faded
-                @click="goToFaqs(assistant)"
-              />
-              <Button
-                :label="t('JIVO.ASSISTANTS.SCENARIOS')"
-                icon="i-lucide-route"
-                slate
-                xs
-                faded
-                @click="goToScenarios(assistant)"
-              />
-              <Button
-                :label="t('JIVO.ASSISTANTS.PLAYGROUND')"
-                icon="i-lucide-message-square-text"
-                slate
-                xs
-                faded
-                @click="goToPlayground(assistant)"
-              />
-              <Button
-                :label="t('JIVO.ASSISTANTS.INBOXES')"
-                icon="i-lucide-inbox"
-                slate
-                xs
-                faded
-                @click="openInboxManager(assistant)"
-              />
-              <Button
                 icon="i-lucide-pen"
                 slate
                 xs
@@ -259,27 +193,21 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <Dialog
+        ref="deleteDialogRef"
+        type="alert"
+        :title="t('JIVO.ASSISTANTS.DELETE.TITLE')"
+        :description="
+          t('JIVO.ASSISTANTS.DELETE.DESCRIPTION', {
+            name: selectedAssistant.name,
+          })
+        "
+        :is-loading="uiFlags.isDeleting"
+        :confirm-button-label="t('JIVO.ASSISTANTS.DELETE.CONFIRM')"
+        :cancel-button-label="t('JIVO.ASSISTANTS.DELETE.CANCEL')"
+        @confirm="confirmDelete"
+      />
     </template>
-
-    <JivoInboxManager
-      v-if="showInboxManager"
-      :assistant="selectedAssistant"
-      @close="showInboxManager = false"
-    />
-
-    <Dialog
-      ref="deleteDialogRef"
-      type="alert"
-      :title="t('JIVO.ASSISTANTS.DELETE.TITLE')"
-      :description="
-        t('JIVO.ASSISTANTS.DELETE.DESCRIPTION', {
-          name: selectedAssistant.name,
-        })
-      "
-      :is-loading="uiFlags.isDeleting"
-      :confirm-button-label="t('JIVO.ASSISTANTS.DELETE.CONFIRM')"
-      :cancel-button-label="t('JIVO.ASSISTANTS.DELETE.CANCEL')"
-      @confirm="confirmDelete"
-    />
-  </SettingsLayout>
+  </JivoPageLayout>
 </template>

@@ -5,9 +5,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 
-import SettingsLayout from '../SettingsLayout.vue';
-import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
-import Button from 'dashboard/components-next/button/Button.vue';
+import JivoPageLayout from 'dashboard/components-next/jivo/layout/JivoPageLayout.vue';
 import JivoCustomToolForm from './components/JivoCustomToolForm.vue';
 
 const store = useStore();
@@ -35,7 +33,9 @@ const headerTitle = computed(() =>
     : t('JIVO.CUSTOM_TOOLS.FORM.EDIT_TITLE')
 );
 
-const goBack = () => router.push({ name: 'jivo_custom_tools' });
+const backRoute = computed(() => ({ name: 'jivo_custom_tools' }));
+
+const goBack = () => router.push(backRoute.value);
 
 const handleSave = async data => {
   try {
@@ -64,27 +64,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <SettingsLayout
-    :is-loading="!isReady"
-    :loading-message="t('JIVO.CUSTOM_TOOLS.LOADING')"
+  <JivoPageLayout
+    :header-title="headerTitle"
+    :show-assistant-switcher="false"
+    :back-url="backRoute"
+    :is-fetching="!isReady"
   >
-    <template #header>
-      <BaseSettingsHeader
-        :title="headerTitle"
-        :description="t('JIVO.CUSTOM_TOOLS.DESCRIPTION')"
-      >
-        <template #actions>
-          <Button
-            icon="i-lucide-arrow-left"
-            :label="t('JIVO.DOCUMENTS.BACK')"
-            slate
-            faded
-            @click="goBack"
-          />
-        </template>
-      </BaseSettingsHeader>
-    </template>
-
     <template #body>
       <JivoCustomToolForm
         v-if="isReady"
@@ -95,5 +80,5 @@ onMounted(async () => {
         @close="goBack"
       />
     </template>
-  </SettingsLayout>
+  </JivoPageLayout>
 </template>

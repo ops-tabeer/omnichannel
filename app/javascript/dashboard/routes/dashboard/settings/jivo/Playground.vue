@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useStore } from 'dashboard/composables/store';
 
 import { frontendURL } from '../../../../helper/URLHelper';
-import JivoPageLayout from 'dashboard/components-next/jivo/playground/JivoPageLayout.vue';
+import JivoPageLayout from 'dashboard/components-next/jivo/layout/JivoPageLayout.vue';
 import JivoAssistantPlayground from 'dashboard/components-next/jivo/playground/JivoAssistantPlayground.vue';
 
 const store = useStore();
@@ -15,7 +15,7 @@ const { t } = useI18n();
 const assistantId = computed(() => Number(route.params.assistantId));
 
 const backUrl = computed(() =>
-  frontendURL(`accounts/${route.params.accountId}/settings/jivo`)
+  frontendURL(`accounts/${route.params.accountId}/jivo`)
 );
 
 onMounted(() => {

@@ -387,6 +387,93 @@ const menuItems = computed(() => {
       ],
     },
     {
+      name: 'Jivo AI',
+      label: t('JIVO.SIDEBAR.LABEL'),
+      icon: 'i-lucide-sparkles',
+      activeOn: [
+        'jivo_assistants',
+        'jivo_assistants_dispatch',
+        'jivo_assistant_new',
+        'jivo_assistant_edit',
+        'jivo_documents',
+        'jivo_faqs',
+        'jivo_inboxes',
+        'jivo_scenarios',
+        'jivo_scenario_new',
+        'jivo_scenario_edit',
+        'jivo_custom_tools',
+        'jivo_custom_tool_new',
+        'jivo_custom_tool_edit',
+        'jivo_playground',
+      ],
+      children: [
+        {
+          name: 'Jivo Assistants',
+          label: t('JIVO.SIDEBAR.ASSISTANTS'),
+          activeOn: [
+            'jivo_assistants',
+            'jivo_assistant_new',
+            'jivo_assistant_edit',
+          ],
+          to: accountScopedRoute('jivo_assistants'),
+        },
+        {
+          name: 'Jivo FAQs',
+          label: t('JIVO.SIDEBAR.FAQS'),
+          activeOn: ['jivo_faqs'],
+          to: accountScopedRoute('jivo_assistants_dispatch', {
+            navigationPath: 'jivo_faqs',
+          }),
+        },
+        {
+          name: 'Jivo Documents',
+          label: t('JIVO.SIDEBAR.DOCUMENTS'),
+          activeOn: ['jivo_documents'],
+          to: accountScopedRoute('jivo_assistants_dispatch', {
+            navigationPath: 'jivo_documents',
+          }),
+        },
+        {
+          name: 'Jivo Scenarios',
+          label: t('JIVO.SIDEBAR.SCENARIOS'),
+          activeOn: [
+            'jivo_scenarios',
+            'jivo_scenario_new',
+            'jivo_scenario_edit',
+          ],
+          to: accountScopedRoute('jivo_assistants_dispatch', {
+            navigationPath: 'jivo_scenarios',
+          }),
+        },
+        {
+          name: 'Jivo Playground',
+          label: t('JIVO.SIDEBAR.PLAYGROUND'),
+          activeOn: ['jivo_playground'],
+          to: accountScopedRoute('jivo_assistants_dispatch', {
+            navigationPath: 'jivo_playground',
+          }),
+        },
+        {
+          name: 'Jivo Inboxes',
+          label: t('JIVO.SIDEBAR.INBOXES'),
+          activeOn: ['jivo_inboxes'],
+          to: accountScopedRoute('jivo_assistants_dispatch', {
+            navigationPath: 'jivo_inboxes',
+          }),
+        },
+        {
+          name: 'Jivo Custom Tools',
+          label: t('JIVO.SIDEBAR.CUSTOM_TOOLS'),
+          activeOn: [
+            'jivo_custom_tools',
+            'jivo_custom_tool_new',
+            'jivo_custom_tool_edit',
+          ],
+          to: accountScopedRoute('jivo_custom_tools'),
+        },
+      ],
+    },
+    {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
       icon: 'i-lucide-contact',
@@ -636,12 +723,6 @@ const menuItems = computed(() => {
           label: t('SIDEBAR.AGENT_BOTS'),
           icon: 'i-lucide-bot',
           to: accountScopedRoute('agent_bots'),
-        },
-        {
-          name: 'Settings Jivo AI',
-          label: 'JIVO AI',
-          icon: 'i-lucide-sparkles',
-          to: accountScopedRoute('jivo_assistants'),
         },
         {
           name: 'Settings Macros',

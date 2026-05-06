@@ -1,12 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, nextTick, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 
-import SettingsLayout from '../SettingsLayout.vue';
-import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
+import JivoPageLayout from 'dashboard/components-next/jivo/layout/JivoPageLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import JivoToolIcon from 'dashboard/components-next/jivo/JivoToolIcon.vue';
@@ -42,7 +41,7 @@ const openEdit = scenario => {
 
 const openDelete = scenario => {
   selectedScenario.value = scenario;
-  deleteDialogRef.value.open();
+  nextTick(() => deleteDialogRef.value?.open());
 };
 
 const confirmDelete = async () => {
@@ -69,48 +68,37 @@ const toolMetaById = computed(() => {
 
 const lookupTool = id => toolMetaById.value[id] || null;
 
-const goBack = () => router.push({ name: 'jivo_assistants' });
-
 const refresh = () => store.dispatch('jivoScenarios/get', assistantId.value);
+
+watch(assistantId, id => {
+  if (id) refresh();
+});
 
 onMounted(async () => {
   await store.dispatch('jivoAssistants/get');
-  await refresh();
+  if (assistantId.value) await refresh();
 });
 </script>
 
 <template>
-  <SettingsLayout
-    :is-loading="uiFlags.isFetching"
-    :loading-message="t('JIVO.SCENARIOS.LOADING')"
-    :no-records-found="!scenarios.length"
-    :no-records-message="t('JIVO.SCENARIOS.EMPTY')"
+  <JivoPageLayout
+    :header-title="t('JIVO.SCENARIOS.HEADER')"
+    :button-label="t('JIVO.SCENARIOS.ADD_NEW')"
+    :is-fetching="uiFlags.isFetching"
+    :is-empty="!scenarios.length"
+    @click="openCreate"
   >
-    <template #header>
-      <BaseSettingsHeader
-        :title="t('JIVO.SCENARIOS.TITLE', { name: assistant.name || '' })"
-        :description="t('JIVO.SCENARIOS.DESCRIPTION')"
+    <template #emptyState>
+      <div
+        class="flex flex-col items-center justify-center py-20 text-n-slate-11"
       >
-        <template #actions>
-          <Button
-            icon="i-lucide-arrow-left"
-            :label="t('JIVO.SCENARIOS.BACK')"
-            slate
-            faded
-            @click="goBack"
-          />
-          <Button icon="i-lucide-refresh-cw" slate faded @click="refresh" />
-          <Button
-            icon="i-lucide-circle-plus"
-            :label="t('JIVO.SCENARIOS.NEW')"
-            @click="openCreate"
-          />
-        </template>
-      </BaseSettingsHeader>
+        <span class="i-lucide-route text-3xl mb-2" />
+        <p class="text-sm">{{ t('JIVO.SCENARIOS.EMPTY') }}</p>
+      </div>
     </template>
 
     <template #body>
-      <div class="space-y-3">
+      <div class="flex flex-col gap-3">
         <div
           v-for="scenario in scenarios"
           :key="scenario.id"
@@ -170,21 +158,21 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-    </template>
 
-    <Dialog
-      ref="deleteDialogRef"
-      type="alert"
-      :title="t('JIVO.SCENARIOS.DELETE.TITLE')"
-      :description="
-        t('JIVO.SCENARIOS.DELETE.DESCRIPTION', {
-          title: selectedScenario.title || '',
-        })
-      "
-      :is-loading="uiFlags.isDeleting"
-      :confirm-button-label="t('JIVO.SCENARIOS.DELETE.CONFIRM')"
-      :cancel-button-label="t('JIVO.SCENARIOS.DELETE.CANCEL')"
-      @confirm="confirmDelete"
-    />
-  </SettingsLayout>
+      <Dialog
+        ref="deleteDialogRef"
+        type="alert"
+        :title="t('JIVO.SCENARIOS.DELETE.TITLE')"
+        :description="
+          t('JIVO.SCENARIOS.DELETE.DESCRIPTION', {
+            title: selectedScenario.title || '',
+          })
+        "
+        :is-loading="uiFlags.isDeleting"
+        :confirm-button-label="t('JIVO.SCENARIOS.DELETE.CONFIRM')"
+        :cancel-button-label="t('JIVO.SCENARIOS.DELETE.CANCEL')"
+        @confirm="confirmDelete"
+      />
+    </template>
+  </JivoPageLayout>
 </template>

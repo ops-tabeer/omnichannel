@@ -1,16 +1,20 @@
 {
   "JIVO": {
+    "SIDEBAR": {
+      "LABEL": "JIVO AI",
+      "ASSISTANTS": "Assistants",
+      "DOCUMENTS": "Documents",
+      "FAQS": "FAQs",
+      "INBOXES": "Inboxes",
+      "SCENARIOS": "Scenarios",
+      "PLAYGROUND": "Playground",
+      "CUSTOM_TOOLS": "Custom Tools"
+    },
     "ASSISTANTS": {
       "TITLE": "JIVO AI",
       "DESCRIPTION": "Configure AI assistants that automatically handle conversations on your inboxes.",
-      "LOADING": "Loading JIVO assistants...",
       "EMPTY": "No JIVO assistants yet. Create your first one to get started.",
       "NEW": "New Assistant",
-      "INBOXES": "Inboxes",
-      "DOCUMENTS": "Documents",
-      "FAQS": "FAQs",
-      "SCENARIOS": "Scenarios",
-      "PLAYGROUND": "Playground",
       "CUSTOM_TOOLS": "Custom Tools",
       "NO_INBOXES": "Not connected to any inbox",
       "ACCOUNT_V2_OVERRIDE": {
@@ -133,22 +137,35 @@
         "CANCEL": "Cancel",
         "CREATE": "Create",
         "SAVE": "Save"
-      },
-      "INBOX_MANAGER": {
-        "TITLE": "Manage Inboxes - {name}",
-        "DESCRIPTION": "Connect this assistant to inboxes. Each inbox can have only one assistant.",
-        "CONNECT": "Connect",
-        "DISCONNECT": "Disconnect",
+      }
+    },
+    "INBOXES": {
+      "HEADER": "Inboxes",
+      "ADD_NEW": "Connect Inbox",
+      "EMPTY": "No inboxes connected. Connect an inbox to let this assistant respond there.",
+      "CONNECT": "Connect",
+      "DISCONNECT": "Disconnect",
+      "CONNECTED": "Connected to {name}",
+      "DISCONNECTED": "Disconnected from {name}",
+      "CONNECT_FAILED": "Failed to connect inbox",
+      "DISCONNECT_FAILED": "Failed to disconnect inbox",
+      "CONNECT_DIALOG": {
+        "TITLE": "Connect Inbox",
+        "DESCRIPTION": "Choose an inbox to attach to this assistant. Each inbox can host only one assistant at a time.",
+        "EMPTY": "All inboxes are already connected to this assistant.",
         "CLOSE": "Close"
+      },
+      "DISCONNECT_DIALOG": {
+        "TITLE": "Disconnect Inbox",
+        "DESCRIPTION": "Stop this assistant from responding in {name}?",
+        "CONFIRM": "Disconnect",
+        "CANCEL": "Cancel"
       }
     },
     "DOCUMENTS": {
-      "TITLE": "Documents - {name}",
-      "DESCRIPTION": "Add web pages as knowledge sources. JIVO will crawl them and auto-generate FAQs.",
-      "LOADING": "Loading documents...",
+      "HEADER": "Documents",
+      "ADD_NEW": "Add Document",
       "EMPTY": "No documents yet. Add a URL to give JIVO knowledge to answer from.",
-      "ADD": "Add URL",
-      "BACK": "Back",
       "RESPONSES_COUNT": "{count} FAQs",
       "ADDED": "Document queued for crawling",
       "ADD_FAILED": "Failed to add document",
@@ -158,6 +175,7 @@
       "RECRAWL_QUEUED": "Re-crawl queued. Existing FAQs cleared.",
       "RECRAWL_FAILED": "Failed to re-crawl document",
       "FORM": {
+        "CREATE_TITLE": "Add Document",
         "MODE_URL": "URL",
         "MODE_PDF": "PDF",
         "URL_LABEL": "URL",
@@ -179,14 +197,11 @@
       }
     },
     "FAQS": {
-      "TITLE": "FAQs - {name}",
-      "DESCRIPTION": "Question-and-answer pairs JIVO uses to answer customer questions.",
-      "LOADING": "Loading FAQs...",
+      "HEADER": "FAQs",
+      "ADD_NEW": "New FAQ",
       "EMPTY": "No FAQs yet. Add documents or create FAQs manually.",
       "EMPTY_PENDING": "No pending FAQs to review.",
       "EMPTY_SEARCH": "No FAQs match your search.",
-      "ADD": "New FAQ",
-      "BACK": "Back",
       "AUTO_GENERATED": "auto-generated",
       "APPROVE": "Approve FAQ",
       "REJECT": "Reject FAQ",
@@ -325,12 +340,9 @@
       }
     },
     "SCENARIOS": {
-      "TITLE": "Scenarios for {name}",
-      "DESCRIPTION": "Specialised sub-agents that the main assistant can hand off to for narrow workflows. Reference tools in the instruction with [Label](tool://tool_id).",
-      "LOADING": "Loading scenarios...",
+      "HEADER": "Scenarios",
+      "ADD_NEW": "New Scenario",
       "EMPTY": "No scenarios yet. Create one to add a specialist sub-agent.",
-      "NEW": "New Scenario",
-      "BACK": "Back to Assistants",
       "DISABLED": "Disabled",
       "CREATED": "Scenario created",
       "UPDATED": "Scenario updated",
@@ -375,11 +387,9 @@
       }
     },
     "CUSTOM_TOOLS": {
-      "TITLE": "Custom Tools",
-      "DESCRIPTION": "HTTP-based tools your assistants can call. Account-wide; reference by slug in scenario instructions.",
-      "LOADING": "Loading custom tools...",
+      "HEADER": "Custom Tools",
+      "ADD_NEW": "New Custom Tool",
       "EMPTY": "No custom tools yet. Add one to let assistants call your APIs.",
-      "NEW": "New Custom Tool",
       "DISABLED": "Disabled",
       "CREATED": "Custom tool created",
       "UPDATED": "Custom tool updated",
@@ -471,7 +481,6 @@
       "MESSAGE_PLACEHOLDER": "Type a message to test the assistant...",
       "USER": "You",
       "ASSISTANT": "Assistant",
-      "BACK": "Back",
       "RESET": "Reset",
       "SWITCH_ASSISTANT": "Switch assistant",
       "EMPTY_ASSISTANTS": "No JIVO assistants yet.",

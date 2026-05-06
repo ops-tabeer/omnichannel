@@ -5,9 +5,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 
-import SettingsLayout from '../SettingsLayout.vue';
-import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
-import Button from 'dashboard/components-next/button/Button.vue';
+import JivoPageLayout from 'dashboard/components-next/jivo/layout/JivoPageLayout.vue';
 import JivoScenarioForm from './components/JivoScenarioForm.vue';
 
 const store = useStore();
@@ -36,11 +34,12 @@ const headerTitle = computed(() =>
     : t('JIVO.SCENARIOS.FORM.EDIT_TITLE')
 );
 
-const goBack = () =>
-  router.push({
-    name: 'jivo_scenarios',
-    params: { assistantId: assistantId.value },
-  });
+const backRoute = computed(() => ({
+  name: 'jivo_scenarios',
+  params: { assistantId: assistantId.value },
+}));
+
+const goBack = () => router.push(backRoute.value);
 
 const handleSave = async data => {
   try {
@@ -74,27 +73,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <SettingsLayout
-    :is-loading="!isReady"
-    :loading-message="t('JIVO.SCENARIOS.LOADING')"
+  <JivoPageLayout
+    :header-title="headerTitle"
+    :show-assistant-switcher="false"
+    :back-url="backRoute"
+    :is-fetching="!isReady"
   >
-    <template #header>
-      <BaseSettingsHeader
-        :title="headerTitle"
-        :description="t('JIVO.SCENARIOS.DESCRIPTION')"
-      >
-        <template #actions>
-          <Button
-            icon="i-lucide-arrow-left"
-            :label="t('JIVO.SCENARIOS.BACK')"
-            slate
-            faded
-            @click="goBack"
-          />
-        </template>
-      </BaseSettingsHeader>
-    </template>
-
     <template #body>
       <JivoScenarioForm
         v-if="isReady"
@@ -106,5 +90,5 @@ onMounted(async () => {
         @close="goBack"
       />
     </template>
-  </SettingsLayout>
+  </JivoPageLayout>
 </template>
