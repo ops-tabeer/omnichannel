@@ -17,6 +17,22 @@ const jivoScenarioLabel = computed(
   () => contentAttributes.value?.jivoScenario || ''
 );
 
+const jivoCitations = computed(() => {
+  const raw = contentAttributes.value?.citations;
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set();
+  return raw
+    .filter(c => c && (c.externalLink || c.documentName))
+    .filter(c => {
+      const key = `${c.documentId || ''}:${c.externalLink || c.documentName}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+});
+
+const citationLabel = c => c.documentName || c.externalLink || c.question;
+
 const { hasTranslations, translationContent } =
   useTranslations(contentAttributes);
 
@@ -67,6 +83,39 @@ const handleSeeOriginal = () => {
         :showing-original="renderOriginal"
         @toggle="handleSeeOriginal"
       />
+      <div v-if="jivoCitations.length" class="flex flex-wrap gap-1.5 -mt-1">
+        <template v-for="(citation, idx) in jivoCitations" :key="idx">
+          <a
+            v-if="citation.externalLink"
+            :href="citation.externalLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3 hover:underline max-w-full"
+          >
+            <span class="i-lucide-external-link size-3 shrink-0" />
+            <span class="truncate">
+              {{
+                t('JIVO.MESSAGE.CITATIONS.SOURCE', {
+                  title: citationLabel(citation),
+                })
+              }}
+            </span>
+          </a>
+          <span
+            v-else
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-n-alpha-2 text-n-slate-11 max-w-full"
+          >
+            <span class="i-lucide-file-text size-3 shrink-0" />
+            <span class="truncate">
+              {{
+                t('JIVO.MESSAGE.CITATIONS.SOURCE', {
+                  title: citationLabel(citation),
+                })
+              }}
+            </span>
+          </span>
+        </template>
+      </div>
       <AttachmentChips :attachments="attachments" class="gap-2" />
       <template v-if="isTemplate">
         <div

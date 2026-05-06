@@ -37,6 +37,7 @@ const form = ref({
     system_prompt: props.assistant.config?.system_prompt || '',
     feature_memory: props.assistant.config?.feature_memory || false,
     feature_faq: props.assistant.config?.feature_faq || false,
+    feature_citation: props.assistant.config?.feature_citation || false,
     feature_v2_agent: props.assistant.config?.feature_v2_agent || false,
     feature_idle_action: props.assistant.config?.feature_idle_action || false,
     idle_timeout_minutes: props.assistant.config?.idle_timeout_minutes || 60,
@@ -48,6 +49,22 @@ const form = ref({
 
 const isValid = computed(() => {
   return form.value.name.trim() && form.value.description.trim();
+});
+
+const NON_VISION_MODEL_PATTERNS = [
+  /^gpt-3\.5/i,
+  /^text-/i,
+  /^o1-mini/i,
+  /^gpt-4-0314/i,
+  /^gpt-4-0613/i,
+  /-instruct$/i,
+  /-nano\b/i,
+];
+
+const isVisionCapable = computed(() => {
+  const model = (form.value.config.openai_model || '').trim();
+  if (!model) return true;
+  return !NON_VISION_MODEL_PATTERNS.some(pattern => pattern.test(model));
 });
 
 const tabs = [
@@ -145,6 +162,13 @@ const submit = () => {
           :placeholder="t('JIVO.ASSISTANTS.FORM.OPENAI_MODEL.PLACEHOLDER')"
         />
 
+        <p
+          v-if="!isVisionCapable"
+          class="text-xs text-n-amber-text bg-n-amber-3 border border-n-amber-7 rounded-md px-2 py-1.5"
+        >
+          {{ t('JIVO.ASSISTANTS.FORM.OPENAI_MODEL.VISION_WARNING') }}
+        </p>
+
         <div>
           <label class="block text-sm font-medium text-n-slate-12 mb-1">
             {{
@@ -181,6 +205,18 @@ const submit = () => {
               {{ t('JIVO.ASSISTANTS.FORM.FEATURE_FAQ.LABEL') }}
             </label>
             <ToggleSwitch v-model="form.config.feature_faq" />
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <label class="text-sm text-n-slate-12">
+                {{ t('JIVO.ASSISTANTS.FORM.FEATURE_CITATION.LABEL') }}
+              </label>
+              <p class="text-xs text-n-slate-11 mt-0.5">
+                {{ t('JIVO.ASSISTANTS.FORM.FEATURE_CITATION.HELP') }}
+              </p>
+            </div>
+            <ToggleSwitch v-model="form.config.feature_citation" />
           </div>
         </div>
 

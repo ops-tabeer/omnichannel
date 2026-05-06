@@ -31,6 +31,13 @@ class JivoAssistantsAPI extends ApiClient {
   removeAvatar(assistantId) {
     return axios.delete(`${this.url}/${assistantId}/avatar`);
   }
+
+  playground({ assistantId, messageContent, messageHistory }) {
+    return axios.post(`${this.url}/${assistantId}/playground`, {
+      message_content: messageContent,
+      message_history: messageHistory,
+    });
+  }
 }
 
 export default new JivoAssistantsAPI();

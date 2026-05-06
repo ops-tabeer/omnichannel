@@ -10,6 +10,7 @@
       "DOCUMENTS": "Documents",
       "FAQS": "FAQs",
       "SCENARIOS": "Scenarios",
+      "PLAYGROUND": "Playground",
       "CUSTOM_TOOLS": "Custom Tools",
       "NO_INBOXES": "Not connected to any inbox",
       "ACCOUNT_V2_OVERRIDE": {
@@ -46,7 +47,8 @@
         },
         "OPENAI_MODEL": {
           "LABEL": "OpenAI Model",
-          "PLACEHOLDER": "gpt-4.1-mini"
+          "PLACEHOLDER": "gpt-4.1-mini",
+          "VISION_WARNING": "This model does not support image inputs. JIVO will run OCR on customer-shared images and pass the extracted text to the assistant instead."
         },
         "TEMPERATURE": "Temperature ({value})",
         "SYSTEM_PROMPT": {
@@ -95,6 +97,10 @@
         },
         "FEATURE_FAQ": {
           "LABEL": "Auto-generate FAQs"
+        },
+        "FEATURE_CITATION": {
+          "LABEL": "Show source citations on replies",
+          "HELP": "When the assistant answers from a knowledge base FAQ that has a source URL, attach a citation chip below the reply so customers can verify the answer."
         },
         "FEATURE_V2_AGENT": {
           "LABEL": "Use V2 multi-agent runner",
@@ -258,7 +264,10 @@
       }
     },
     "MESSAGE": {
-      "AGENT_BADGE": "via {name}"
+      "AGENT_BADGE": "via {name}",
+      "CITATIONS": {
+        "SOURCE": "Source: {title}"
+      }
     },
     "TASKS": {
       "PANEL_TITLE": "JIVO Assistant",
@@ -455,6 +464,19 @@
         "CONFIRM": "Delete",
         "CANCEL": "Cancel"
       }
+    },
+    "PLAYGROUND": {
+      "HEADER": "Playground",
+      "DESCRIPTION": "Test conversations with this assistant without affecting any real inbox.",
+      "MESSAGE_PLACEHOLDER": "Type a message to test the assistant...",
+      "USER": "You",
+      "ASSISTANT": "Assistant",
+      "BACK": "Back",
+      "RESET": "Reset",
+      "SWITCH_ASSISTANT": "Switch assistant",
+      "EMPTY_ASSISTANTS": "No JIVO assistants yet.",
+      "CREDIT_NOTE": "Playground messages do not count against your live conversation usage.",
+      "ERROR": "Could not get a response. Please try again."
     }
   }
 }

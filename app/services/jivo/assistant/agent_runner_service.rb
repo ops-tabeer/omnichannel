@@ -20,7 +20,7 @@ class Jivo::Assistant::AgentRunnerService
     Jivo::Runtime::ApiKeyLock.with_assistant_key(assistant) do
       agents = build_and_wire_agents
       current_message, prior_history = split_current_user_message(message_history)
-      context = build_context(prior_history)
+      context = build_context(prior_history, full_history: message_history)
       last_user_message = message_input(current_message)
 
       runner = Agents::Runner.with_agents(*agents)
@@ -74,7 +74,7 @@ class Jivo::Assistant::AgentRunnerService
     [main_agent] + scenario_agents
   end
 
-  def build_context(message_history)
+  def build_context(message_history, full_history: [])
     history = message_history.map do |msg|
       {
         role: msg[:role].to_sym,
@@ -85,29 +85,25 @@ class Jivo::Assistant::AgentRunnerService
     {
       session_id: "#{assistant.account_id}_#{conversation&.display_id}",
       conversation_history: history,
-      state: build_state
+      state: build_state(full_history: full_history)
     }
   end
 
-  def build_state
-    state = {
-      account_id: assistant.account_id,
-      assistant_id: assistant.id,
-      assistant_config: assistant.config
-    }
-
-    if conversation
-      state[:conversation] = conversation.attributes.symbolize_keys.slice(*CONVERSATION_STATE_ATTRIBUTES)
-      state[:contact] = conversation.contact.attributes.symbolize_keys.slice(*CONTACT_STATE_ATTRIBUTES) if conversation.contact
-      state[:preloaded_knowledge] = preloaded_knowledge_payload
-    end
-
+  def build_state(full_history: [])
+    state = { account_id: assistant.account_id, assistant_id: assistant.id, assistant_config: assistant.config, citations: [] }
+    apply_conversation_state!(state) if conversation
+    apply_preloaded_knowledge!(state, full_history) if conversation || full_history.any?
     state
   end
 
-  def preloaded_knowledge_payload
-    Jivo::Knowledge::FaqContextService.new(assistant: assistant, conversation: conversation).fetch
-                                      .map { |faq| { question: faq.question, answer: faq.answer } }
+  def apply_conversation_state!(state)
+    state[:conversation] = conversation.attributes.symbolize_keys.slice(*CONVERSATION_STATE_ATTRIBUTES)
+    state[:contact] = conversation.contact.attributes.symbolize_keys.slice(*CONTACT_STATE_ATTRIBUTES) if conversation.contact
+  end
+
+  def apply_preloaded_knowledge!(state, full_history)
+    history = full_history.map { |msg| { role: msg[:role], content: extract_text_from_content(msg[:content]) } }
+    Jivo::Runtime::KnowledgePreloader.new(assistant: assistant, conversation: conversation, normalized_history: history).apply!(state)
   end
 
   def extract_text_from_content(content)
@@ -151,6 +147,8 @@ class Jivo::Assistant::AgentRunnerService
     payload = normalize_output(result.output)
     current_agent = result.context&.dig(:current_agent)
     payload['agent_name'] = current_agent if current_agent.present?
+    citations = result.context&.dig(:state, :citations)
+    payload['citations'] = citations if citations.is_a?(Array) && citations.any?
     payload
   end
 
@@ -208,16 +206,10 @@ class Jivo::Assistant::AgentRunnerService
   end
 
   def fallback_payload(output)
-    {
-      'response' => output.to_s,
-      'reasoning' => 'Processed by JIVO agent'
-    }.with_indifferent_access
+    { 'response' => output.to_s, 'reasoning' => 'Processed by JIVO agent' }.with_indifferent_access
   end
 
   def error_response(error_message)
-    {
-      'response' => Jivo::ConversationHandlerService::HANDOFF_SIGNAL,
-      'reasoning' => "Error occurred: #{error_message}"
-    }
+    { 'response' => Jivo::ConversationHandlerService::HANDOFF_SIGNAL, 'reasoning' => "Error occurred: #{error_message}" }
   end
 end

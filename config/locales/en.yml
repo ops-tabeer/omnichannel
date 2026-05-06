@@ -384,6 +384,8 @@ en:
     tasks:
       learn:
         queued: 'Learning queued. Notes and FAQs will appear shortly.'
+    playground:
+      openai_key_missing: 'OpenAI API key is not configured for this assistant. Add the key in the assistant settings to use the playground.'
   public_portal:
     search:
       search_placeholder: Search for article by title or body...

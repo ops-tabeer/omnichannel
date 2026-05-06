@@ -6,6 +6,7 @@ import CustomTools from './CustomTools.vue';
 import AssistantEdit from './AssistantEdit.vue';
 import ScenarioEdit from './ScenarioEdit.vue';
 import CustomToolEdit from './CustomToolEdit.vue';
+import Playground from './Playground.vue';
 import { frontendURL } from '../../../../helper/URLHelper';
 import SettingsWrapper from '../SettingsWrapper.vue';
 
@@ -107,6 +108,14 @@ export default {
           },
         },
       ],
+    },
+    {
+      path: frontendURL('accounts/:accountId/jivo/:assistantId/playground'),
+      name: 'jivo_playground',
+      component: Playground,
+      meta: {
+        permissions: ['administrator', 'agent'],
+      },
     },
   ],
 };

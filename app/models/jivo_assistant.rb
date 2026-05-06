@@ -32,7 +32,7 @@ class JivoAssistant < ApplicationRecord
 
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                  :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
-                 :idle_reminder_limit, :feature_v2_agent
+                 :idle_reminder_limit, :feature_v2_agent, :feature_citation
 
   IDLE_ACTION_HANDOFF = 'handoff'.freeze
   IDLE_ACTION_RESOLVE = 'resolve'.freeze
@@ -41,8 +41,22 @@ class JivoAssistant < ApplicationRecord
   DEFAULT_IDLE_TIMEOUT_MINUTES = 60
   DEFAULT_IDLE_REMINDER_LIMIT = 3
 
+  NON_VISION_MODEL_PATTERNS = [
+    /\Agpt-3\.5/i,
+    /\Atext-/i,
+    /\Ao1-mini/i,
+    /\Agpt-4-0314/i,
+    /\Agpt-4-0613/i,
+    /-instruct\z/i,
+    /-nano\b/i
+  ].freeze
+
   def model
     openai_model.presence || 'gpt-4.1-mini'
+  end
+
+  def vision_capable?
+    NON_VISION_MODEL_PATTERNS.none? { |pattern| pattern.match?(model) }
   end
 
   def temperature_value
@@ -60,6 +74,10 @@ class JivoAssistant < ApplicationRecord
   def feature_v2_agent_enabled?
     ActiveModel::Type::Boolean.new.cast(account.jivo_v2_agent) ||
       ActiveModel::Type::Boolean.new.cast(feature_v2_agent)
+  end
+
+  def feature_citation_enabled?
+    ActiveModel::Type::Boolean.new.cast(feature_citation)
   end
 
   def idle_timeout_minutes_value

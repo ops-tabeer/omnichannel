@@ -86,6 +86,13 @@ const goToScenarios = assistant => {
   });
 };
 
+const goToPlayground = assistant => {
+  router.push({
+    name: 'jivo_playground',
+    params: { assistantId: assistant.id },
+  });
+};
+
 const goToCustomTools = () => {
   router.push({ name: 'jivo_custom_tools' });
 };
@@ -217,6 +224,14 @@ onMounted(() => {
                 xs
                 faded
                 @click="goToScenarios(assistant)"
+              />
+              <Button
+                :label="t('JIVO.ASSISTANTS.PLAYGROUND')"
+                icon="i-lucide-message-square-text"
+                slate
+                xs
+                faded
+                @click="goToPlayground(assistant)"
               />
               <Button
                 :label="t('JIVO.ASSISTANTS.INBOXES')"

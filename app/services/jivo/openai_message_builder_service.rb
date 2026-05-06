@@ -43,10 +43,29 @@ class Jivo::OpenaiMessageBuilderService
   end
 
   def image_attachment_parts
-    @message.attachments.where(file_type: :image).filter_map do |att|
+    images = @message.attachments.where(file_type: :image)
+    return [] if images.blank?
+    return image_ocr_text_parts(images) unless vision_capable?
+
+    images.filter_map do |att|
       url = attachment_url(att)
       image_part(url) if url.present?
     end
+  end
+
+  def vision_capable?
+    @assistant.respond_to?(:vision_capable?) ? @assistant.vision_capable? : true
+  end
+
+  def image_ocr_text_parts(images)
+    return [] if @assistant.blank?
+
+    transcripts = images.filter_map do |att|
+      Jivo::Messages::ImageOcrService.new(attachment: att, assistant: @assistant).perform.presence
+    end
+    return [] if transcripts.blank?
+
+    [text_part("Customer image content (extracted via OCR): #{transcripts.join(' | ')}")]
   end
 
   def audio_transcripts_text

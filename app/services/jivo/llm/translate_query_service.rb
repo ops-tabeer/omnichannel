@@ -1,9 +1,12 @@
 require 'net/http'
 
 class Jivo::Llm::TranslateQueryService
+  include Redis::RedisKeys
+
   OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'.freeze
   MODEL = 'gpt-4.1-nano'.freeze
   REQUEST_TIMEOUT = 30
+  CACHE_TTL = 7.days
 
   pattr_initialize [:assistant!]
 
@@ -12,8 +15,13 @@ class Jivo::Llm::TranslateQueryService
     return query if query_in_target_language?(query)
     return query if assistant.openai_api_key.blank?
 
+    cached = read_cache(query, target_language)
+    return cached if cached.present?
+
     response = call_openai(query, target_language)
-    response.dig('choices', 0, 'message', 'content').to_s.strip.presence || query
+    translated = response.dig('choices', 0, 'message', 'content').to_s.strip.presence || query
+    write_cache(query, target_language, translated)
+    translated
   rescue StandardError => e
     Rails.logger.warn "[JIVO] TranslateQueryService failed: #{e.message}, falling back to original query"
     query
@@ -65,5 +73,23 @@ class Jivo::Llm::TranslateQueryService
       Translate the query to #{target_language}.
       Return only the translated query, with no explanation or extra text.
     PROMPT
+  end
+
+  def cache_key(query, target_language)
+    digest = Digest::SHA1.hexdigest("#{query}|#{target_language}")
+    format(JIVO_TRANSLATION_CACHE_KEY, assistant_id: assistant.id, target: target_language.to_s, digest: digest)
+  end
+
+  def read_cache(query, target_language)
+    Redis::Alfred.get(cache_key(query, target_language))
+  rescue StandardError => e
+    Rails.logger.warn "[JIVO] Translation cache read failed: #{e.message}"
+    nil
+  end
+
+  def write_cache(query, target_language, translated)
+    Redis::Alfred.setex(cache_key(query, target_language), translated, CACHE_TTL)
+  rescue StandardError => e
+    Rails.logger.warn "[JIVO] Translation cache write failed: #{e.message}"
   end
 end

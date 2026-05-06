@@ -2318,11 +2318,11 @@ Catches every deferred item from Phases 1-5 plus the originally planned Sections
 - [x] 6.2 V2 Runner Hardening + Observability — COMPLETE (6.2.1–6.2.5 ✅; streaming UI moved to Phase 7.1)
 - [x] 6.3 Knowledge Base Ingestion Polish — COMPLETE (6.3.1 ✅, 6.3.2 ✅, 6.3.3 ✅; 6.3.4 SKIPPED — Captain has no chunker either, JIVO is already at parity)
 - [x] 6.4 Assistant Settings UI Polish — COMPLETE (6.4.1–6.4.4 ✅)
-- [ ] 6.5 Conversation Panel Polish + Inline Rewrite Editor — NOT STARTED
-- [ ] 6.6 Non-Resolution Learning Hardening — NOT STARTED
-- [ ] 6.7 Multimodal + Multi-Language Polish — NOT STARTED
-- [ ] 6.8 Custom Tool UX + Live Tester — NOT STARTED
-- [ ] 6.9 Webhooks + Events + Branding — NOT STARTED
+- [x] 6.5 Conversation Panel Polish + Inline Rewrite Editor — COMPLETE (tool icons, scenario badge, contact memory panel, selection-aware rewrite)
+- [ ] 6.6 Non-Resolution Learning Hardening — DEFERRED (revisit when conversations stop being resolved regularly enough to feed learning; brings inactivity-based learner cron, learn watermark, note dedup, and token-aware budgeting)
+- [x] 6.7 Multimodal + Multi-Language Polish — COMPLETE (translation cache, Whisper language hint + fallback, vision-capable detection + warning + image OCR fallback; per-language FAQ storage skipped — Captain doesn't have it)
+- [ ] 6.8 Custom Tool UX + Live Tester — DEFERRED (revisit when custom tool authoring becomes a frequent task; brings live tool tester, visual `param_schema` editor, scenario drag-drop reorder, and auth rotation reminder)
+- [ ] 6.9 Webhooks + Events + Branding — DEFERRED (revisit when external integrations or self-hosted rebrands are needed; brings realtime push events, inbound/outbound webhook signing, branding audit, and V1→V2 bulk migration)
 - [x] 6.10 Captain-style PDF Ingestion Quality Upgrade — COMPLETE
 - [x] 6.11 FAQ Admin Search — COMPLETE
 
@@ -3095,8 +3095,8 @@ Picks up everything that didn't make Phase 6's polish scope, plus two large feat
 
 **Phase 7 Status Tracker:**
 - [ ] 7.1 Copilot (agent-side AI sidebar with 8 tools) — NOT STARTED
-- [ ] 7.2 Assistant Playground — NOT STARTED
-- [ ] 7.3 Citations & Source Attribution — NOT STARTED
+- [x] 7.2 Assistant Playground — COMPLETE (Captain-style full-page chat with assistant switcher; reuses V2 `AgentRunnerService` for replies; explicit OpenAI-key-missing message; new top-level route `/accounts/:accountId/jivo/:assistantId/playground`)
+- [x] 7.3 Citations & Source Attribution — COMPLETE (V2 path; per-assistant `feature_citation` flag, FAQ tool collects citations on `tool_context.state[:citations]`, runner surfaces them in the result, V2 handler persists on `content_attributes[:citations]`, citation chips render under bot replies linking to the source URL)
 - [ ] 7.4 Usage Limits & Tracking — NOT STARTED
 - [ ] 7.5 FAQ Approval Advanced (inline edit, auto-approve, audit log) — NOT STARTED
 - [ ] 7.6 Resilience (circuit breakers, PDF OCR, ML learning watermark) — NOT STARTED

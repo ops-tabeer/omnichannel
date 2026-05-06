@@ -55,7 +55,7 @@ class Jivo::ConversationV2HandlerService
     if reply == HANDOFF_SIGNAL
       perform_handoff(assistant.handoff_message_text)
     elsif reply.present?
-      create_outgoing_message(reply, scenario_label_for(result['agent_name']))
+      create_outgoing_message(reply, scenario_label_for(result['agent_name']), citations_for(result))
     else
       raise 'JIVO V2 agent returned blank response'
     end
@@ -68,7 +68,18 @@ class Jivo::ConversationV2HandlerService
     assistant.scenarios.enabled.find { |s| s.agent_name == agent_name }&.title
   end
 
-  def create_outgoing_message(content, scenario_label = nil)
+  def citations_for(result)
+    return nil unless assistant.feature_citation_enabled?
+
+    citations = Array(result['citations']).map { |c| c.respond_to?(:with_indifferent_access) ? c.with_indifferent_access : c.stringify_keys }
+    return nil if citations.empty?
+
+    citations.map do |c|
+      { document_id: c['document_id'], external_link: c['external_link'], document_name: c['document_name'], question: c['question'] }
+    end
+  end
+
+  def create_outgoing_message(content, scenario_label = nil, citations = nil)
     attrs = {
       message_type: :outgoing,
       account_id: account.id,
@@ -77,7 +88,10 @@ class Jivo::ConversationV2HandlerService
       content: content,
       private: false
     }
-    attrs[:content_attributes] = { jivo_scenario: scenario_label } if scenario_label.present?
+    content_attrs = {}
+    content_attrs[:jivo_scenario] = scenario_label if scenario_label.present?
+    content_attrs[:citations] = citations if citations.present?
+    attrs[:content_attributes] = content_attrs if content_attrs.any?
     conversation.messages.create!(attrs)
   end
 

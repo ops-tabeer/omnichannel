@@ -2,6 +2,7 @@ require 'net/http'
 
 class Jivo::Messages::AudioTranscriptionService
   WHISPER_MODEL = 'whisper-1'.freeze
+  FALLBACK_MODEL = 'gpt-4o-mini-transcribe'.freeze
   OPENAI_TRANSCRIPTION_URL = 'https://api.openai.com/v1/audio/transcriptions'.freeze
   REQUEST_TIMEOUT = 90
 
@@ -26,7 +27,10 @@ class Jivo::Messages::AudioTranscriptionService
 
   def transcribe
     temp_path = write_audio_to_temp_file
-    post_to_whisper(temp_path)
+    post_to_whisper(temp_path, model: WHISPER_MODEL)
+  rescue StandardError => e
+    Rails.logger.warn "[JIVO] Whisper primary model failed (#{WHISPER_MODEL}): #{e.message}; retrying with #{FALLBACK_MODEL}"
+    post_to_whisper(temp_path, model: FALLBACK_MODEL)
   ensure
     FileUtils.rm_f(temp_path) if temp_path
   end
@@ -45,11 +49,11 @@ class Jivo::Messages::AudioTranscriptionService
     path
   end
 
-  def post_to_whisper(file_path)
+  def post_to_whisper(file_path, model: WHISPER_MODEL)
     uri = URI.parse(OPENAI_TRANSCRIPTION_URL)
     boundary = "JivoAudio-#{SecureRandom.hex(8)}"
 
-    response = whisper_http_client(uri).request(whisper_request(uri, file_path, boundary))
+    response = whisper_http_client(uri).request(whisper_request(uri, file_path, boundary, model))
     raise "Whisper API error #{response.code}: #{response.body}" unless response.is_a?(Net::HTTPSuccess)
 
     JSON.parse(response.body)['text'].to_s.strip
@@ -63,26 +67,35 @@ class Jivo::Messages::AudioTranscriptionService
     http
   end
 
-  def whisper_request(uri, file_path, boundary)
+  def whisper_request(uri, file_path, boundary, model)
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
     request['Authorization'] = "Bearer #{assistant.openai_api_key}"
-    request.body = build_multipart_body(file_path, boundary)
+    request.body = build_multipart_body(file_path, boundary, model)
     request
   end
 
-  def build_multipart_body(file_path, boundary)
+  def build_multipart_body(file_path, boundary, model)
     eol = "\r\n"
     body = +''
     body << "--#{boundary}#{eol}"
     body << %(Content-Disposition: form-data; name="model"#{eol}#{eol})
-    body << "#{WHISPER_MODEL}#{eol}"
+    body << "#{model}#{eol}"
+    if account_language_hint.present?
+      body << "--#{boundary}#{eol}"
+      body << %(Content-Disposition: form-data; name="language"#{eol}#{eol})
+      body << "#{account_language_hint}#{eol}"
+    end
     body << "--#{boundary}#{eol}"
     body << %(Content-Disposition: form-data; name="file"; filename="#{File.basename(file_path)}"#{eol})
     body << "Content-Type: application/octet-stream#{eol}#{eol}"
     body << File.binread(file_path)
     body << "#{eol}--#{boundary}--#{eol}"
     body
+  end
+
+  def account_language_hint
+    @account_language_hint ||= assistant.account.locale.to_s.split('_').first.presence
   end
 
   def save_transcript(text)

@@ -60,6 +60,7 @@ Rails.application.routes.draw do
               member do
                 post :avatar
                 delete :avatar, action: :remove_avatar
+                post :playground
               end
               resources :inboxes, only: [:index, :create, :destroy], param: :inbox_id
               resources :documents, only: [:index, :show, :create, :destroy] do

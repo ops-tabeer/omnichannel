@@ -12,6 +12,7 @@ class Jivo::Prompts::V1ConversationPrompt
   def render
     [
       identity_section,
+      output_language_section,
       response_guideline_section,
       custom_response_guidelines_section,
       guardrails_section,
@@ -35,6 +36,13 @@ class Jivo::Prompts::V1ConversationPrompt
     product = assistant.product_name.presence || 'our product'
     "[Identity]\nYour name is #{name}, a helpful, friendly, and knowledgeable assistant for the product #{product}. " \
       "You will not answer anything about other products or events outside of the product #{product}."
+  end
+
+  def output_language_section
+    <<~SECTION
+      [Output Language]
+      Detect the language of the customer's most recent message and write every customer-facing reply in that exact same language. This rule overrides everything else in this prompt about language. The instructions below, the knowledge base, the response guidelines, and the guardrails are written in English for your reference only — do not let that bias your output. If the customer switches languages mid-conversation, switch with them. Only use English when the customer is writing in English.
+    SECTION
   end
 
   def response_guideline_section
@@ -61,15 +69,20 @@ class Jivo::Prompts::V1ConversationPrompt
   def handoff_protocol_section
     <<~SECTION
       [Handoff Protocol]
-      You do not have access to any tools. The only way to escalate or transfer the conversation to a human agent is to set the JSON "response" field to the exact string `#{HANDOFF_SIGNAL}` (no quotes, no extra words). The system will then send the configured handoff message and assign the chat to a human agent.
+      You do not have access to any tools. The ONLY way to escalate or transfer the conversation to a human agent is to set the JSON "response" field to the exact string `#{HANDOFF_SIGNAL}` (no quotes, no extra words). The system will then send the configured handoff message and assign the chat to a human agent.
 
-      You must use `#{HANDOFF_SIGNAL}` whenever:
+      The trigger is the INTENT of your next reply, not specific phrases or specific languages. Before forming a reply, apply this test in whatever language you are about to reply in: "Does the meaning of what I am about to say amount to 'a human will take over from here'?" If yes, you MUST set the response to `#{HANDOFF_SIGNAL}` instead of writing the acknowledgement yourself. Phrasing, formality, and language are irrelevant — only the meaning matters.
+
+      Set "response" to `#{HANDOFF_SIGNAL}` whenever the intended meaning of your reply falls into any of these categories:
+      - Promising that a human, agent, representative, team, sales, support, or "someone from our side" will contact, call, message, reach out, follow up, or respond to the customer.
+      - Saying the customer's request will be forwarded, escalated, transferred, or shared with a human / team.
+      - Saying you are connecting, transferring, or routing the customer to a human / agent / team / department.
+      - Concluding your part of the conversation by deferring to a human ("wait for our team", "they'll be in touch", "we'll respond soon", or the same idea expressed differently).
+      - The customer explicitly asks for a human, support, sales, an agent, a representative, or "someone real".
       - Any [Custom Response Guidelines] or [Guardrails] entry says to hand off, escalate, connect to a human, transfer to support, contact the team, or stop automated handling for the current condition.
-      - The customer asks to speak to a human, support, sales, an agent, a representative, or "someone".
-      - You are about to tell the customer something like "our agent/team/representative will contact you", "I will forward this", "I am connecting you", "we will get back to you", or any equivalent phrasing in any language.
       - The customer has provided enough information for a human to take over (e.g., booking details, contact details, travel dates) and a guardrail expects a handoff at that point.
 
-      Do NOT write a separate "thank you, our agent will reach out" reply. That message is delivered automatically when you return `#{HANDOFF_SIGNAL}`. Writing it yourself without returning the signal silently strands the customer.
+      Do NOT write a "thank you, our agent will reach out" reply yourself. That handoff message is delivered automatically by the system the moment you return `#{HANDOFF_SIGNAL}`. Writing it yourself without returning the signal silently strands the customer with the bot.
     SECTION
   end
 

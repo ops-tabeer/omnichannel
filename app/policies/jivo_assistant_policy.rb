@@ -27,6 +27,10 @@ class JivoAssistantPolicy < ApplicationPolicy
     @account_user.administrator?
   end
 
+  def playground?
+    @account_user.administrator? || @account_user.agent?
+  end
+
   def rewrite?
     @account_user.administrator? || @account_user.agent?
   end

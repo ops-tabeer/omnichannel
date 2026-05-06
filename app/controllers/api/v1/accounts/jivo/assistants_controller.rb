@@ -35,7 +35,25 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
     render :show
   end
 
+  def playground
+    if @assistant.openai_api_key.blank?
+      render json: { response: I18n.t('jivo.playground.openai_key_missing'), reasoning: 'OpenAI API key not configured' }
+      return
+    end
+
+    response = Jivo::Assistant::AgentRunnerService.new(assistant: @assistant).generate_response(message_history: playground_history)
+    render json: response
+  end
+
   private
+
+  def playground_history
+    Array(params[:message_history]).map { |msg| { role: msg[:role].to_s, content: msg[:content].to_s } }
+                                   .reject { |msg| msg[:content].blank? }
+                                   .tap do |history|
+      history << { role: 'user', content: params[:message_content].to_s } if params[:message_content].present?
+    end
+  end
 
   def assistant
     @assistant = Current.account.jivo_assistants.find(params[:id])
@@ -49,7 +67,7 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
       guardrails: [],
       config: [:openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
-               :idle_reminder_limit, :feature_v2_agent]
+               :idle_reminder_limit, :feature_v2_agent, :feature_citation]
     )
   end
 
