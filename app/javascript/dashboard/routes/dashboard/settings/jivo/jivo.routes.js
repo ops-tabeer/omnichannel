@@ -11,103 +11,87 @@ import Playground from './Playground.vue';
 import AssistantsDispatcher from './AssistantsDispatcher.vue';
 import { frontendURL } from '../../../../helper/URLHelper';
 
+const adminMeta = {
+  permissions: ['administrator'],
+};
+
+const agentMeta = {
+  permissions: ['administrator', 'agent'],
+};
+
 export default {
   routes: [
     {
       path: frontendURL('accounts/:accountId/jivo'),
       name: 'jivo_assistants',
       component: Index,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/new'),
       name: 'jivo_assistant_new',
       component: AssistantEdit,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/custom_tools'),
       name: 'jivo_custom_tools',
       component: CustomTools,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/custom_tools/new'),
       name: 'jivo_custom_tool_new',
       component: CustomToolEdit,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/custom_tools/:id/edit'),
       name: 'jivo_custom_tool_edit',
       component: CustomToolEdit,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/dispatch/:navigationPath'),
       name: 'jivo_assistants_dispatch',
       component: AssistantsDispatcher,
-      meta: {
-        permissions: ['administrator', 'agent'],
-      },
+      meta: agentMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/:assistantId/edit'),
       name: 'jivo_assistant_edit',
       component: AssistantEdit,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/:assistantId/documents'),
       name: 'jivo_documents',
       component: Documents,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/:assistantId/faqs'),
       name: 'jivo_faqs',
       component: Faqs,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/:assistantId/inboxes'),
       name: 'jivo_inboxes',
       component: Inboxes,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/:assistantId/scenarios'),
       name: 'jivo_scenarios',
       component: Scenarios,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/jivo/:assistantId/scenarios/new'),
       name: 'jivo_scenario_new',
       component: ScenarioEdit,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL(
@@ -115,9 +99,7 @@ export default {
       ),
       name: 'jivo_scenario_edit',
       component: ScenarioEdit,
-      meta: {
-        permissions: ['administrator'],
-      },
+      meta: adminMeta,
     },
     {
       path: frontendURL('accounts/:accountId/settings/jivo/:pathMatch(.*)*'),
@@ -130,9 +112,7 @@ export default {
       path: frontendURL('accounts/:accountId/jivo/:assistantId/playground'),
       name: 'jivo_playground',
       component: Playground,
-      meta: {
-        permissions: ['administrator', 'agent'],
-      },
+      meta: agentMeta,
     },
   ],
 };

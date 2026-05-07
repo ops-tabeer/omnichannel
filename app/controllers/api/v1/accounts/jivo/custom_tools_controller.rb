@@ -1,4 +1,6 @@
 class Api::V1::Accounts::Jivo::CustomToolsController < Api::V1::Accounts::BaseController
+  include Jivo::FeatureGated
+
   before_action :current_account
   before_action :check_authorization
   before_action :custom_tool, only: [:show, :update, :destroy]

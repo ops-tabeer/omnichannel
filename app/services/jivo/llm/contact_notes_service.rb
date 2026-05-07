@@ -21,7 +21,7 @@ class Jivo::Llm::ContactNotesService
   end
 
   def generate_notes
-    raise 'OpenAI API key not configured for assistant' if assistant.openai_api_key.blank?
+    raise 'OpenAI API key not configured for assistant' if assistant.effective_openai_api_key.blank?
 
     response = call_openai
     parse_response(response.dig('choices', 0, 'message', 'content'))
@@ -50,7 +50,7 @@ class Jivo::Llm::ContactNotesService
   def openai_request(uri)
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = 'application/json'
-    request['Authorization'] = "Bearer #{assistant.openai_api_key}"
+    request['Authorization'] = "Bearer #{assistant.effective_openai_api_key}"
     request.body = request_body.to_json
     request
   end

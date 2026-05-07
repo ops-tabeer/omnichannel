@@ -22,7 +22,7 @@
 #  index_accounts_on_status  (status)
 #
 
-class Account < ApplicationRecord
+class Account < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # used for single column multi flags
   include FlagShihTzu
   include Reportable
@@ -32,11 +32,27 @@ class Account < ApplicationRecord
   include AccountEmailRateLimitable
 
   def hide_resolve_action
-    custom_attributes['hide_resolve_action'] == true
+    ActiveModel::Type::Boolean.new.cast(custom_attributes['hide_resolve_action'])
   end
 
   def hide_resolve_action=(value)
     self.custom_attributes = custom_attributes.merge('hide_resolve_action' => ActiveModel::Type::Boolean.new.cast(value))
+  end
+
+  def jivo_byo_key_allowed
+    ActiveModel::Type::Boolean.new.cast(custom_attributes['jivo_byo_key_allowed'])
+  end
+
+  def jivo_byo_key_allowed=(value)
+    self.custom_attributes = custom_attributes.merge('jivo_byo_key_allowed' => ActiveModel::Type::Boolean.new.cast(value))
+  end
+
+  def jivo_enabled
+    ActiveModel::Type::Boolean.new.cast(custom_attributes['jivo_enabled'])
+  end
+
+  def jivo_enabled=(value)
+    self.custom_attributes = custom_attributes.merge('jivo_enabled' => ActiveModel::Type::Boolean.new.cast(value))
   end
 
   SETTINGS_PARAMS_SCHEMA = {

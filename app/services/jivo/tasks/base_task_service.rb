@@ -9,7 +9,7 @@ class Jivo::Tasks::BaseTaskService
   end
 
   def perform
-    raise 'OpenAI API key not configured for assistant' if @assistant.openai_api_key.blank?
+    raise 'OpenAI API key not configured for assistant' if @assistant.effective_openai_api_key.blank?
 
     response = call_openai(build_messages)
     build_result(response)
@@ -63,7 +63,7 @@ class Jivo::Tasks::BaseTaskService
   def openai_request(uri, messages)
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = 'application/json'
-    request['Authorization'] = "Bearer #{@assistant.openai_api_key}"
+    request['Authorization'] = "Bearer #{@assistant.effective_openai_api_key}"
     request.body = openai_request_body(messages).to_json
     request
   end

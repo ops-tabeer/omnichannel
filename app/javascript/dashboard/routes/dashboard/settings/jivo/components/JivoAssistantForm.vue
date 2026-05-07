@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
+import { useAccount } from 'dashboard/composables/useAccount';
 import JivoAvatarUploader from './JivoAvatarUploader.vue';
 
 const props = defineProps({
@@ -14,6 +15,11 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'close']);
 const { t } = useI18n();
+const { currentAccount } = useAccount();
+
+const byoKeyAllowed = computed(
+  () => currentAccount.value?.custom_attributes?.jivo_byo_key_allowed === true
+);
 
 const linesToArray = text =>
   text
@@ -150,11 +156,18 @@ const submit = () => {
 
       <div v-show="currentTab === 'ai'" class="space-y-4">
         <Input
+          v-if="byoKeyAllowed"
           v-model="form.config.openai_api_key"
           :label="t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.LABEL')"
           type="password"
           :placeholder="t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.PLACEHOLDER')"
         />
+        <p
+          v-else
+          class="text-xs text-n-slate-11 bg-n-alpha-black2 border border-n-weak rounded-md px-3 py-2"
+        >
+          {{ t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.PLATFORM_KEY_NOTICE') }}
+        </p>
 
         <Input
           v-model="form.config.openai_model"

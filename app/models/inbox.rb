@@ -81,9 +81,8 @@ class Inbox < ApplicationRecord
 
   enum sender_name_type: { friendly: 0, professional: 1 }
 
-  after_destroy :delete_round_robin_agents
-
   before_save :track_auto_reassignment_enabled_since
+  after_destroy :delete_round_robin_agents
 
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
@@ -178,7 +177,7 @@ class Inbox < ApplicationRecord
   end
 
   def active_jivo_assistant?
-    jivo_assistant.present?
+    jivo_assistant.present? && account.jivo_enabled
   end
 
   def inbox_type

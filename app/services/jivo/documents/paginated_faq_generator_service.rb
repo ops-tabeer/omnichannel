@@ -125,7 +125,7 @@ class Jivo::Documents::PaginatedFaqGeneratorService
 
   def client
     @client ||= OpenAI::Client.new(
-      access_token: assistant.openai_api_key,
+      access_token: assistant.effective_openai_api_key,
       log_errors: Rails.env.development?
     )
   end

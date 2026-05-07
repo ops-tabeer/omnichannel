@@ -12,7 +12,7 @@ class Jivo::Messages::AudioTranscriptionService
     cached = attachment.meta&.dig('transcribed_text')
     return cached if cached.present?
     return '' unless attachment.file.attached?
-    raise 'OpenAI API key not configured for assistant' if assistant.openai_api_key.blank?
+    raise 'OpenAI API key not configured for assistant' if assistant.effective_openai_api_key.blank?
 
     transcript = transcribe
     save_transcript(transcript) if transcript.present?
@@ -70,7 +70,7 @@ class Jivo::Messages::AudioTranscriptionService
   def whisper_request(uri, file_path, boundary, model)
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
-    request['Authorization'] = "Bearer #{assistant.openai_api_key}"
+    request['Authorization'] = "Bearer #{assistant.effective_openai_api_key}"
     request.body = build_multipart_body(file_path, boundary, model)
     request
   end

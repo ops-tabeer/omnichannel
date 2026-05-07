@@ -33,11 +33,13 @@ class SuperAdmin::AccountsController < SuperAdmin::ApplicationController
   # empty values into nil values. It uses other APIs such as `resource_class`
   # and `dashboard`:
   #
-  def resource_params
+  def resource_params # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     permitted_params = super
     permitted_params[:limits] = permitted_params[:limits].to_h.compact
     permitted_params[:selected_feature_flags] = params[:enabled_features].keys.map(&:to_sym) if params[:enabled_features].present?
     permitted_params[:hide_resolve_action] = params[:account][:hide_resolve_action] if params[:account]&.key?(:hide_resolve_action)
+    permitted_params[:jivo_enabled] = params[:account][:jivo_enabled] if params[:account]&.key?(:jivo_enabled)
+    permitted_params[:jivo_byo_key_allowed] = params[:account][:jivo_byo_key_allowed] if params[:account]&.key?(:jivo_byo_key_allowed)
     permitted_params
   end
 

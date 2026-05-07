@@ -10,7 +10,7 @@ class Jivo::Messages::ImageOcrService
   def perform
     cached = attachment.meta&.dig('jivo_ocr_text')
     return cached if cached.present?
-    return '' if assistant.openai_api_key.blank?
+    return '' if assistant.effective_openai_api_key.blank?
 
     url = image_url
     return '' if url.blank?
@@ -41,7 +41,7 @@ class Jivo::Messages::ImageOcrService
 
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = 'application/json'
-    request['Authorization'] = "Bearer #{assistant.openai_api_key}"
+    request['Authorization'] = "Bearer #{assistant.effective_openai_api_key}"
     request.body = body_for(url).to_json
 
     response = http.request(request)

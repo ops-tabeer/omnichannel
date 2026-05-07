@@ -55,6 +55,12 @@ class JivoAssistant < ApplicationRecord
     openai_model.presence || 'gpt-4.1-mini'
   end
 
+  def effective_openai_api_key
+    return openai_api_key if account.jivo_byo_key_allowed && openai_api_key.present?
+
+    InstallationConfig.find_by(name: 'JIVO_OPEN_AI_API_KEY')&.value
+  end
+
   def vision_capable?
     NON_VISION_MODEL_PATTERNS.none? { |pattern| pattern.match?(model) }
   end

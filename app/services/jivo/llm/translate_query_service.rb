@@ -13,7 +13,7 @@ class Jivo::Llm::TranslateQueryService
   def translate(query, target_language:)
     return query if query.blank?
     return query if query_in_target_language?(query)
-    return query if assistant.openai_api_key.blank?
+    return query if assistant.effective_openai_api_key.blank?
 
     cached = read_cache(query, target_language)
     return cached if cached.present?
@@ -51,7 +51,7 @@ class Jivo::Llm::TranslateQueryService
 
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = 'application/json'
-    request['Authorization'] = "Bearer #{assistant.openai_api_key}"
+    request['Authorization'] = "Bearer #{assistant.effective_openai_api_key}"
     request.body = {
       model: MODEL,
       messages: [

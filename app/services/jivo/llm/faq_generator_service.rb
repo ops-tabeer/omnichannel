@@ -7,7 +7,7 @@ class Jivo::Llm::FaqGeneratorService
 
   def generate
     return [] if content.blank?
-    raise 'OpenAI API key not configured' if assistant.openai_api_key.blank?
+    raise 'OpenAI API key not configured' if assistant.effective_openai_api_key.blank?
 
     response = call_openai
     parse_faqs(response)
@@ -38,7 +38,7 @@ class Jivo::Llm::FaqGeneratorService
   def openai_request(uri)
     Net::HTTP::Post.new(uri).tap do |request|
       request['Content-Type'] = 'application/json'
-      request['Authorization'] = "Bearer #{assistant.openai_api_key}"
+      request['Authorization'] = "Bearer #{assistant.effective_openai_api_key}"
       request.body = request_body.to_json
     end
   end

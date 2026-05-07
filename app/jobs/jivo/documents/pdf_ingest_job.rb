@@ -30,7 +30,7 @@ class Jivo::Documents::PdfIngestJob < ApplicationJob
   end
 
   def upload_to_openai(document)
-    return if document.jivo_assistant.openai_api_key.blank?
+    return if document.jivo_assistant.effective_openai_api_key.blank?
 
     Jivo::Documents::PdfUploadService.new(document: document).perform
   rescue StandardError => e

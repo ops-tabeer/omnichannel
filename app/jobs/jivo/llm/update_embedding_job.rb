@@ -7,7 +7,7 @@ class Jivo::Llm::UpdateEmbeddingJob < ApplicationJob
     return if record.blank? || content.blank?
 
     assistant = record.jivo_assistant
-    return if assistant.blank? || assistant.openai_api_key.blank?
+    return if assistant.blank? || assistant.effective_openai_api_key.blank?
 
     embedding = Jivo::Llm::EmbeddingService.new(assistant: assistant).get_embedding(content)
     record.update_column(:embedding, embedding) if embedding.present?

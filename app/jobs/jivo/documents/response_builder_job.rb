@@ -28,7 +28,7 @@ class Jivo::Documents::ResponseBuilderJob < ApplicationJob
   end
 
   def processable_assistant?(assistant)
-    assistant.present? && assistant.openai_api_key.present?
+    assistant.present? && assistant.effective_openai_api_key.present?
   end
 
   def generate_faqs(document, assistant)

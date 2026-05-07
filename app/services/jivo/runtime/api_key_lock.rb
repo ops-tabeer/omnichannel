@@ -7,7 +7,7 @@ module Jivo::Runtime::ApiKeyLock
     MUTEX.synchronize do
       previous = snapshot_config
       begin
-        apply(openai_api_key: assistant.openai_api_key, default_model: assistant.model)
+        apply(openai_api_key: assistant.effective_openai_api_key, default_model: assistant.model)
         yield
       ensure
         apply(**previous)

@@ -3097,7 +3097,7 @@ Picks up everything that didn't make Phase 6's polish scope, plus two large feat
 - [ ] 7.1 Copilot (agent-side AI sidebar with 8 tools) — NOT STARTED
 - [x] 7.2 Assistant Playground — COMPLETE (Captain-style full-page chat with assistant switcher; reuses V2 `AgentRunnerService` for replies; explicit OpenAI-key-missing message; new top-level route `/accounts/:accountId/jivo/:assistantId/playground`)
 - [x] 7.3 Citations & Source Attribution — COMPLETE (V2 path; per-assistant `feature_citation` flag, FAQ tool collects citations on `tool_context.state[:citations]`, runner surfaces them in the result, V2 handler persists on `content_attributes[:citations]`, citation chips render under bot replies linking to the source URL)
-- [ ] 7.4 Usage Limits & Tracking — NOT STARTED
+- [ ] 7.4 Usage Limits & Tracking — DEFERRED (PR 2 postponed; implement later via `account.custom_attributes`, not `feature_flags` or new account columns)
 - [ ] 7.5 FAQ Approval Advanced (inline edit, auto-approve, audit log) — NOT STARTED
 - [ ] 7.6 Resilience (circuit breakers, PDF OCR, ML learning watermark) — NOT STARTED
 - [ ] 7.7 Authoring & Editing Polish (dirty-state, rewrite diff, tool versioning) — NOT STARTED
@@ -3242,25 +3242,30 @@ Picks up everything that didn't make Phase 6's polish scope, plus two large feat
 
 ### Sub-Task 7.4: Usage Limits & Tracking
 
-**Status: NOT STARTED**
-**Estimate:** ~3-4 hrs
+**Status: DEFERRED**
+**Estimate:** ~4-6 hrs for MVP when resumed
 
 **Goal:** Track and enforce JIVO usage per account. Maps to Section 17.
 
+**Deferred decision:** PR 2 is intentionally postponed. When resumed, keep the implementation on `account.custom_attributes` (`jivo_responses_usage`, `jivo_responses_limit`, reset metadata) for the same reason as `jivo_enabled` and `jivo_byo_key_allowed`: avoid Chatwoot's saturated `feature_flags` bigint and avoid adding schema for a toggle/limit that is account-specific JIVO configuration.
+
 **Sub-Task Items:**
-1. **Counter increment.** Every successful V2 reply, every copilot reply (7.1), every inline task (rewrite/summarize/etc.) increments `account.jivo_responses_usage` (new column on accounts).
+1. **Counter increment.** Every successful V2 reply, every copilot reply (7.1), every inline task (rewrite/summarize/etc.) increments `account.custom_attributes['jivo_responses_usage']`.
 2. **Monthly reset.** Cron job on the 1st of each month resets the counter (or rolls over, depending on plan).
-3. **Pre-flight limit check.** Before each runner call, check `account.jivo_responses_usage < account.jivo_responses_limit`. If over, gracefully fall back to `bot_handoff!` with a "service temporarily unavailable" message.
+3. **Pre-flight limit check.** Before each runner call, check usage against `account.custom_attributes['jivo_responses_limit']`. If over, gracefully fall back to `bot_handoff!` with a "service temporarily unavailable" message.
 4. **Usage dashboard.** Settings → JIVO → Usage tab showing current month's count, limit, % used, daily breakdown chart.
 5. **Configurable limits per account.** Super Admin sets `jivo_responses_limit` per account.
 
 **Files to create:**
-- `db/migrate/<ts>_add_jivo_usage_columns_to_accounts.rb` — `jivo_responses_usage` integer default 0; `jivo_responses_limit` integer nullable; `jivo_usage_reset_at` timestamp.
 - `app/jobs/jivo/usage/monthly_reset_job.rb`
 - `app/services/jivo/usage/limit_checker.rb`
 - `app/javascript/dashboard/routes/dashboard/settings/jivo/Usage.vue`
 
 **Files to modify:**
+- `app/models/account.rb` — custom-attribute getters/setters for `jivo_responses_usage`, `jivo_responses_limit`, and reset metadata.
+- `app/dashboards/account_dashboard.rb` — Super Admin limit field.
+- `app/controllers/super_admin/accounts_controller.rb` — permit `jivo_responses_limit`.
+- `app/views/api/v1/models/_account.json.jbuilder` — expose usage/limit to the dashboard.
 - `app/services/jivo/conversation_v2_handler_service.rb` — `LimitChecker.allowed?` before running; increment after successful reply.
 - `app/services/jivo/conversation_handler_service.rb` — same for V1 path.
 - `app/services/jivo/tasks/*_service.rb` — increment after each inline task.
@@ -3276,7 +3281,7 @@ Picks up everything that didn't make Phase 6's polish scope, plus two large feat
 
 **Lock-in state:** Per-account quota enforced; usage observable.
 
-**Deferred:** Per-feature breakdown (autopilot vs copilot vs inline tasks) — Phase 8 if billing needs it.
+**Deferred:** Entire PR 2 / 7.4 implementation is postponed. Per-feature breakdown (autopilot vs copilot vs inline tasks) remains Phase 8+ if billing needs it.
 
 ---
 
@@ -3423,6 +3428,167 @@ If picking up:
 1. Same independence rules as Phase 6 — pick whichever sub-task matters most. **7.1 and 7.2 are the biggest wins** (Copilot, Playground) since they unlock entirely new product surfaces. The rest are quality improvements.
 2. Some sub-tasks depend on Phase 6 work: 7.5 builds on 6.1's bulk-actions controller; 7.6's OCR builds on 6.3's PDF pipeline; 7.6's ML watermark builds on 6.6's scheduled learner. If those aren't done yet, those Phase 7 items will need stub versions of the missing dependencies.
 3. Phase 7 has no critical path — none of these block production. They're product expansion, not stability.
+
+---
+
+## Phase 8 — Captain UI Mirror ✅ COMPLETED 2026-05-07
+
+JIVO pages were nested under `/settings/jivo/...` and wrapped in `SettingsLayout` chrome (Captain-era inheritance from Phase 1). Captain itself moved to a top-level `/captain/...` surface long ago. Phase 7.2 (Playground) shipped on Captain-style chrome as a prototype; this phase mirrored the same chrome across **every** JIVO page so the product reads as a peer of Captain in the sidebar, not as a buried settings sub-tree.
+
+**Phase 8 Status Tracker:**
+- [x] 8.A Shared layout components (`JivoPageLayout`, `JivoAssistantSwitcher`) — ✅ COMPLETED
+- [x] 8.B Assistants list at top-level (`/jivo`, sidebar group) — ✅ COMPLETED
+- [x] 8.C Per-assistant pages migrated, dispatcher built, sidebar wired — ✅ COMPLETED
+- [x] 8.C.6 Inboxes page replaces `JivoInboxManager` modal — ✅ COMPLETED
+- [x] 8.D Cleanup (route catch-all redirect, orphan i18n, per-row buttons) — ✅ COMPLETED
+- [x] Production bug fixes (default-slot dialog mount, vue-i18n literal escapes) — ✅ COMPLETED
+
+---
+
+### Sub-Task 8.A: Shared Layout Components
+
+**Status: ✅ COMPLETED**
+
+**Goal:** Extract a Captain-style page wrapper + assistant switcher so every JIVO page renders the same chrome.
+
+**Implemented:**
+- New folder [app/javascript/dashboard/components-next/jivo/layout/](app/javascript/dashboard/components-next/jivo/layout/) holds layout primitives, separate from the existing component grab-bag.
+- [JivoPageLayout.vue](app/javascript/dashboard/components-next/jivo/layout/JivoPageLayout.vue) — Captain-equivalent page chrome. Props: `title`, `description`, `backUrl`, `buttonLabel`, `isFetching`, `isEmpty`, `showAssistantSwitcher`. Slots: `search`, `actions`, `subHeader`, `emptyState`, `body`, plus a default `<slot />`. Emits `click` for the primary header button. Renders inline Spinner when `isFetching` is set.
+- [JivoAssistantSwitcher.vue](app/javascript/dashboard/components-next/jivo/layout/JivoAssistantSwitcher.vue) — moved out of `playground/` into the shared `layout/` folder so any per-assistant page can mount it in the header.
+
+**Lock-in state:** Every JIVO page can now opt into the same header (back arrow + title + description + switcher + primary action button) by mounting `<JivoPageLayout>` instead of `<SettingsLayout>` + bespoke headers.
+
+---
+
+### Sub-Task 8.B: Assistants List at Top-Level
+
+**Status: ✅ COMPLETED**
+
+**Goal:** Promote the JIVO assistant list from `/settings/jivo` to a first-class `/jivo` surface peering with `/captain`.
+
+**Implemented:**
+- New top-level route `/accounts/:accountId/jivo` (route name `jivo_assistants`) renders [Index.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Index.vue).
+- [Index.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Index.vue) rebuilt on `<JivoPageLayout :show-assistant-switcher="false">`. Description moved into the body; loading + empty states handled inline by the layout's `isFetching` / `isEmpty` props.
+- "Custom Tools" header button kept on the list (account-wide entry point).
+- [Sidebar.vue](app/javascript/dashboard/components-next/sidebar/Sidebar.vue) — JIVO removed from the Settings group and given its own top-level **JIVO AI** group adjacent to Captain.
+
+**Lock-in state:** Visiting `/accounts/:id/jivo` lands on the assistant list with full Captain-style chrome. Old bookmarks pointing at `/settings/jivo` continue to work via the redirect added in 8.D.
+
+---
+
+### Sub-Task 8.C: Per-Assistant Pages, Dispatcher, Sidebar Wiring
+
+**Status: ✅ COMPLETED**
+
+**Goal:** Every per-assistant page (Documents, FAQs, Scenarios, Inboxes, Playground, edit forms) renders on `JivoPageLayout`. Sidebar entries deep-link via a dispatcher that remembers the user's last active assistant — same pattern as `enterprise/.../captain/AssistantsIndexPage.vue`.
+
+**Implemented:**
+- **Dispatcher:** new [AssistantsDispatcher.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/AssistantsDispatcher.vue) at `/jivo/dispatch/:navigationPath`. Reads `uiSettings.last_active_jivo_assistant_id`, falls back to the first assistant, then redirects to the requested per-assistant page or back to the list when no assistants exist. Permitted for `['administrator', 'agent']` so the Playground sidebar entry is reachable for agents.
+- **Last-active tracking:** [JivoPageLayout.vue](app/javascript/dashboard/components-next/jivo/layout/JivoPageLayout.vue) watches `route.params.assistantId` and persists `last_active_jivo_assistant_id` via `useUISettings`.
+- **Pages migrated to `JivoPageLayout`:**
+  - List pages (switcher ON, primary action in header, body slot for cards/rows): [Documents.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Documents.vue), [Faqs.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Faqs.vue), [Scenarios.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Scenarios.vue), [Inboxes.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Inboxes.vue).
+  - Focused-form pages (`:show-assistant-switcher="false"`, `:back-url` pointing at the parent list): [AssistantEdit.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/AssistantEdit.vue), [ScenarioEdit.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/ScenarioEdit.vue), [CustomToolEdit.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/CustomToolEdit.vue).
+  - Account-wide page: [CustomTools.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/CustomTools.vue) (`:show-assistant-switcher="false"`).
+- **Routes** ([jivo.routes.js](app/javascript/dashboard/routes/dashboard/settings/jivo/jivo.routes.js)): `/jivo/new`, `/jivo/:id/edit`, `/jivo/:id/{documents,faqs,scenarios,scenarios/new,scenarios/:scenarioId/edit,inboxes,playground}`, `/jivo/custom_tools`, `/jivo/custom_tools/{new,:id/edit}`.
+- **Sidebar children** under JIVO AI in Captain's order: Assistants → FAQs → Documents → Scenarios → Playground → Inboxes → Custom Tools. Assistants and Custom Tools link directly; FAQs/Documents/Scenarios/Playground/Inboxes route through the dispatcher.
+
+**Why a dispatcher instead of "always require an assistant ID in the URL":** sidebar entries need stable URLs that don't bake in a specific assistant ID. Captain solves this with `AssistantsIndexPage` reading the last-active assistant from UI settings; mirroring that pattern lets a user click "Playground" once, get pinned to assistant A, and have every subsequent click on "Documents"/"FAQs"/etc. land on the same assistant without re-selection.
+
+**Lock-in state:** Every per-assistant page reads as a sibling of its peers — same header, same switcher, same back arrow. Sidebar deep links work without forcing the user to pick an assistant first.
+
+#### 8.C.6 — Inboxes Page Replaces `JivoInboxManager` Modal
+
+**Status: ✅ COMPLETED**
+
+**Goal:** The legacy `JivoInboxManager` modal didn't fit the page-layout pattern. Replace with a proper per-assistant page.
+
+**Implemented:**
+- New [Inboxes.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Inboxes.vue) on `JivoPageLayout`. Header primary button **"Connect Inbox"** opens a dialog listing unattached inboxes. Each row exposes a per-row **"Disconnect"** with confirm dialog.
+- Old `app/javascript/dashboard/routes/dashboard/settings/jivo/components/JivoInboxManager.vue` deleted.
+- [Index.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Index.vue)'s per-row "Inboxes" button now navigates to the page instead of opening the legacy modal — consistent with how the other per-assistant nav works after the per-row cleanup below.
+
+**Per-row cleanup on `Index.vue`:** Documents/FAQs/Scenarios/Playground/Inboxes navigation buttons removed from each assistant row (sidebar handles those now). Each row keeps only **Edit** (pen) + **Delete** (trash). The "Custom Tools" header button stays on the list.
+
+**Why remove per-row navigation:** with the new sidebar exposing every per-assistant page through the dispatcher, the row buttons were redundant chrome — five buttons per row that all did "go to assistant X's Y page" when the sidebar already does that for the active assistant. Trimming to Edit/Delete makes the list scannable again.
+
+---
+
+### Sub-Task 8.D: Cleanup
+
+**Status: ✅ COMPLETED**
+
+**Goal:** Retire the legacy `/settings/jivo` block, redirect old bookmarks, and prune i18n keys for now-removed UI.
+
+**Implemented:**
+- Whole `SettingsWrapper`-wrapped block in [jivo.routes.js](app/javascript/dashboard/routes/dashboard/settings/jivo/jivo.routes.js) deleted. Replaced with a single catch-all child redirect `path: '/settings/jivo/:pathMatch(.*)*' → name: 'jivo_assistants'`. Old `/accounts/:id/settings/jivo/<anything>` URLs redirect to the new top-level list — bookmarks survive the move without per-route shimming.
+- Unused `SettingsWrapper` import removed.
+- **17 orphan i18n keys removed** from [jivo.json](app/javascript/dashboard/i18n/locale/en/jivo.json):
+  - 4 `*.BACK` keys (DOCUMENTS, FAQS, SCENARIOS, PLAYGROUND) — back buttons replaced by `JivoPageLayout`'s back arrow.
+  - The `JIVO.ASSISTANTS.INBOX_MANAGER` block — modal replaced by 8.C.6's page.
+  - `*.TITLE` / `*.DESCRIPTION` / `*.LOADING` per migrated page — those values now live on the page-level i18n keys consumed by `JivoPageLayout`.
+  - `JIVO.ASSISTANTS.LOADING` — redundant; layout handles loading state.
+  - 5 navigation labels `JIVO.ASSISTANTS.{DOCUMENTS,FAQS,SCENARIOS,PLAYGROUND,INBOXES}` — removed after the per-row buttons were dropped from `Index.vue`.
+
+**Why a single catch-all redirect over per-route redirects:** vue-router's `pathMatch` syntax lets one entry collapse what would otherwise be a dozen redirect rules. Old bookmarks land on the new list rather than 404, which is a softer UX than fan-out 1:1 redirects (some old paths no longer have direct equivalents — e.g. the "Inboxes" modal — so landing on the list is the safer default).
+
+**Lock-in state:** No legacy `/settings/jivo/...` route definitions remain. i18n is in sync with the rendered surface.
+
+---
+
+### Production Bug Fixes (during dev verification)
+
+Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were caused by Phase 8's structural changes interacting with existing components and were fixed before the phase was declared complete.
+
+**Bug 1 — Dialogs never opened on empty state.**
+- Symptom: on a fresh dev DB, clicking "Add Document" / "New FAQ" / "Connect Inbox" / "New Custom Tool" silently no-oped. Reproduced consistently when `isEmpty === true`.
+- Root cause: `JivoPageLayout.vue`'s `<slot name="body" />` lives inside a `v-else` chain (after `isFetching` and `isEmpty`). With `isEmpty` true, the body slot never mounted → the `<Dialog>` refs declared inside `#body` were `null` → button-click handlers that called `dialogRef.value.open()` were no-ops.
+- Fix: added a default `<slot />` to `JivoPageLayout` that always mounts regardless of `isFetching` / `isEmpty`, then moved every `<Dialog>` out of `#body` into the default slot. Affected: Documents, Faqs, Inboxes, CustomTools, Scenarios.
+- Commit: [`abc7606d27`](https://github.com/) — "fix(jivo): keep dialogs mounted when page body is in empty state".
+
+**Bug 2 — Custom Tool form rendered blank.**
+- Symptom: opening the custom-tool form crashed in the console with vue-i18n's "Not allowed nest placeholder" error on five strings.
+- Root cause: those five strings under `JIVO.CUSTOM_TOOLS.FORM.*` document the JIVO custom-tool variable syntax, which uses literal `{{var}}` patterns. vue-i18n parses `{` as a placeholder delimiter, so `{{order_id}}` looked like a nested placeholder.
+- Fix: wrap the literal braces in vue-i18n's literal-interpolation form, e.g. `{'{{'}order_id{'}}'}`, so vue-i18n emits the literal characters instead of attempting placeholder substitution.
+- Commit: [`bcabc47052`](https://github.com/) — "Update jivo.json".
+
+**Why these survived initial QA:** both are conditional on state that the seeded dev fixture skipped (Bug 1 needs zero records of a given type; Bug 2 needs the custom-tool form to actually render). The dev VPS deploy with a fresh DB exposed both within the first verification pass — exactly the kind of issue staging exists to catch.
+
+---
+
+### Phase 8 Handoff Notes
+
+- All seven JIVO sidebar entries route correctly: Assistants and Custom Tools link directly; FAQs/Documents/Scenarios/Playground/Inboxes route through the dispatcher.
+- Old bookmarks pointing at `/accounts/:id/settings/jivo/...` still work — they redirect to `jivo_assistants`.
+- The `last_active_jivo_assistant_id` UI setting is the source of truth for "which assistant should sidebar links default to." Cleared when an account has no assistants.
+- Phase 8 didn't touch any backend code — no controller, route, or model changes. It's purely a frontend chrome rework + the per-assistant Inboxes page (which reuses existing inbox attach/detach endpoints).
+
+**Verification (post-deploy):**
+1. Hard reload `https://dev-chat.orbitechsol.com`.
+2. Sidebar **JIVO AI** → 7 children in Captain order.
+3. Click each child → routes through dispatcher (or directly for Assistants / Custom Tools) → page renders with switcher in header.
+4. On a fresh assistant (no records): clicking "Add Document" / "New FAQ" / "Connect Inbox" / "New Custom Tool" → dialog opens (or navigates for Custom Tool).
+5. Old `/accounts/:id/settings/jivo/<anything>` URLs redirect to the new top-level paths.
+
+**Files touched:**
+- [app/javascript/dashboard/components-next/jivo/layout/JivoPageLayout.vue](app/javascript/dashboard/components-next/jivo/layout/JivoPageLayout.vue)
+- [app/javascript/dashboard/components-next/jivo/layout/JivoAssistantSwitcher.vue](app/javascript/dashboard/components-next/jivo/layout/JivoAssistantSwitcher.vue) (moved from `playground/`)
+- [app/javascript/dashboard/components-next/sidebar/Sidebar.vue](app/javascript/dashboard/components-next/sidebar/Sidebar.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/AssistantEdit.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/AssistantEdit.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/AssistantsDispatcher.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/AssistantsDispatcher.vue) (new)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/CustomToolEdit.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/CustomToolEdit.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/CustomTools.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/CustomTools.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/Documents.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Documents.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/Faqs.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Faqs.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/Inboxes.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Inboxes.vue) (new)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/Index.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Index.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/Playground.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Playground.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/ScenarioEdit.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/ScenarioEdit.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/Scenarios.vue](app/javascript/dashboard/routes/dashboard/settings/jivo/Scenarios.vue)
+- [app/javascript/dashboard/routes/dashboard/settings/jivo/jivo.routes.js](app/javascript/dashboard/routes/dashboard/settings/jivo/jivo.routes.js)
+- `app/javascript/dashboard/routes/dashboard/settings/jivo/components/JivoInboxManager.vue` (deleted)
+- [app/javascript/dashboard/i18n/locale/en/jivo.json](app/javascript/dashboard/i18n/locale/en/jivo.json)
+
+**Deferred:** none — Phase 8 was scope-complete by definition (mirror Captain's chrome). Future polish (e.g. animated page transitions between sidebar entries, breadcrumb history) can land as Phase 9 product-level work if/when it matters.
 
 ---
 

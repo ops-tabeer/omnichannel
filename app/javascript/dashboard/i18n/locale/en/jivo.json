@@ -1,5 +1,10 @@
 {
   "JIVO": {
+    "NOT_ENABLED": {
+      "TITLE": "JIVO AI is not enabled",
+      "DESCRIPTION": "JIVO AI is not enabled for this account.",
+      "ASK_ADMIN": "Contact your administrator to enable JIVO AI."
+    },
     "SIDEBAR": {
       "LABEL": "JIVO AI",
       "ASSISTANTS": "Assistants",
@@ -47,7 +52,8 @@
         },
         "OPENAI_API_KEY": {
           "LABEL": "OpenAI API Key",
-          "PLACEHOLDER": "sk-..."
+          "PLACEHOLDER": "sk-...",
+          "PLATFORM_KEY_NOTICE": "This account uses the platform-provided OpenAI key. Per-assistant key configuration is disabled. Contact your administrator to change this."
         },
         "OPENAI_MODEL": {
           "LABEL": "OpenAI Model",

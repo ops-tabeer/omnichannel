@@ -4,10 +4,12 @@ import { OnClickOutside } from '@vueuse/components';
 import { useRoute } from 'vue-router';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useAccount } from 'dashboard/composables/useAccount';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import BackButton from 'dashboard/components/widgets/BackButton.vue';
 import JivoAssistantSwitcher from './JivoAssistantSwitcher.vue';
+import JivoNotEnabled from './JivoNotEnabled.vue';
 
 defineProps({
   headerTitle: {
@@ -40,6 +42,11 @@ defineEmits(['click']);
 
 const route = useRoute();
 const { uiSettings, updateUISettings } = useUISettings();
+const { currentAccount } = useAccount();
+
+const featureNotEnabled = computed(
+  () => currentAccount.value?.custom_attributes?.jivo_enabled !== true
+);
 
 const showSwitcherDropdown = ref(false);
 
@@ -86,7 +93,10 @@ watch(
         >
           <div class="flex gap-3 items-center">
             <BackButton v-if="backUrl" :back-url="backUrl" />
-            <div v-if="showAssistantSwitcher" class="flex items-center gap-2">
+            <div
+              v-if="showAssistantSwitcher && !featureNotEnabled"
+              class="flex items-center gap-2"
+            >
               <span
                 v-if="!isFetchingAssistants"
                 class="text-xl font-medium truncate text-n-slate-12"
@@ -123,7 +133,7 @@ watch(
               </span>
             </div>
           </div>
-          <div class="flex gap-2 items-center">
+          <div v-if="!featureNotEnabled" class="flex gap-2 items-center">
             <slot name="search" />
             <slot name="actions" />
             <Button
@@ -140,23 +150,30 @@ watch(
     </header>
     <main class="flex-1 px-6 overflow-y-auto">
       <div class="w-full max-w-[60rem] h-full mx-auto py-4">
-        <div
-          v-if="isFetching"
-          class="flex items-center justify-center py-10 text-n-slate-11"
-        >
-          <Spinner />
+        <div v-if="featureNotEnabled">
+          <slot name="paywall">
+            <JivoNotEnabled />
+          </slot>
         </div>
-        <div v-else-if="isEmpty">
-          <slot name="emptyState" />
-        </div>
-        <slot v-else name="body" />
-        <!--
-          Default slot is mounted regardless of fetching/empty state. Use it
-          for elements that must always exist in the DOM (e.g. <Dialog> refs
-          that the page opens via a button in the header before any data is
-          loaded).
-        -->
-        <slot />
+        <template v-else>
+          <div
+            v-if="isFetching"
+            class="flex items-center justify-center py-10 text-n-slate-11"
+          >
+            <Spinner />
+          </div>
+          <div v-else-if="isEmpty">
+            <slot name="emptyState" />
+          </div>
+          <slot v-else name="body" />
+          <!--
+            Default slot is mounted regardless of fetching/empty state. Use it
+            for elements that must always exist in the DOM (e.g. <Dialog> refs
+            that the page opens via a button in the header before any data is
+            loaded).
+          -->
+          <slot />
+        </template>
       </div>
     </main>
   </section>

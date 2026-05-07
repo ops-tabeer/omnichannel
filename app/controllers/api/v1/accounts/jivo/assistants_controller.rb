@@ -1,4 +1,6 @@
 class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseController
+  include Jivo::FeatureGated
+
   before_action :current_account
   before_action :check_authorization
   before_action :assistant, except: [:index, :create]
@@ -36,7 +38,7 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
   end
 
   def playground
-    if @assistant.openai_api_key.blank?
+    if @assistant.effective_openai_api_key.blank?
       render json: { response: I18n.t('jivo.playground.openai_key_missing'), reasoning: 'OpenAI API key not configured' }
       return
     end
@@ -60,7 +62,7 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
   end
 
   def permitted_params
-    params.require(:assistant).permit(
+    attrs = params.require(:assistant).permit(
       :name,
       :description,
       response_guidelines: [],
@@ -69,6 +71,8 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
                :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
                :idle_reminder_limit, :feature_v2_agent, :feature_citation]
     )
+    attrs[:config]&.delete(:openai_api_key) unless Current.account.jivo_byo_key_allowed
+    attrs
   end
 
   def check_authorization
