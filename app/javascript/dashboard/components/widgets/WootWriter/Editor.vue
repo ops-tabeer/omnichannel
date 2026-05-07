@@ -23,6 +23,7 @@ import { useEmitter } from 'dashboard/composables/emitter';
 import { useI18n } from 'vue-i18n';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useCaptain } from 'dashboard/composables/useCaptain';
+import { useConfig } from 'dashboard/composables/useConfig';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import { setEditorSelection } from 'dashboard/composables/useEditorSelection';
 import { useTrack } from 'dashboard/composables';
@@ -118,6 +119,11 @@ const { t } = useI18n();
 const store = useStore();
 const currentChat = useMapGetter('getSelectedChat');
 const { captainTasksEnabled } = useCaptain();
+const { isEnterprise } = useConfig();
+
+const isCaptainAvailable = computed(
+  () => isEnterprise && captainTasksEnabled.value
+);
 
 const jivoTasksEnabled = computed(() => {
   const inboxId = currentChat.value?.inbox_id;
@@ -144,7 +150,7 @@ const editorSchema = computed(() => {
     : effectiveChannelType.value;
   const formatting = getFormattingForEditor(
     formatType,
-    captainTasksEnabled.value,
+    isCaptainAvailable.value,
     jivoTasksEnabled.value
   );
   return buildMessageSchema(formatting.marks, formatting.nodes);
@@ -156,7 +162,7 @@ const editorMenuOptions = computed(() => {
     : effectiveChannelType.value || DEFAULT_FORMATTING;
   const formatting = getFormattingForEditor(
     formatType,
-    captainTasksEnabled.value,
+    isCaptainAvailable.value,
     jivoTasksEnabled.value
   );
 
@@ -909,7 +915,7 @@ useEmitter(BUS_EVENTS.REPLACE_RICH_EDITOR_SELECTION, replaceSelectionInEditor);
       @select-tool="content => insertSpecialContent('tool', content)"
     />
     <CopilotMenuBar
-      v-if="showSelectionMenu && captainTasksEnabled"
+      v-if="showSelectionMenu && isCaptainAvailable"
       v-on-click-outside="handleClickOutside"
       :has-selection="isTextSelected"
       :show-selection-menu="showSelectionMenu"

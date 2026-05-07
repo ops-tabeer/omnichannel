@@ -10,34 +10,32 @@ class Jivo::Tasks::ReplySuggestionService < Jivo::Tasks::BaseTaskService
   def build_messages
     [
       { role: 'system', content: system_prompt },
-      { role: 'user', content: conversation_text }
+      { role: 'user', content: formatted_conversation }
     ]
   end
 
   private
 
   def system_prompt
-    agent_name = @agent&.name.presence || 'a support agent'
-    channel_type = @conversation.inbox.channel_type.to_s.split('::').last
-
-    <<~PROMPT
-      You are #{agent_name}, drafting a reply for a customer support agent on #{channel_type}.
-
-      Read the conversation and draft the next reply the agent should send to the customer.
-
-      Guidelines:
-      - Match the language the customer is using
-      - Keep it natural and conversational, 1-3 sentences
-      - Be professional but warm
-      - Address the customer's most recent question or concern
-      - Don't add greetings if the conversation is already in progress
-      - Don't sign off with "Best regards" or signatures
-
-      Output ONLY the suggested reply text — no preamble, no quotes, no labels.
-    PROMPT
+    template = prompt_from_file('reply')
+    render_liquid_template(template, prompt_variables)
   end
 
-  def conversation_text
+  def prompt_variables
+    {
+      'channel_type' => @conversation.inbox.channel_type.to_s,
+      'agent_name' => @agent&.name.presence || 'a support agent',
+      'agent_signature' => @agent&.message_signature.presence
+    }
+  end
+
+  def formatted_conversation
+    LlmFormatter::ConversationLlmFormatter.new(@conversation).format(token_limit: MAX_INPUT_LENGTH)
+  rescue StandardError
+    fallback_conversation_text
+  end
+
+  def fallback_conversation_text
     messages = @conversation.messages
                             .where(message_type: [:incoming, :outgoing], private: false)
                             .order(:created_at)

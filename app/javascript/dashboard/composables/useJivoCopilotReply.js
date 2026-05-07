@@ -156,10 +156,29 @@ export function useJivoCopilotReply() {
    */
   async function execute(action, data) {
     if (action === 'ask_copilot') {
-      updateUISettings({
-        is_contact_sidebar_open: false,
-        is_copilot_panel_open: true,
-      });
+      // On enterprise instances, open the copilot sidebar panel.
+      // On non-enterprise, fall back to generating a reply suggestion inline.
+      const config = window.chatwootConfig || {};
+      const isEnterprise = config.isEnterprise === 'true';
+      if (isEnterprise) {
+        updateUISettings({
+          is_contact_sidebar_open: false,
+          is_copilot_panel_open: true,
+        });
+        return;
+      }
+      // eslint-disable-next-line no-param-reassign
+      action = 'reply_suggestion';
+    }
+
+    if (action === 'learn_from_conversation') {
+      try {
+        await JivoTasksAPI.learnFromConversation({
+          conversationDisplayId: conversationId.value,
+        });
+      } catch {
+        // silently fail
+      }
       return;
     }
 

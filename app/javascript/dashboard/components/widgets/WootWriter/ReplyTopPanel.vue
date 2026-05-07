@@ -6,6 +6,7 @@ import { useTrack } from 'dashboard/composables';
 import { vOnClickOutside } from '@vueuse/components';
 import { REPLY_EDITOR_MODES, CHAR_LENGTH_WARNING } from './constants';
 import { CAPTAIN_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
+import { useConfig } from 'dashboard/composables/useConfig';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import EditorModeToggle from './EditorModeToggle.vue';
 import CopilotMenuBar from './CopilotMenuBar.vue';
@@ -82,6 +83,10 @@ export default {
     };
 
     const { captainTasksEnabled } = useCaptain();
+    const { isEnterprise } = useConfig();
+    const isCaptainAvailable = computed(
+      () => isEnterprise && captainTasksEnabled.value
+    );
     const showCopilotMenu = ref(false);
 
     const handleCopilotAction = actionKey => {
@@ -141,7 +146,7 @@ export default {
     useKeyboardEvents(keyboardEvents);
 
     const hasAnyAIEnabled = computed(
-      () => captainTasksEnabled.value || jivoTasksEnabled.value
+      () => isCaptainAvailable.value || jivoTasksEnabled.value
     );
 
     return {
@@ -149,7 +154,7 @@ export default {
       handleReplyClick,
       handleNoteClick,
       REPLY_EDITOR_MODES,
-      captainTasksEnabled,
+      isCaptainAvailable,
       handleCopilotAction,
       showCopilotMenu,
       toggleCopilotMenu,
@@ -203,7 +208,7 @@ export default {
       </div>
     </div>
     <div v-if="hasAnyAIEnabled" class="flex items-center gap-2">
-      <div v-if="captainTasksEnabled" class="relative">
+      <div v-if="isCaptainAvailable" class="relative">
         <NextButton
           ghost
           :disabled="disabled || isEditorDisabled"

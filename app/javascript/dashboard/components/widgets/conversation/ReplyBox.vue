@@ -1372,6 +1372,7 @@ export default {
           @toggle-variables-menu="toggleVariablesMenu"
           @clear-selection="clearEditorSelection"
           @execute-copilot-action="executeCopilotAction"
+          @execute-jivo-copilot-action="executeJivoCopilotAction"
         />
 
         <QuotedEmailPreview

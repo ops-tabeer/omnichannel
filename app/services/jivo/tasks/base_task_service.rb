@@ -42,6 +42,14 @@ class Jivo::Tasks::BaseTaskService
     false
   end
 
+  def prompt_from_file(file_name)
+    Rails.root.join('lib/integrations/jivo/jivo_prompts', "#{file_name}.liquid").read
+  end
+
+  def render_liquid_template(template_content, variables = {})
+    Liquid::Template.parse(template_content).render(variables)
+  end
+
   private
 
   def call_openai(messages)

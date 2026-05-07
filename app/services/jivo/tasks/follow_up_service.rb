@@ -77,24 +77,23 @@ class Jivo::Tasks::FollowUpService < Jivo::Tasks::BaseTaskService
 
   def system_prompt
     <<~PROMPT
-      You are a writing assistant helping refine a previous output. The original task was: #{event_description}.
-
-      The user is now giving you feedback to refine your previous response. Apply their feedback while staying true to the original task and context.
-
-      Output ONLY the refined text — no preamble, no explanations.
+      You just performed a #{event_description} action for a customer support agent.
+      Your job now is to help them refine the result based on their feedback.
+      Be concise and focused on their specific request.
+      Output only the reply, no preamble, tags, or explanation.
     PROMPT
   end
 
   def event_description
     case event_name
-    when 'fix_spelling_grammar' then 'fix spelling and grammar'
-    when 'improve' then 'improve a written message'
+    when 'fix_spelling_grammar' then 'spelling and grammar correction'
+    when 'improve' then 'message improvement'
     when 'casual', 'professional', 'friendly', 'confident', 'straightforward'
-      "rewrite a message in a #{event_name} tone"
-    when 'summarize' then 'summarize a conversation'
-    when 'reply_suggestion' then 'suggest a reply for an agent'
-    when 'label_suggestion' then 'suggest labels for a conversation'
-    else 'process text'
+      "tone rewrite (#{event_name})"
+    when 'summarize' then 'conversation summary'
+    when 'reply_suggestion' then 'reply suggestion'
+    when 'label_suggestion' then 'label suggestion'
+    else event_name
     end
   end
 end

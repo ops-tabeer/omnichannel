@@ -41,7 +41,7 @@ class Jivo::Tasks::RewriteService < Jivo::Tasks::BaseTaskService
   def system_prompt
     case @operation
     when 'fix_spelling_grammar'
-      fix_spelling_grammar_prompt
+      prompt_from_file('fix_spelling_grammar')
     when 'improve'
       improve_prompt
     when *TONE_OPERATIONS
@@ -49,30 +49,29 @@ class Jivo::Tasks::RewriteService < Jivo::Tasks::BaseTaskService
     end
   end
 
-  def fix_spelling_grammar_prompt
-    <<~PROMPT
-      You are a writing assistant. Fix only the spelling and grammar of the user message.
-      Preserve the meaning, tone, and style.
-      Output ONLY the corrected text without any preamble or explanation.
-    PROMPT
-  end
-
   def improve_prompt
-    context = conversation_context_block
-    <<~PROMPT
-      You are a writing assistant. Improve the clarity, structure, and flow of the user message while preserving its meaning and tone. Use the conversation context if relevant. Output ONLY the improved message without any preamble or explanation.
-
-      #{context}
-    PROMPT
+    template = prompt_from_file('improve')
+    render_liquid_template(template, {
+                             'conversation_context' => conversation_context_text,
+                             'draft_message' => @content
+                           })
   end
 
   def tone_prompt
-    <<~PROMPT
-      You are a writing assistant. Rewrite the user message in a #{@operation} tone. Preserve the meaning. Do not add information that is not in the original. Output ONLY the rewritten message without any preamble or explanation.
-    PROMPT
+    template = prompt_from_file('tone_rewrite')
+    render_liquid_template(template, 'tone' => @operation)
   end
 
-  def conversation_context_block
+  def conversation_context_text
+    return '' if @conversation.blank?
+
+    @conversation.to_llm_text(include_contact_details: true)
+  rescue StandardError
+    # Fallback to basic formatting if to_llm_text is not available
+    fallback_conversation_context
+  end
+
+  def fallback_conversation_context
     return '' if @conversation.blank?
 
     history = @conversation.messages
