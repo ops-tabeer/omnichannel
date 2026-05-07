@@ -53,6 +53,8 @@
         "OPENAI_API_KEY": {
           "LABEL": "OpenAI API Key",
           "PLACEHOLDER": "sk-...",
+          "CONFIGURED_PLACEHOLDER": "Leave blank to keep the existing key",
+          "CONFIGURED_NOTICE": "An OpenAI key is already configured. Leave this field blank to keep it, or enter a new key to replace it.",
           "PLATFORM_KEY_NOTICE": "This account uses the platform-provided OpenAI key. Per-assistant key configuration is disabled. Contact your administrator to change this."
         },
         "OPENAI_MODEL": {

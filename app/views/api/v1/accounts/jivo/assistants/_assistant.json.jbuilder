@@ -1,7 +1,9 @@
 json.id resource.id
 json.name resource.name
 json.description resource.description
-json.config resource.config
+json.config resource.config.except('openai_api_key').merge(
+  'openai_api_key_configured' => resource.openai_api_key.present?
+)
 json.response_guidelines Array(resource.response_guidelines)
 json.guardrails Array(resource.guardrails)
 json.available_tools resource.available_agent_tools

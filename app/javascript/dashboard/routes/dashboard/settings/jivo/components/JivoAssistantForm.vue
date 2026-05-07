@@ -20,6 +20,9 @@ const { currentAccount } = useAccount();
 const byoKeyAllowed = computed(
   () => currentAccount.value?.custom_attributes?.jivo_byo_key_allowed === true
 );
+const openAIKeyConfigured = computed(
+  () => props.assistant.config?.openai_api_key_configured === true
+);
 
 const linesToArray = text =>
   text
@@ -155,13 +158,23 @@ const submit = () => {
       </div>
 
       <div v-show="currentTab === 'ai'" class="space-y-4">
-        <Input
-          v-if="byoKeyAllowed"
-          v-model="form.config.openai_api_key"
-          :label="t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.LABEL')"
-          type="password"
-          :placeholder="t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.PLACEHOLDER')"
-        />
+        <template v-if="byoKeyAllowed">
+          <Input
+            v-model="form.config.openai_api_key"
+            :label="t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.LABEL')"
+            type="password"
+            :placeholder="
+              openAIKeyConfigured
+                ? t(
+                    'JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.CONFIGURED_PLACEHOLDER'
+                  )
+                : t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.PLACEHOLDER')
+            "
+          />
+          <p v-if="openAIKeyConfigured" class="text-xs text-n-slate-11">
+            {{ t('JIVO.ASSISTANTS.FORM.OPENAI_API_KEY.CONFIGURED_NOTICE') }}
+          </p>
+        </template>
         <p
           v-else
           class="text-xs text-n-slate-11 bg-n-alpha-black2 border border-n-weak rounded-md px-3 py-2"
