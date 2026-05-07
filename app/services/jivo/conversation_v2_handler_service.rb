@@ -5,6 +5,7 @@ class Jivo::ConversationV2HandlerService
   pattr_initialize [:conversation!, :assistant!]
 
   def perform
+    enrich_contact
     history = build_message_history
     result = Jivo::Assistant::AgentRunnerService.new(
       assistant: assistant,
@@ -21,6 +22,10 @@ class Jivo::ConversationV2HandlerService
   private
 
   delegate :account, :inbox, to: :conversation
+
+  def enrich_contact
+    Jivo::ContactEnrichmentService.new(conversation: conversation, assistant: assistant).perform
+  end
 
   def build_message_history
     conversation.messages

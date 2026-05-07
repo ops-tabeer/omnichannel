@@ -9,6 +9,7 @@ class Jivo::ConversationHandlerService
   def perform
     return Jivo::ConversationV2HandlerService.new(conversation: conversation, assistant: assistant).perform if assistant.feature_v2_agent_enabled?
 
+    enrich_contact
     @knowledge_context = retrieve_knowledge_context
     raw_response = call_openai(build_messages)
     process_response(raw_response)
@@ -21,6 +22,10 @@ class Jivo::ConversationHandlerService
   private
 
   delegate :account, :inbox, to: :conversation
+
+  def enrich_contact
+    Jivo::ContactEnrichmentService.new(conversation: conversation, assistant: assistant).perform
+  end
 
   def retrieve_knowledge_context
     Jivo::Knowledge::FaqContextService.new(
@@ -77,11 +82,21 @@ class Jivo::ConversationHandlerService
     raise 'OpenAI API key not configured' if assistant.effective_openai_api_key.blank?
 
     uri = URI.parse(OPENAI_API_URL)
+    response = openai_http_client(uri).request(openai_request(uri, messages))
+    raise "OpenAI API error #{response.code}: #{response.body}" unless response.is_a?(Net::HTTPSuccess)
+
+    JSON.parse(response.body)
+  end
+
+  def openai_http_client(uri)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     http.open_timeout = 10
     http.read_timeout = REQUEST_TIMEOUT
+    http
+  end
 
+  def openai_request(uri, messages)
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = 'application/json'
     request['Authorization'] = "Bearer #{assistant.effective_openai_api_key}"
@@ -91,11 +106,7 @@ class Jivo::ConversationHandlerService
       response_format: { type: 'json_object' },
       temperature: assistant.temperature_value
     }.to_json
-
-    response = http.request(request)
-    raise "OpenAI API error #{response.code}: #{response.body}" unless response.is_a?(Net::HTTPSuccess)
-
-    JSON.parse(response.body)
+    request
   end
 
   def process_response(raw_response)
