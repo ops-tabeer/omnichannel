@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: SSH to VPS and run deploy script
+        id: deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEV_VPS_HOST }}
@@ -24,3 +25,50 @@ jobs:
           script_stop: true
           script: |
             /opt/chatwoot-dev/infra/deploy-dev.sh
+
+      - name: Notify on success
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        continue-on-error: true
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.NOTIFY_SMTP_USERNAME }}
+          password: ${{ secrets.NOTIFY_SMTP_PASSWORD }}
+          from: Dev Deploy <${{ secrets.NOTIFY_SMTP_USERNAME }}>
+          to: ${{ secrets.NOTIFY_TO }}
+          subject: "[dev-chat] Deploy succeeded — ${{ github.event.head_commit.message || github.ref_name }}"
+          body: |
+            Dev deploy completed successfully.
+
+            URL:      https://dev-chat.orbitechsol.com
+            Branch:   ${{ github.ref_name }}
+            Commit:   ${{ github.sha }}
+            Author:   ${{ github.event.head_commit.author.name || github.actor }}
+            Message:  ${{ github.event.head_commit.message || 'manual run' }}
+
+            Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Notify on failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        continue-on-error: true
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.NOTIFY_SMTP_USERNAME }}
+          password: ${{ secrets.NOTIFY_SMTP_PASSWORD }}
+          from: Dev Deploy <${{ secrets.NOTIFY_SMTP_USERNAME }}>
+          to: ${{ secrets.NOTIFY_TO }}
+          subject: "[dev-chat] Deploy FAILED — ${{ github.event.head_commit.message || github.ref_name }}"
+          body: |
+            Dev deploy FAILED.
+
+            Branch:   ${{ github.ref_name }}
+            Commit:   ${{ github.sha }}
+            Author:   ${{ github.event.head_commit.author.name || github.actor }}
+            Message:  ${{ github.event.head_commit.message || 'manual run' }}
+
+            Logs:     ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
