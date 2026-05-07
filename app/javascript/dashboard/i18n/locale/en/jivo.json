@@ -411,8 +411,8 @@
         },
         "ENDPOINT_URL": {
           "LABEL": "Endpoint URL",
-          "PLACEHOLDER": "https://api.example.com/orders/{{order_id}}",
-          "HELP": "Must use HTTPS. Use {{var}} placeholders for parameter substitution."
+          "PLACEHOLDER": "https://api.example.com/orders/'{{'order_id'}}'",
+          "HELP": "Must use HTTPS. Use '{{'var'}}' placeholders for parameter substitution."
         },
         "HTTP_METHOD": {
           "LABEL": "HTTP Method",
@@ -448,13 +448,13 @@
         },
         "REQUEST_TEMPLATE": {
           "LABEL": "Request Body Template (Liquid)",
-          "PLACEHOLDER": "{ \"order_id\": \"{{order_id}}\" }",
+          "PLACEHOLDER": "'{' \"order_id\": \"'{{'order_id'}}'\" '}'",
           "HELP": "Optional. Used for POST requests. Liquid syntax with parameters."
         },
         "RESPONSE_TEMPLATE": {
           "LABEL": "Response Template (Liquid)",
-          "PLACEHOLDER": "Order {{ r.id }} status: {{ r.status }}",
-          "HELP": "Optional. Format the API response before passing to the LLM. Use {{ r }} or {{ response }} to access the parsed response body."
+          "PLACEHOLDER": "Order '{{' r.id '}}' status: '{{' r.status '}}'",
+          "HELP": "Optional. Format the API response before passing to the LLM. Use '{{' r '}}' or '{{' response '}}' to access the parsed response body."
         },
         "ENABLED": {
           "LABEL": "Enabled"
