@@ -17,9 +17,11 @@ import TagAgents from '../conversation/TagAgents.vue';
 import VariableList from '../conversation/VariableList.vue';
 import TagTools from '../conversation/TagTools.vue';
 import CopilotMenuBar from './CopilotMenuBar.vue';
+import JivoCopilotMenuBar from 'dashboard/components-next/jivo/copilot/JivoCopilotMenuBar.vue';
 
 import { useEmitter } from 'dashboard/composables/emitter';
 import { useI18n } from 'vue-i18n';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useCaptain } from 'dashboard/composables/useCaptain';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import { setEditorSelection } from 'dashboard/composables/useEditorSelection';
@@ -109,10 +111,21 @@ const emit = defineEmits([
   'input',
   'update:modelValue',
   'executeCopilotAction',
+  'executeJivoCopilotAction',
 ]);
 
 const { t } = useI18n();
+const store = useStore();
+const currentChat = useMapGetter('getSelectedChat');
 const { captainTasksEnabled } = useCaptain();
+
+const jivoTasksEnabled = computed(() => {
+  const inboxId = currentChat.value?.inbox_id;
+  const inbox = store.getters['inboxes/getInbox'](inboxId);
+  const hasAssistant = !!inbox?.jivo_assistant_id;
+  const jivoAssistants = store.getters['jivoAssistants/getAssistants'];
+  return hasAssistant || jivoAssistants.length > 0;
+});
 
 const TYPING_INDICATOR_IDLE_TIME = 4000;
 const MAXIMUM_FILE_UPLOAD_SIZE = 4; // in MB
@@ -131,7 +144,8 @@ const editorSchema = computed(() => {
     : effectiveChannelType.value;
   const formatting = getFormattingForEditor(
     formatType,
-    captainTasksEnabled.value
+    captainTasksEnabled.value,
+    jivoTasksEnabled.value
   );
   return buildMessageSchema(formatting.marks, formatting.nodes);
 });
@@ -142,7 +156,8 @@ const editorMenuOptions = computed(() => {
     : effectiveChannelType.value || DEFAULT_FORMATTING;
   const formatting = getFormattingForEditor(
     formatType,
-    captainTasksEnabled.value
+    captainTasksEnabled.value,
+    jivoTasksEnabled.value
   );
 
   return formatting.menu;
@@ -215,6 +230,17 @@ const handleCopilotAction = actionKey => {
     emit('executeCopilotAction', actionKey);
   }
 
+  showSelectionMenu.value = false;
+};
+
+const handleJivoCopilotAction = (actionKey, data) => {
+  let content = data;
+  if (!content && isTextSelected.value && editorView?.state) {
+    const { from, to } = editorView.state.selection;
+    content = editorView.state.doc.textBetween(from, to).trim();
+  }
+
+  emit('executeJivoCopilotAction', actionKey, content);
   showSelectionMenu.value = false;
 };
 
@@ -883,12 +909,18 @@ useEmitter(BUS_EVENTS.REPLACE_RICH_EDITOR_SELECTION, replaceSelectionInEditor);
       @select-tool="content => insertSpecialContent('tool', content)"
     />
     <CopilotMenuBar
-      v-if="showSelectionMenu"
+      v-if="showSelectionMenu && captainTasksEnabled"
       v-on-click-outside="handleClickOutside"
       :has-selection="isTextSelected"
       :show-selection-menu="showSelectionMenu"
       :show-general-menu="false"
       @execute-copilot-action="handleCopilotAction"
+    />
+    <JivoCopilotMenuBar
+      v-if="showSelectionMenu && jivoTasksEnabled"
+      v-on-click-outside="handleClickOutside"
+      :has-selection="isTextSelected"
+      @execute-copilot-action="handleJivoCopilotAction"
     />
     <input
       ref="imageUpload"

@@ -1,5 +1,5 @@
 <script>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import { useCaptain } from 'dashboard/composables/useCaptain';
 import { useTrack } from 'dashboard/composables';
@@ -9,6 +9,8 @@ import { CAPTAIN_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import EditorModeToggle from './EditorModeToggle.vue';
 import CopilotMenuBar from './CopilotMenuBar.vue';
+import JivoCopilotMenuBar from 'dashboard/components-next/jivo/copilot/JivoCopilotMenuBar.vue';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
 
 export default {
   name: 'ReplyTopPanel',
@@ -16,6 +18,7 @@ export default {
     NextButton,
     EditorModeToggle,
     CopilotMenuBar,
+    JivoCopilotMenuBar,
   },
   directives: {
     OnClickOutside: vOnClickOutside,
@@ -50,8 +53,16 @@ export default {
       default: () => 0,
     },
   },
-  emits: ['setReplyMode', 'togglePopout', 'executeCopilotAction'],
+  emits: [
+    'setReplyMode',
+    'togglePopout',
+    'executeCopilotAction',
+    'executeJivoCopilotAction',
+  ],
   setup(props, { emit }) {
+    const store = useStore();
+    const currentChat = useMapGetter('getSelectedChat');
+
     const setReplyMode = mode => {
       emit('setReplyMode', mode);
     };
@@ -93,6 +104,30 @@ export default {
       showCopilotMenu.value = false;
     };
 
+    const jivoTasksEnabled = computed(() => {
+      const inboxId = currentChat.value?.inbox_id;
+      const inbox = store.getters['inboxes/getInbox'](inboxId);
+      const hasAssistant = !!inbox?.jivo_assistant_id;
+      const jivoAssistants =
+        store.getters['jivoAssistants/getAssistants'] || [];
+      return hasAssistant || jivoAssistants.length > 0;
+    });
+
+    const showJivoCopilotMenu = ref(false);
+
+    const handleJivoCopilotAction = actionKey => {
+      emit('executeJivoCopilotAction', actionKey);
+      showJivoCopilotMenu.value = false;
+    };
+
+    const toggleJivoCopilotMenu = () => {
+      showJivoCopilotMenu.value = !showJivoCopilotMenu.value;
+    };
+
+    const handleJivoClickOutside = () => {
+      showJivoCopilotMenu.value = false;
+    };
+
     const keyboardEvents = {
       'Alt+KeyP': {
         action: () => handleNoteClick(),
@@ -105,6 +140,10 @@ export default {
     };
     useKeyboardEvents(keyboardEvents);
 
+    const hasAnyAIEnabled = computed(
+      () => captainTasksEnabled.value || jivoTasksEnabled.value
+    );
+
     return {
       handleModeToggle,
       handleReplyClick,
@@ -115,6 +154,12 @@ export default {
       showCopilotMenu,
       toggleCopilotMenu,
       handleClickOutside,
+      jivoTasksEnabled,
+      hasAnyAIEnabled,
+      showJivoCopilotMenu,
+      handleJivoCopilotAction,
+      toggleJivoCopilotMenu,
+      handleJivoClickOutside,
     };
   },
   computed: {
@@ -157,8 +202,8 @@ export default {
         </span>
       </div>
     </div>
-    <div v-if="captainTasksEnabled" class="flex items-center gap-2">
-      <div class="relative">
+    <div v-if="hasAnyAIEnabled" class="flex items-center gap-2">
+      <div v-if="captainTasksEnabled" class="relative">
         <NextButton
           ghost
           :disabled="disabled || isEditorDisabled"
@@ -176,6 +221,26 @@ export default {
           :has-selection="false"
           class="ltr:right-0 rtl:left-0 bottom-full mb-2"
           @execute-copilot-action="handleCopilotAction"
+        />
+      </div>
+      <div v-if="jivoTasksEnabled" class="relative">
+        <NextButton
+          ghost
+          :disabled="disabled || isEditorDisabled"
+          :class="{
+            'text-n-blue-9 hover:enabled:!bg-n-blue-3': !showJivoCopilotMenu,
+            'text-n-blue-9 bg-n-blue-3': showJivoCopilotMenu,
+          }"
+          sm
+          icon="i-ph-sparkle"
+          @click="toggleJivoCopilotMenu"
+        />
+        <JivoCopilotMenuBar
+          v-if="showJivoCopilotMenu"
+          v-on-click-outside="handleJivoClickOutside"
+          :has-selection="false"
+          class="ltr:right-0 rtl:left-0 bottom-full mb-2"
+          @execute-copilot-action="handleJivoCopilotAction"
         />
       </div>
       <NextButton

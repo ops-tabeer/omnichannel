@@ -3614,6 +3614,251 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ---
 
+## Phase 9 — Inline Editor AI Assistant (Mirror Captain AI) — NOT STARTED
+
+> **Objective:** Replace the modal-based `JivoAssistantPanel` (triggered from ConversationHeader sparkle icon) with Captain AI's inline reply-editor integration — sparkle icon in editor toolbar, dropdown menu, copilot editor section, and copilot bottom panel. A-to-Z UI mirror of Captain's conversation editor AI.
+
+**Captain reference root:** `app/javascript/dashboard/components/widgets/WootWriter/` (CopilotMenuBar, ReplyTopPanel, Editor), `app/javascript/dashboard/components/widgets/conversation/` (CopilotEditorSection, ReplyBox), `app/javascript/dashboard/composables/useCopilotReply.js`.
+
+**Current JIVO state:** Modal-based panel opened from ConversationHeader sparkle button. Task grid (Summarize, Reply, Rewrite, Label, Learn). Works but disconnected from the reply editor flow.
+
+**Target state:** Inline editor integration identical to Captain AI's UI — sparkle icon in reply editor top panel, context-aware dropdown menu, copilot editor section with loading/content states, accept/cancel bottom panel.
+
+### Phase 9 Status Tracker
+
+- [x] 9.1 `useJivoCopilotReply` composable — ✅ COMPLETED (2026-05-08)
+- [x] 9.2 `JivoCopilotMenuBar.vue` dropdown — ✅ COMPLETED (2026-05-08)
+- [x] 9.3 `JivoCopilotEditorSection.vue` — ✅ COMPLETED (2026-05-08)
+- [x] 9.4 `JivoCopilotReplyBottomPanel.vue` — ✅ COMPLETED (2026-05-08)
+- [x] 9.5 Wire into `ReplyTopPanel.vue` — ✅ COMPLETED (2026-05-08)
+- [x] 9.6 Wire into `ReplyBox.vue` — ✅ COMPLETED (2026-05-08)
+- [x] 9.7 Wire into `Editor.vue` (selection menu) — ✅ COMPLETED (2026-05-08)
+- [x] 9.8 Remove modal-based panel from `ConversationHeader.vue` — ✅ COMPLETED (2026-05-08)
+- [x] 9.9 i18n keys (`JIVO.COPILOT.*`) — ✅ COMPLETED (2026-05-08)
+
+---
+
+### Sub-Task 9.1: `useJivoCopilotReply` Composable
+
+**Status: NOT STARTED**
+
+**Goal:** JIVO equivalent of Captain's `useCopilotReply.js`. Manages the inline copilot state machine (idle → generating → showing editor → accepted/cancelled).
+
+**Captain reference:** `app/javascript/dashboard/composables/useCopilotReply.js`
+
+**File to create:**
+- `app/javascript/dashboard/composables/useJivoCopilotReply.js`
+
+**State:**
+- `showEditor`, `isGenerating`, `isContentReady`, `generatedContent`, `followUpContext`, `abortController`, `currentAction` (all refs)
+
+**Computed:** `isActive`, `isButtonDisabled`, `editorTransitionKey`
+
+**Methods:** `reset()`, `toggleEditor()`, `setContentReady()`, `execute(action, data)`, `sendFollowUp(message)`, `accept()`
+
+**Key difference from Captain:** Calls `JivoTasksAPI` (existing at `dashboard/api/jivoTasks.js`) instead of Captain's `TasksAPI`. JIVO API returns `{ success, message, follow_up_context }` — composable normalizes to `{ message, followUpContext }`.
+
+**Routing inside `execute(action, data)`:**
+- `'summarize'` → `JivoTasksAPI.summarize({ conversationDisplayId })`
+- `'reply_suggestion'` → `JivoTasksAPI.replySuggestion({ conversationDisplayId })`
+- `'improve'` / tones / grammar → `JivoTasksAPI.rewrite({ content, operation, conversationDisplayId })`
+- `'ask_copilot'` → open copilot sidebar (stub for now)
+
+---
+
+### Sub-Task 9.2: `JivoCopilotMenuBar.vue`
+
+**Status: NOT STARTED**
+
+**Goal:** JIVO clone of Captain's `CopilotMenuBar.vue`. Compact dropdown anchored to sparkle icon with context-aware menu items.
+
+**Captain reference:** `app/javascript/dashboard/components/widgets/WootWriter/CopilotMenuBar.vue`
+
+**File to create:**
+- `app/javascript/dashboard/components-next/jivo/copilot/JivoCopilotMenuBar.vue`
+
+**Menu structure:**
+1. **Draft-aware items** (only when editor has content):
+   - Improve Reply (`i-fluent-pen-sparkle-24-regular`)
+   - Change Tone → submenu (Professional, Casual, Straightforward, Confident, Friendly)
+   - Fix Grammar (`i-fluent-flow-sparkle-24-regular`)
+2. **Divider**
+3. **General items** (always):
+   - Suggest a reply (`i-fluent-chat-sparkle-16-regular`) — only in Reply mode
+   - Summarize (`i-fluent-text-bullet-list-square-sparkle-32-regular`)
+   - Ask Copilot (`i-fluent-circle-sparkle-24-regular`)
+4. **Admin-only** (gated on `useAdmin`):
+   - Learn from this conversation (`i-lucide-brain`)
+
+**Uses:** `DropdownBody`, `Button`, `Icon` (existing components)
+
+**Props:** `hasSelection: Boolean`
+**Emits:** `executeCopilotAction(actionKey: string)`
+
+---
+
+### Sub-Task 9.3: `JivoCopilotEditorSection.vue`
+
+**Status: NOT STARTED**
+
+**Goal:** JIVO clone of `CopilotEditorSection.vue`. Shows loading state during generation, then copilot editor with generated content.
+
+**Captain reference:** `app/javascript/dashboard/components/widgets/conversation/CopilotEditorSection.vue`
+
+**File to create:**
+- `app/javascript/dashboard/components-next/jivo/copilot/JivoCopilotEditorSection.vue`
+
+**Two states:**
+1. **Generating:** `bg-n-iris-5` with `CaptainLoader` + "JIVO is thinking..."
+2. **Content ready:** `CopilotEditor` with generated content + follow-up input
+
+**Reuses:** `CopilotEditor.vue` (Captain's, works generically), `CaptainLoader.vue` (animated SVG)
+
+**Props:** `showCopilotEditor`, `isGeneratingContent`, `generatedContent`, `isPopout`
+**Emits:** `focus`, `blur`, `clearSelection`, `contentReady`, `send`
+
+---
+
+### Sub-Task 9.4: `JivoCopilotReplyBottomPanel.vue`
+
+**Status: NOT STARTED**
+
+**Goal:** JIVO clone of `CopilotReplyBottomPanel.vue`. Accept/Cancel bottom bar when copilot is active.
+
+**Captain reference:** `app/javascript/dashboard/components/widgets/WootWriter/CopilotReplyBottomPanel.vue`
+
+**File to create:**
+- `app/javascript/dashboard/components-next/jivo/copilot/JivoCopilotReplyBottomPanel.vue`
+
+**Layout:** Two buttons: **Accept** (primary, disabled while generating) + **Cancel** (secondary)
+
+**Props:** `isGeneratingContent: Boolean`
+**Emits:** `submit`, `cancel`
+
+---
+
+### Sub-Task 9.5: Wire into `ReplyTopPanel.vue`
+
+**Status: NOT STARTED**
+
+**Goal:** Add JIVO sparkle icon + dropdown menu to the reply editor top panel.
+
+**File to modify:**
+- `app/javascript/dashboard/components/widgets/WootWriter/ReplyTopPanel.vue`
+
+**Changes:**
+- Import `JivoCopilotMenuBar`
+- Add `jivoTasksEnabled` computed (check inbox or account for JIVO assistant availability)
+- Add sparkle button + `JivoCopilotMenuBar` dropdown alongside (or instead of) Captain's when Captain isn't active
+- Emit `executeJivoCopilotAction` event
+
+---
+
+### Sub-Task 9.6: Wire into `ReplyBox.vue`
+
+**Status: NOT STARTED**
+
+**Goal:** Integrate `useJivoCopilotReply` into ReplyBox alongside Captain's `useCopilotReply`.
+
+**File to modify:**
+- `app/javascript/dashboard/components/widgets/conversation/ReplyBox.vue`
+
+**Changes:**
+- In `setup()`: instantiate `useJivoCopilotReply()` as `jivoCopilot`
+- Add `executeJivoCopilotAction(action, data)` method
+- In template: add `JivoCopilotEditorSection` (gated on `jivoCopilot.isActive`)
+- In template: add `JivoCopilotReplyBottomPanel` (gated on `jivoCopilot.isActive`)
+- Add `onSubmitJivoCopilotReply()` — accept → set message
+- **Mutual exclusion:** only one copilot (Captain or JIVO) active at a time
+
+---
+
+### Sub-Task 9.7: Wire into `Editor.vue` (Selection Menu)
+
+**Status: NOT STARTED**
+
+**Goal:** Use JIVO copilot menu for text-selection-based inline actions when Captain isn't active.
+
+**File to modify:**
+- `app/javascript/dashboard/components/widgets/WootWriter/Editor.vue`
+
+**Changes:**
+- When JIVO is enabled and Captain is not: show `JivoCopilotMenuBar` instead of `CopilotMenuBar` for the selection floating menu
+- The copilot icon in ProseMirror toolbar routes to JIVO actions
+
+---
+
+### Sub-Task 9.8: Remove Modal-Based Panel from ConversationHeader
+
+**Status: NOT STARTED**
+
+**Goal:** Clean up the old modal trigger now that inline editor integration replaces it.
+
+**File to modify:**
+- `app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue`
+
+**Changes:**
+- Remove `showJivoPanel` ref
+- Remove `JivoAssistantPanel` import and `<JivoAssistantPanel>` rendering
+- Remove the sparkle button from the header actions
+- Remove `handleJivoApplyReply` and `handleJivoReplaceSelection` methods
+- Keep `JivoAssistantPanel.vue` file for potential future repurposing
+
+**Note:** The "Learn from Conversation" admin action moves to `JivoCopilotMenuBar` (sub-task 9.2).
+
+---
+
+### Sub-Task 9.9: i18n Keys
+
+**Status: NOT STARTED**
+
+**File to modify:**
+- `app/javascript/dashboard/i18n/locale/en/jivo.json`
+
+**Keys to add under `JIVO.COPILOT`:**
+- `THINKING`, menu labels (Improve, Tone options, Grammar, Suggestion, Summarize, Ask Copilot, Learn), bottom panel (Accept, Cancel), follow-up placeholder
+
+---
+
+### Execution Order
+
+`9.9 → 9.1 → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8`
+
+### Files to Create (4)
+| File | Mirror of |
+|---|---|
+| `composables/useJivoCopilotReply.js` | `composables/useCopilotReply.js` |
+| `components-next/jivo/copilot/JivoCopilotMenuBar.vue` | `WootWriter/CopilotMenuBar.vue` |
+| `components-next/jivo/copilot/JivoCopilotEditorSection.vue` | `conversation/CopilotEditorSection.vue` |
+| `components-next/jivo/copilot/JivoCopilotReplyBottomPanel.vue` | `WootWriter/CopilotReplyBottomPanel.vue` |
+
+### Files to Modify (5)
+| File | Change |
+|---|---|
+| `WootWriter/ReplyTopPanel.vue` | Add JIVO sparkle + dropdown |
+| `conversation/ReplyBox.vue` | Integrate JIVO copilot composable + editor + bottom panel |
+| `WootWriter/Editor.vue` | JIVO selection menu |
+| `conversation/ConversationHeader.vue` | Remove modal-based panel |
+| `i18n/locale/en/jivo.json` | Add `JIVO.COPILOT.*` keys |
+
+### Reused Components (no changes needed)
+| Component | Why reusable |
+|---|---|
+| `CopilotEditor.vue` | Generic editable mini-editor |
+| `CaptainLoader.vue` | Animated SVG loading indicator |
+| `DropdownBody.vue` | Shared dropdown shell |
+
+### Deferred to Phase 10
+| Item | Reason |
+|---|---|
+| Ask Copilot (sidebar chat threads) | Requires copilot thread backend (Section 6 of this doc) |
+| Contact Memory Panel relocation | Needs sidebar integration design |
+| Label Suggestion auto-trigger | Needs event-based automation |
+| Streaming responses | Needs SSE/WebSocket frontend plumbing |
+| ProseMirror toolbar copilot icon | Deep plugin-level integration |
+
+---
+
 ## Conventions for Updating This Log
 
 When completing a phase:

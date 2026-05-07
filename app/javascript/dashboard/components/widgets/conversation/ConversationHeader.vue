@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 import { useElementSize } from '@vueuse/core';
@@ -8,15 +8,11 @@ import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
 import Avatar from 'next/avatar/Avatar.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
-import JivoAssistantPanel from 'dashboard/components-next/jivo/JivoAssistantPanel.vue';
-import Button from 'dashboard/components-next/button/Button.vue';
 import wootConstants from 'dashboard/constants/globals';
 import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 import { snoozedReopenTime } from 'dashboard/helper/snoozeHelpers';
 import { useInbox } from 'dashboard/composables/useInbox';
 import { useI18n } from 'vue-i18n';
-import { BUS_EVENTS } from 'shared/constants/busEvents';
-import { emitter } from 'shared/helpers/mitt';
 
 const props = defineProps({
   chat: {
@@ -35,18 +31,10 @@ const route = useRoute();
 const conversationHeader = ref(null);
 const { width } = useElementSize(conversationHeader);
 const { isAWebWidgetInbox } = useInbox();
-const showJivoPanel = ref(false);
 
 const currentChat = computed(() => store.getters.getSelectedChat);
+
 const accountId = computed(() => store.getters.getCurrentAccountId);
-
-const handleJivoApplyReply = content => {
-  emitter.emit(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, content);
-};
-
-const handleJivoReplaceSelection = content => {
-  emitter.emit(BUS_EVENTS.REPLACE_RICH_EDITOR_SELECTION, content);
-};
 
 const chatMetadata = computed(() => props.chat.meta);
 
@@ -98,25 +86,11 @@ const inbox = computed(() => {
   return store.getters['inboxes/getInbox'](inboxId);
 });
 
-const jivoAssistants = computed(
-  () => store.getters['jivoAssistants/getAssistants'] || []
-);
-
-const hasJivoTasksAvailable = computed(
-  () => inbox.value?.jivo_tasks_available || jivoAssistants.value.length > 0
-);
-
 const hasMultipleInboxes = computed(
   () => store.getters['inboxes/getInboxes'].length > 1
 );
 
 const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
-
-onMounted(() => {
-  if (!hasJivoTasksAvailable.value) {
-    store.dispatch('jivoAssistants/get');
-  }
-});
 </script>
 
 <template>
@@ -178,25 +152,7 @@ onMounted(() => {
         :parent-width="width"
         class="hidden md:flex"
       />
-      <Button
-        v-if="hasJivoTasksAvailable"
-        v-tooltip.bottom="t('JIVO.TASKS.PANEL_TITLE')"
-        icon="i-lucide-sparkles"
-        slate
-        sm
-        faded
-        @click="showJivoPanel = true"
-      />
       <MoreActions :conversation-id="currentChat.id" />
     </div>
-
-    <JivoAssistantPanel
-      v-if="showJivoPanel"
-      :conversation-display-id="currentChat.id"
-      :contact-id="chatMetadata.sender && chatMetadata.sender.id"
-      @close="showJivoPanel = false"
-      @apply-reply="handleJivoApplyReply"
-      @replace-selection="handleJivoReplaceSelection"
-    />
   </div>
 </template>

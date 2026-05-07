@@ -32,11 +32,15 @@ class JivoTasksAPI extends ApiClient {
     });
   }
 
-  followUp({ followUpContext, message } = {}) {
-    return axios.post(`${this.url}/follow_up`, {
-      follow_up_context: followUpContext,
-      message,
-    });
+  followUp({ followUpContext, message, signal } = {}) {
+    return axios.post(
+      `${this.url}/follow_up`,
+      {
+        follow_up_context: followUpContext,
+        message,
+      },
+      { signal }
+    );
   }
 
   learnFromConversation({ conversationDisplayId } = {}) {

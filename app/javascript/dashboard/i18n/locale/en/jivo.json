@@ -347,6 +347,33 @@
         "QUEUED": "Learning queued. Notes and FAQs will appear shortly."
       }
     },
+    "COPILOT": {
+      "THINKING": "JIVO is thinking...",
+      "MENU": {
+        "IMPROVE_REPLY": "Improve reply",
+        "CHANGE_TONE": {
+          "TITLE": "Change tone",
+          "OPTIONS": {
+            "PROFESSIONAL": "Professional",
+            "CASUAL": "Casual",
+            "STRAIGHTFORWARD": "Straightforward",
+            "CONFIDENT": "Confident",
+            "FRIENDLY": "Friendly"
+          }
+        },
+        "GRAMMAR": "Fix spelling & grammar",
+        "SUGGESTION": "Suggest a reply",
+        "SUMMARIZE": "Summarize the conversation",
+        "ASK_COPILOT": "Ask Copilot",
+        "LEARN_FROM_CONVERSATION": "Learn from this conversation"
+      },
+      "BOTTOM_PANEL": {
+        "ACCEPT": "Accept",
+        "CANCEL": "Cancel"
+      },
+      "FOLLOW_UP_PLACEHOLDER": "Refine this response...",
+      "MSG_INPUT": "Refine this response..."
+    },
     "SCENARIOS": {
       "HEADER": "Scenarios",
       "ADD_NEW": "New Scenario",
