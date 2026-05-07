@@ -150,6 +150,13 @@ watch(
           <slot name="emptyState" />
         </div>
         <slot v-else name="body" />
+        <!--
+          Default slot is mounted regardless of fetching/empty state. Use it
+          for elements that must always exist in the DOM (e.g. <Dialog> refs
+          that the page opens via a button in the header before any data is
+          loaded).
+        -->
+        <slot />
       </div>
     </main>
   </section>

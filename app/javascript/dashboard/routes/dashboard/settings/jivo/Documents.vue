@@ -214,96 +214,96 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+    </template>
 
-      <Dialog
-        ref="addDialogRef"
-        :title="t('JIVO.DOCUMENTS.FORM.CREATE_TITLE')"
-        :show-cancel-button="false"
-        :show-confirm-button="false"
-      >
-        <div class="space-y-3">
-          <div class="flex gap-2">
-            <Button
-              :label="t('JIVO.DOCUMENTS.FORM.MODE_URL')"
-              :slate="addMode !== 'url'"
-              :faded="addMode !== 'url'"
-              xs
-              @click="addMode = 'url'"
-            />
-            <Button
-              :label="t('JIVO.DOCUMENTS.FORM.MODE_PDF')"
-              :slate="addMode !== 'pdf'"
-              :faded="addMode !== 'pdf'"
-              xs
-              @click="addMode = 'pdf'"
-            />
-          </div>
-          <Input
-            v-if="addMode === 'url'"
-            v-model="newDocLink"
-            :label="t('JIVO.DOCUMENTS.FORM.URL_LABEL')"
-            :placeholder="t('JIVO.DOCUMENTS.FORM.URL_PLACEHOLDER')"
+    <Dialog
+      ref="addDialogRef"
+      :title="t('JIVO.DOCUMENTS.FORM.CREATE_TITLE')"
+      :show-cancel-button="false"
+      :show-confirm-button="false"
+    >
+      <div class="space-y-3">
+        <div class="flex gap-2">
+          <Button
+            :label="t('JIVO.DOCUMENTS.FORM.MODE_URL')"
+            :slate="addMode !== 'url'"
+            :faded="addMode !== 'url'"
+            xs
+            @click="addMode = 'url'"
           />
-          <div v-else>
-            <label class="block text-sm font-medium text-n-slate-12 mb-1">
-              {{ t('JIVO.DOCUMENTS.FORM.PDF_LABEL') }}
-            </label>
-            <input
-              type="file"
-              accept="application/pdf"
-              class="block w-full text-sm text-n-slate-12 file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-n-blue-3 file:text-n-blue-text"
-              @change="handleFileChange"
-            />
-            <p class="text-xs text-n-slate-11 mt-1">
-              {{ t('JIVO.DOCUMENTS.FORM.PDF_HELP') }}
-            </p>
-            <p
-              v-if="newDocFile && newDocFile.type !== 'application/pdf'"
-              class="text-xs text-n-ruby-text mt-1"
-            >
-              {{ t('JIVO.DOCUMENTS.FORM.PDF_INVALID') }}
-            </p>
-            <p
-              v-else-if="newDocFile && newDocFile.size > PDF_MAX_BYTES"
-              class="text-xs text-n-ruby-text mt-1"
-            >
-              {{ t('JIVO.DOCUMENTS.FORM.PDF_TOO_LARGE') }}
-            </p>
-          </div>
-          <Input
-            v-model="newDocName"
-            :label="t('JIVO.DOCUMENTS.FORM.NAME_LABEL')"
-            :placeholder="t('JIVO.DOCUMENTS.FORM.NAME_PLACEHOLDER')"
+          <Button
+            :label="t('JIVO.DOCUMENTS.FORM.MODE_PDF')"
+            :slate="addMode !== 'pdf'"
+            :faded="addMode !== 'pdf'"
+            xs
+            @click="addMode = 'pdf'"
           />
         </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <Button
-              :label="t('JIVO.DOCUMENTS.FORM.CANCEL')"
-              slate
-              faded
-              @click="addDialogRef?.close()"
-            />
-            <Button
-              :label="t('JIVO.DOCUMENTS.FORM.SUBMIT')"
-              :is-loading="uiFlags.isCreating"
-              :disabled="!isAddValid"
-              @click="submitAdd"
-            />
-          </div>
-        </template>
-      </Dialog>
+        <Input
+          v-if="addMode === 'url'"
+          v-model="newDocLink"
+          :label="t('JIVO.DOCUMENTS.FORM.URL_LABEL')"
+          :placeholder="t('JIVO.DOCUMENTS.FORM.URL_PLACEHOLDER')"
+        />
+        <div v-else>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1">
+            {{ t('JIVO.DOCUMENTS.FORM.PDF_LABEL') }}
+          </label>
+          <input
+            type="file"
+            accept="application/pdf"
+            class="block w-full text-sm text-n-slate-12 file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-n-blue-3 file:text-n-blue-text"
+            @change="handleFileChange"
+          />
+          <p class="text-xs text-n-slate-11 mt-1">
+            {{ t('JIVO.DOCUMENTS.FORM.PDF_HELP') }}
+          </p>
+          <p
+            v-if="newDocFile && newDocFile.type !== 'application/pdf'"
+            class="text-xs text-n-ruby-text mt-1"
+          >
+            {{ t('JIVO.DOCUMENTS.FORM.PDF_INVALID') }}
+          </p>
+          <p
+            v-else-if="newDocFile && newDocFile.size > PDF_MAX_BYTES"
+            class="text-xs text-n-ruby-text mt-1"
+          >
+            {{ t('JIVO.DOCUMENTS.FORM.PDF_TOO_LARGE') }}
+          </p>
+        </div>
+        <Input
+          v-model="newDocName"
+          :label="t('JIVO.DOCUMENTS.FORM.NAME_LABEL')"
+          :placeholder="t('JIVO.DOCUMENTS.FORM.NAME_PLACEHOLDER')"
+        />
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button
+            :label="t('JIVO.DOCUMENTS.FORM.CANCEL')"
+            slate
+            faded
+            @click="addDialogRef?.close()"
+          />
+          <Button
+            :label="t('JIVO.DOCUMENTS.FORM.SUBMIT')"
+            :is-loading="uiFlags.isCreating"
+            :disabled="!isAddValid"
+            @click="submitAdd"
+          />
+        </div>
+      </template>
+    </Dialog>
 
-      <Dialog
-        ref="deleteDialogRef"
-        type="alert"
-        :title="t('JIVO.DOCUMENTS.DELETE.TITLE')"
-        :description="t('JIVO.DOCUMENTS.DELETE.DESCRIPTION')"
-        :is-loading="uiFlags.isDeleting"
-        :confirm-button-label="t('JIVO.DOCUMENTS.DELETE.CONFIRM')"
-        :cancel-button-label="t('JIVO.DOCUMENTS.DELETE.CANCEL')"
-        @confirm="confirmDelete"
-      />
-    </template>
+    <Dialog
+      ref="deleteDialogRef"
+      type="alert"
+      :title="t('JIVO.DOCUMENTS.DELETE.TITLE')"
+      :description="t('JIVO.DOCUMENTS.DELETE.DESCRIPTION')"
+      :is-loading="uiFlags.isDeleting"
+      :confirm-button-label="t('JIVO.DOCUMENTS.DELETE.CONFIRM')"
+      :cancel-button-label="t('JIVO.DOCUMENTS.DELETE.CANCEL')"
+      @confirm="confirmDelete"
+    />
   </JivoPageLayout>
 </template>

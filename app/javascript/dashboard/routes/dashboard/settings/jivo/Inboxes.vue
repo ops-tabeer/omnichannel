@@ -134,67 +134,67 @@ onMounted(() => {
           />
         </div>
       </div>
-
-      <Dialog
-        ref="connectDialogRef"
-        :title="t('JIVO.INBOXES.CONNECT_DIALOG.TITLE')"
-        :description="t('JIVO.INBOXES.CONNECT_DIALOG.DESCRIPTION')"
-        :show-cancel-button="false"
-        :show-confirm-button="false"
-      >
-        <div v-if="!availableInboxes.length" class="py-6 text-center">
-          <p class="text-sm text-n-slate-11">
-            {{ t('JIVO.INBOXES.CONNECT_DIALOG.EMPTY') }}
-          </p>
-        </div>
-        <div v-else class="space-y-2 max-h-96 overflow-y-auto">
-          <div
-            v-for="inbox in availableInboxes"
-            :key="inbox.id"
-            class="flex items-center justify-between p-3 border border-n-weak rounded-md"
-          >
-            <div class="min-w-0">
-              <div class="text-sm font-medium text-n-slate-12 truncate">
-                {{ inbox.name }}
-              </div>
-              <div class="text-xs text-n-slate-11">
-                {{ inbox.channel_type }}
-              </div>
-            </div>
-            <Button
-              icon="i-lucide-plug"
-              :label="t('JIVO.INBOXES.CONNECT')"
-              xs
-              :is-loading="togglingInboxId === inbox.id"
-              @click="connectInbox(inbox)"
-            />
-          </div>
-        </div>
-        <template #footer>
-          <div class="flex justify-end">
-            <Button
-              :label="t('JIVO.INBOXES.CONNECT_DIALOG.CLOSE')"
-              slate
-              faded
-              @click="connectDialogRef?.close()"
-            />
-          </div>
-        </template>
-      </Dialog>
-
-      <Dialog
-        ref="disconnectDialogRef"
-        type="alert"
-        :title="t('JIVO.INBOXES.DISCONNECT_DIALOG.TITLE')"
-        :description="
-          t('JIVO.INBOXES.DISCONNECT_DIALOG.DESCRIPTION', {
-            name: selectedInbox?.name || '',
-          })
-        "
-        :confirm-button-label="t('JIVO.INBOXES.DISCONNECT_DIALOG.CONFIRM')"
-        :cancel-button-label="t('JIVO.INBOXES.DISCONNECT_DIALOG.CANCEL')"
-        @confirm="confirmDisconnect"
-      />
     </template>
+
+    <Dialog
+      ref="connectDialogRef"
+      :title="t('JIVO.INBOXES.CONNECT_DIALOG.TITLE')"
+      :description="t('JIVO.INBOXES.CONNECT_DIALOG.DESCRIPTION')"
+      :show-cancel-button="false"
+      :show-confirm-button="false"
+    >
+      <div v-if="!availableInboxes.length" class="py-6 text-center">
+        <p class="text-sm text-n-slate-11">
+          {{ t('JIVO.INBOXES.CONNECT_DIALOG.EMPTY') }}
+        </p>
+      </div>
+      <div v-else class="space-y-2 max-h-96 overflow-y-auto">
+        <div
+          v-for="inbox in availableInboxes"
+          :key="inbox.id"
+          class="flex items-center justify-between p-3 border border-n-weak rounded-md"
+        >
+          <div class="min-w-0">
+            <div class="text-sm font-medium text-n-slate-12 truncate">
+              {{ inbox.name }}
+            </div>
+            <div class="text-xs text-n-slate-11">
+              {{ inbox.channel_type }}
+            </div>
+          </div>
+          <Button
+            icon="i-lucide-plug"
+            :label="t('JIVO.INBOXES.CONNECT')"
+            xs
+            :is-loading="togglingInboxId === inbox.id"
+            @click="connectInbox(inbox)"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <Button
+            :label="t('JIVO.INBOXES.CONNECT_DIALOG.CLOSE')"
+            slate
+            faded
+            @click="connectDialogRef?.close()"
+          />
+        </div>
+      </template>
+    </Dialog>
+
+    <Dialog
+      ref="disconnectDialogRef"
+      type="alert"
+      :title="t('JIVO.INBOXES.DISCONNECT_DIALOG.TITLE')"
+      :description="
+        t('JIVO.INBOXES.DISCONNECT_DIALOG.DESCRIPTION', {
+          name: selectedInbox?.name || '',
+        })
+      "
+      :confirm-button-label="t('JIVO.INBOXES.DISCONNECT_DIALOG.CONFIRM')"
+      :cancel-button-label="t('JIVO.INBOXES.DISCONNECT_DIALOG.CANCEL')"
+      @confirm="confirmDisconnect"
+    />
   </JivoPageLayout>
 </template>

@@ -122,21 +122,21 @@ onMounted(() => store.dispatch('jivoCustomTools/get'));
           </div>
         </div>
       </div>
-
-      <Dialog
-        ref="deleteDialogRef"
-        type="alert"
-        :title="t('JIVO.CUSTOM_TOOLS.DELETE.TITLE')"
-        :description="
-          t('JIVO.CUSTOM_TOOLS.DELETE.DESCRIPTION', {
-            title: selectedTool.title || '',
-          })
-        "
-        :is-loading="uiFlags.isDeleting"
-        :confirm-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CONFIRM')"
-        :cancel-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CANCEL')"
-        @confirm="confirmDelete"
-      />
     </template>
+
+    <Dialog
+      ref="deleteDialogRef"
+      type="alert"
+      :title="t('JIVO.CUSTOM_TOOLS.DELETE.TITLE')"
+      :description="
+        t('JIVO.CUSTOM_TOOLS.DELETE.DESCRIPTION', {
+          title: selectedTool.title || '',
+        })
+      "
+      :is-loading="uiFlags.isDeleting"
+      :confirm-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CONFIRM')"
+      :cancel-button-label="t('JIVO.CUSTOM_TOOLS.DELETE.CANCEL')"
+      @confirm="confirmDelete"
+    />
   </JivoPageLayout>
 </template>

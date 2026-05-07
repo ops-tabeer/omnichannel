@@ -347,68 +347,68 @@ onMounted(async () => {
           @toggle-selection="toggleSelection"
         />
       </div>
-
-      <Dialog
-        ref="formDialogRef"
-        :title="
-          formMode === 'create'
-            ? t('JIVO.FAQS.FORM.CREATE_TITLE')
-            : t('JIVO.FAQS.FORM.EDIT_TITLE')
-        "
-        :show-cancel-button="false"
-        :show-confirm-button="false"
-      >
-        <div class="space-y-3">
-          <Input
-            v-model="formData.question"
-            :label="t('JIVO.FAQS.FORM.QUESTION_LABEL')"
-            :placeholder="t('JIVO.FAQS.FORM.QUESTION_PLACEHOLDER')"
-          />
-          <div>
-            <label class="block text-sm font-medium text-n-slate-12 mb-1">
-              {{ t('JIVO.FAQS.FORM.ANSWER_LABEL') }}
-            </label>
-            <textarea
-              v-model="formData.answer"
-              rows="4"
-              :placeholder="t('JIVO.FAQS.FORM.ANSWER_PLACEHOLDER')"
-              class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
-            />
-          </div>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <Button
-              :label="t('JIVO.FAQS.FORM.CANCEL')"
-              slate
-              faded
-              @click="formDialogRef?.close()"
-            />
-            <Button
-              :label="
-                formMode === 'create'
-                  ? t('JIVO.FAQS.FORM.CREATE')
-                  : t('JIVO.FAQS.FORM.SAVE')
-              "
-              :is-loading="uiFlags.isCreating || uiFlags.isUpdating"
-              :disabled="!formData.question.trim() || !formData.answer.trim()"
-              @click="submit"
-            />
-          </div>
-        </template>
-      </Dialog>
-
-      <Dialog
-        ref="confirmDialogRef"
-        :type="confirmDialogProps.type"
-        :title="confirmDialogProps.title"
-        :description="confirmDialogProps.description"
-        :is-loading="isConfirming"
-        :confirm-button-label="confirmDialogProps.confirmLabel"
-        :cancel-button-label="t('JIVO.FAQS.CONFIRM.CANCEL')"
-        @confirm="handleConfirm"
-        @close="pendingAction = null"
-      />
     </template>
+
+    <Dialog
+      ref="formDialogRef"
+      :title="
+        formMode === 'create'
+          ? t('JIVO.FAQS.FORM.CREATE_TITLE')
+          : t('JIVO.FAQS.FORM.EDIT_TITLE')
+      "
+      :show-cancel-button="false"
+      :show-confirm-button="false"
+    >
+      <div class="space-y-3">
+        <Input
+          v-model="formData.question"
+          :label="t('JIVO.FAQS.FORM.QUESTION_LABEL')"
+          :placeholder="t('JIVO.FAQS.FORM.QUESTION_PLACEHOLDER')"
+        />
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1">
+            {{ t('JIVO.FAQS.FORM.ANSWER_LABEL') }}
+          </label>
+          <textarea
+            v-model="formData.answer"
+            rows="4"
+            :placeholder="t('JIVO.FAQS.FORM.ANSWER_PLACEHOLDER')"
+            class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button
+            :label="t('JIVO.FAQS.FORM.CANCEL')"
+            slate
+            faded
+            @click="formDialogRef?.close()"
+          />
+          <Button
+            :label="
+              formMode === 'create'
+                ? t('JIVO.FAQS.FORM.CREATE')
+                : t('JIVO.FAQS.FORM.SAVE')
+            "
+            :is-loading="uiFlags.isCreating || uiFlags.isUpdating"
+            :disabled="!formData.question.trim() || !formData.answer.trim()"
+            @click="submit"
+          />
+        </div>
+      </template>
+    </Dialog>
+
+    <Dialog
+      ref="confirmDialogRef"
+      :type="confirmDialogProps.type"
+      :title="confirmDialogProps.title"
+      :description="confirmDialogProps.description"
+      :is-loading="isConfirming"
+      :confirm-button-label="confirmDialogProps.confirmLabel"
+      :cancel-button-label="t('JIVO.FAQS.CONFIRM.CANCEL')"
+      @confirm="handleConfirm"
+      @close="pendingAction = null"
+    />
   </JivoPageLayout>
 </template>

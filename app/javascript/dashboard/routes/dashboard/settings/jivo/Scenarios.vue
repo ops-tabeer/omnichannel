@@ -158,21 +158,21 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-
-      <Dialog
-        ref="deleteDialogRef"
-        type="alert"
-        :title="t('JIVO.SCENARIOS.DELETE.TITLE')"
-        :description="
-          t('JIVO.SCENARIOS.DELETE.DESCRIPTION', {
-            title: selectedScenario.title || '',
-          })
-        "
-        :is-loading="uiFlags.isDeleting"
-        :confirm-button-label="t('JIVO.SCENARIOS.DELETE.CONFIRM')"
-        :cancel-button-label="t('JIVO.SCENARIOS.DELETE.CANCEL')"
-        @confirm="confirmDelete"
-      />
     </template>
+
+    <Dialog
+      ref="deleteDialogRef"
+      type="alert"
+      :title="t('JIVO.SCENARIOS.DELETE.TITLE')"
+      :description="
+        t('JIVO.SCENARIOS.DELETE.DESCRIPTION', {
+          title: selectedScenario.title || '',
+        })
+      "
+      :is-loading="uiFlags.isDeleting"
+      :confirm-button-label="t('JIVO.SCENARIOS.DELETE.CONFIRM')"
+      :cancel-button-label="t('JIVO.SCENARIOS.DELETE.CANCEL')"
+      @confirm="confirmDelete"
+    />
   </JivoPageLayout>
 </template>
