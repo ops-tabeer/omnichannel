@@ -1,0 +1,26 @@
+name: Deploy dev
+
+on:
+  push:
+    branches: [omni-dev]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: SSH to VPS and run deploy script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_VPS_HOST }}
+          username: ${{ secrets.DEV_VPS_USER }}
+          key: ${{ secrets.DEV_VPS_SSH_KEY }}
+          port: ${{ secrets.DEV_VPS_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            /opt/chatwoot-dev/infra/deploy-dev.sh
