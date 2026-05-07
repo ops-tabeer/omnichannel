@@ -31,7 +31,11 @@ services:
     extra_hosts:
       # Lets dev rails reach host-bound services on the VPS (e.g. Evolution
       # API on 127.0.0.1:8080) without joining the prod docker network.
+      # `evolution-api` is also aliased to the gateway so any inbox config
+      # auto-created with that hostname (Evolution's docker DNS name on
+      # prod's network) resolves correctly from dev too.
       - 'host.docker.internal:host-gateway'
+      - 'evolution-api:host-gateway'
     depends_on:
       - postgres
       - redis
@@ -45,6 +49,7 @@ services:
       - storage:/app/storage
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+      - 'evolution-api:host-gateway'
     depends_on:
       - rails
       - postgres
