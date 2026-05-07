@@ -393,6 +393,10 @@ These are the foundational database tables and models that everything else depen
 - Idle action settings: enable/disable, timeout, action type, idle message
 - Custom instructions (appended to system prompt)
 - Feature toggles: `feature_faq`, `feature_memory`, `feature_citation`
+- **OpenAI API Key**: Per-assistant key (BYO) or platform key
+  - Write-only: API returns `openai_api_key_configured: true/false`, never the key itself
+  - Blank submission keeps existing key, non-blank replaces it
+  - Disabled for accounts without `jivo_byo_key_allowed` flag
 
 ### 2.3 Playground
 - Test conversations without affecting real conversations
@@ -512,6 +516,21 @@ The original autonomous bot that handles incoming customer messages.
 - Delay job by 1-5 seconds when message has attachments
 - Allows file processing to complete before AI reads them
 
+### 4.11 Contact Enrichment
+- Automatic extraction of contact details from customer messages
+- Runs before AI generates response in both V1 and V2 handlers
+- **Deterministic extraction**: Email/phone via regex
+- **LLM extraction**: Name via OpenAI when signals detected
+- **Validation rules**:
+  - Never overwrite existing email/phone
+  - Name only if blank/placeholder-like (e.g. not existing name, not phone number)
+  - Email: downcased, validated, duplicate-checked case-insensitively
+  - Phone: normalized via TelephoneNumber, duplicate-checked
+- **Signals**: Email regex, phone regex, name phrases (`my name is`, `i am`, `this is`)
+- **Watermarking**: `conversation.custom_attributes["jivo_contact_enriched_message_id"]` tracks last processed message
+- **Scope**: Latest 25 incoming non-private messages, newer than watermark
+- **Updates**: Direct `contact.update!(updates)` with applied values
+
 ---
 
 ## 5. Conversation Auto-Pilot (V2 — Multi-Agent)
@@ -541,6 +560,9 @@ Modern agent-based architecture using Ruby Agents SDK.
 ### 5.5 Custom Tool Support
 - Scenarios can use custom HTTP tools
 - Tools dynamically loaded based on scenario configuration
+
+### 5.6 Contact Enrichment
+- Same as V1 (see 4.11) — runs before agent generates response
 
 ---
 
