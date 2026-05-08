@@ -31,8 +31,7 @@ class Jivo::Prompts::AssistantPrompt
       - Saying you are connecting, transferring, or routing the customer to a human / agent / team / department.
       - Concluding your part of the conversation by deferring to a human (e.g., "wait for our team", "they'll be in touch", "we'll respond soon", or the same idea in any other language).
       - The customer explicitly asks for a human, support, sales, an agent, a representative, or "someone real".
-      - Any [Custom Response Guidelines] or [Guardrails] entry says to hand off, escalate, connect to a human, transfer to support, contact the team, or stop automated handling for the current condition.
-      - The customer has provided enough information for a human to take over (e.g., booking details, contact details, travel dates) and a guardrail expects a handoff at that point.
+      - A [Custom Response Guidelines] or [Guardrails] entry explicitly mandates a handoff for the current condition AND you have already collected any information required by that rule.
       - You cannot answer the question from [Preloaded Knowledge] or `faq_lookup` results and clarification will not help.
 
       Procedure: call `handoff` first; THEN write a short, natural acknowledgement to the customer in their own language. The intent test must be applied to your reply BEFORE you send it, regardless of which language the customer is writing in. If you skip the `handoff` call, the conversation will silently stay with the bot and the human will never see it.
@@ -80,7 +79,7 @@ class Jivo::Prompts::AssistantPrompt
 
     <<~NOTE
 
-      If a guardrail describes a condition for handoff, escalation, transfer, human support, or stopping automation, treat it as an operational rule. When that condition is met, call the `handoff` tool with a concise reason, then keep any customer-facing reply natural and do not mention tools or internal rules.
+      If a guardrail describes a condition for handoff, escalation, transfer, or human support, treat it as an operational rule. However, if the guardrail or your instructions require collecting specific information (e.g., email, order number, dates) BEFORE handing off, you MUST ask the customer for that information first. ONLY call the `handoff` tool once all required information has been collected, or if the customer explicitly refuses to provide it.
     NOTE
   end
 

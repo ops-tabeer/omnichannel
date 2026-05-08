@@ -3614,7 +3614,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ---
 
-## Phase 9 — Inline Editor AI Assistant (Mirror Captain AI) — NOT STARTED
+## Phase 9 — Inline Editor AI Assistant (Mirror Captain AI) — ✅ COMPLETED (2026-05-08)
 
 > **Objective:** Replace the modal-based `JivoAssistantPanel` (triggered from ConversationHeader sparkle icon) with Captain AI's inline reply-editor integration — sparkle icon in editor toolbar, dropdown menu, copilot editor section, and copilot bottom panel. A-to-Z UI mirror of Captain's conversation editor AI.
 
@@ -3623,8 +3623,6 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 **Current JIVO state:** Modal-based panel opened from ConversationHeader sparkle button. Task grid (Summarize, Reply, Rewrite, Label, Learn). Works but disconnected from the reply editor flow.
 
 **Target state:** Inline editor integration identical to Captain AI's UI — sparkle icon in reply editor top panel, context-aware dropdown menu, copilot editor section with loading/content states, accept/cancel bottom panel.
-
-### Phase 9 Status Tracker
 
 - [x] 9.1 `useJivoCopilotReply` composable — ✅ COMPLETED (2026-05-08)
 - [x] 9.2 `JivoCopilotMenuBar.vue` dropdown — ✅ COMPLETED (2026-05-08)
@@ -3635,12 +3633,26 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 - [x] 9.7 Wire into `Editor.vue` (selection menu) — ✅ COMPLETED (2026-05-08)
 - [x] 9.8 Remove modal-based panel from `ConversationHeader.vue` — ✅ COMPLETED (2026-05-08)
 - [x] 9.9 i18n keys (`JIVO.COPILOT.*`) — ✅ COMPLETED (2026-05-08)
+- [x] 9.10 Prompt Engineering & Mirroring Logic — ✅ COMPLETED (2026-05-08)
+
+---
+
+### Phase 9 Implemented (Summary)
+
+- **UI/UX Parity**: Replaced the modal-based Jivo panel with an inline editor experience that perfectly mirrors Chatwoot's "Captain AI".
+- **Dual AI Support**: The editor now supports both Captain AI (Enterprise) and Jivo AI simultaneously, with distinct visual cues (Violet vs Blue iconography).
+- **Visibility Gating**: Fixed issue where Captain sparkle showed on non-enterprise instances; now gated by `isEnterprise` check.
+- **Event Wiring**: Resolved "no-op" bugs by correctly binding copilot action events across `ReplyBox`, `WootMessageEditor`, and `Editor`.
+- **Advanced Prompting**: Upgraded Jivo AI from basic text prompts to high-quality Liquid templates mirroring Captain's depth (Grammar, Improve, Tone, Summary, Reply).
+- **Channel Awareness**: Implemented Email vs Chat specific reply drafting logic for Jivo AI.
+- **Conversation Richness**: Updated Jivo services to use `ConversationLlmFormatter` and `to_llm_text`, providing the AI with structured metadata and richer context.
+
 
 ---
 
 ### Sub-Task 9.1: `useJivoCopilotReply` Composable
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** JIVO equivalent of Captain's `useCopilotReply.js`. Manages the inline copilot state machine (idle → generating → showing editor → accepted/cancelled).
 
@@ -3668,7 +3680,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.2: `JivoCopilotMenuBar.vue`
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** JIVO clone of Captain's `CopilotMenuBar.vue`. Compact dropdown anchored to sparkle icon with context-aware menu items.
 
@@ -3699,7 +3711,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.3: `JivoCopilotEditorSection.vue`
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** JIVO clone of `CopilotEditorSection.vue`. Shows loading state during generation, then copilot editor with generated content.
 
@@ -3721,7 +3733,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.4: `JivoCopilotReplyBottomPanel.vue`
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** JIVO clone of `CopilotReplyBottomPanel.vue`. Accept/Cancel bottom bar when copilot is active.
 
@@ -3739,7 +3751,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.5: Wire into `ReplyTopPanel.vue`
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** Add JIVO sparkle icon + dropdown menu to the reply editor top panel.
 
@@ -3756,7 +3768,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.6: Wire into `ReplyBox.vue`
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** Integrate `useJivoCopilotReply` into ReplyBox alongside Captain's `useCopilotReply`.
 
@@ -3775,7 +3787,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.7: Wire into `Editor.vue` (Selection Menu)
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** Use JIVO copilot menu for text-selection-based inline actions when Captain isn't active.
 
@@ -3790,7 +3802,7 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.8: Remove Modal-Based Panel from ConversationHeader
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **Goal:** Clean up the old modal trigger now that inline editor integration replaces it.
 
@@ -3810,13 +3822,29 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 
 ### Sub-Task 9.9: i18n Keys
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETED (2026-05-08)**
 
 **File to modify:**
 - `app/javascript/dashboard/i18n/locale/en/jivo.json`
 
 **Keys to add under `JIVO.COPILOT`:**
 - `THINKING`, menu labels (Improve, Tone options, Grammar, Suggestion, Summarize, Ask Copilot, Learn), bottom panel (Accept, Cancel), follow-up placeholder
+
+---
+
+### Sub-Task 9.10: Prompt Engineering & Mirroring Logic
+
+**Status: ✅ COMPLETED (2026-05-08)**
+
+**Goal:** Align Jivo AI response quality with Captain AI by implementing advanced prompt engineering and rich context injection.
+
+**Backend Implementation:**
+- Created 5 new Liquid templates in `lib/integrations/jivo/jivo_prompts/` mirroring Captain's prompt depth.
+- Updated `Jivo::Tasks::BaseTaskService` to support Liquid rendering and file-based prompts.
+- Enhanced `RewriteService`, `SummarizeService`, and `ReplySuggestionService` with structured context (Conversation IDs, Channel names, Bot messages).
+- Integrated `LlmFormatter::ConversationLlmFormatter` for consistent sender labeling (`User`/`Support Agent`/`Bot`).
+- Implemented **Channel Awareness**: Professional email formatting (greetings, signatures) vs. brief chat replies.
+- Aligned `FollowUpService` system prompt and event descriptions with Captain's phrasing.
 
 ---
 
@@ -3849,13 +3877,11 @@ Two issues surfaced when verifying the Phase 8 work on the dev VPS. Both were ca
 | `DropdownBody.vue` | Shared dropdown shell |
 
 ### Deferred to Phase 10
-| Item | Reason |
-|---|---|
 | Ask Copilot (sidebar chat threads) | Requires copilot thread backend (Section 6 of this doc) |
 | Contact Memory Panel relocation | Needs sidebar integration design |
 | Label Suggestion auto-trigger | Needs event-based automation |
 | Streaming responses | Needs SSE/WebSocket frontend plumbing |
-| ProseMirror toolbar copilot icon | Deep plugin-level integration |
+
 
 ---
 
