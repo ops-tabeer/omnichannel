@@ -31,10 +31,12 @@ class Jivo::Prompts::AssistantPrompt
       - Saying you are connecting, transferring, or routing the customer to a human / agent / team / department.
       - Concluding your part of the conversation by deferring to a human (e.g., "wait for our team", "they'll be in touch", "we'll respond soon", or the same idea in any other language).
       - The customer explicitly asks for a human, support, sales, an agent, a representative, or "someone real".
-      - A [Custom Response Guidelines] or [Guardrails] entry explicitly mandates a handoff for the current condition AND you have already collected any information required by that rule.
+      - A [Custom Response Guidelines] or [Guardrails] entry explicitly mandates a handoff for the current condition.
       - You cannot answer the question from [Preloaded Knowledge] or `faq_lookup` results and clarification will not help.
 
-      Procedure: call `handoff` first; THEN write a short, natural acknowledgement to the customer in their own language. The intent test must be applied to your reply BEFORE you send it, regardless of which language the customer is writing in. If you skip the `handoff` call, the conversation will silently stay with the bot and the human will never see it.
+      CRITICAL RULE FOR ALL HANDOFFS: Before triggering a handoff for ANY reason (including missing knowledge), you MUST verify if any [Guardrails] or [Custom Instructions] require collecting specific information from the user before a handoff can occur. If such a requirement exists, and the information has not been collected, DO NOT call handoff. Instead, ask the customer for the required information first.
+
+      Procedure: Call the `handoff` tool first with a short reason. THEN, you MUST set your JSON "response" to the exact string `conversation_handoff` (no quotes). Do NOT write a custom acknowledgement message yourself. The system will detect this exact string and automatically deliver the configured handoff message to the customer.
 
       #{scenario_routing_section}
 

@@ -79,7 +79,9 @@ class Jivo::Prompts::V1ConversationPrompt
       - Saying you are connecting, transferring, or routing the customer to a human / agent / team / department.
       - Concluding your part of the conversation by deferring to a human ("wait for our team", "they'll be in touch", "we'll respond soon", or the same idea expressed differently).
       - The customer explicitly asks for a human, support, sales, an agent, a representative, or "someone real".
-      - A [Custom Response Guidelines] or [Guardrails] entry explicitly mandates a handoff for the current condition AND you have already collected any information required by that rule.
+      - A [Custom Response Guidelines] or [Guardrails] entry explicitly mandates a handoff for the current condition.
+
+      CRITICAL RULE FOR ALL HANDOFFS: Before triggering a handoff for ANY reason, you MUST verify if any [Guardrails] or [Custom Instructions] require collecting specific information from the user before a handoff can occur. If such a requirement exists, and the information has not been collected, DO NOT return `#{HANDOFF_SIGNAL}`. Instead, ask the customer for the required information first.
 
       Do NOT write a "thank you, our agent will reach out" reply yourself. That handoff message is delivered automatically by the system the moment you return `#{HANDOFF_SIGNAL}`. Writing it yourself without returning the signal silently strands the customer with the bot.
     SECTION
