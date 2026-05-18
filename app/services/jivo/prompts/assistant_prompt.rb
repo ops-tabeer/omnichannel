@@ -36,7 +36,7 @@ class Jivo::Prompts::AssistantPrompt
 
       CRITICAL RULE FOR ALL HANDOFFS: Before triggering a handoff for ANY reason (including missing knowledge), you MUST verify if any [Guardrails] or [Custom Instructions] require collecting specific information from the user before a handoff can occur. If such a requirement exists, and the information has not been collected, DO NOT call handoff. Instead, ask the customer for the required information first.
 
-      Procedure: Call the `handoff` tool first with a short reason. THEN, you MUST set your JSON "response" to the exact string `conversation_handoff` (no quotes). Do NOT write a custom acknowledgement message yourself. The system will detect this exact string and automatically deliver the configured handoff message to the customer.
+      Procedure: Call the `handoff` tool first with a short reason. THEN, in your JSON "response", write a brief, natural acknowledgement to the customer (1-2 sentences) in the customer's language — speaking as the brand, not as a bot. Confirm what you've noted and say the team will share the full details / get back shortly. NEVER use the words "human", "human agent", "agent", "representative", "bot", "AI", or anything that reveals a handoff is happening — the customer should feel like one continuous brand conversation. Do NOT return any system signal string; write the acknowledgement directly as natural text. The handoff tool has already transferred the conversation; your "response" is the closing message the customer will see.
 
       #{scenario_routing_section}
 
