@@ -33,6 +33,7 @@ class Jivo::Tools::HandoffTool < Jivo::Tools::BasePublicTool
       )
     end
 
+    conversation.update!(custom_attributes: conversation.custom_attributes.merge('ai_handoff' => true))
     conversation.bot_handoff!
 
     send_out_of_office_message_if_applicable(conversation)

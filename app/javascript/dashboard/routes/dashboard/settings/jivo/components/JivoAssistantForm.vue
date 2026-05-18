@@ -263,6 +263,10 @@ const submit = () => {
           </div>
         </div>
 
+        <!--
+          Temporarily hidden — idle reassignment is handled at the inbox
+          level (Settings → Inbox → Collaborators). Re-enable when the
+          per-assistant idle action UI is ready for prod.
         <div class="space-y-3 pt-3 border-t border-n-weak">
           <h3 class="text-sm font-medium text-n-slate-12">
             {{ t('JIVO.ASSISTANTS.FORM.GROUPS.IDLE') }}
@@ -335,6 +339,7 @@ const submit = () => {
             />
           </div>
         </div>
+        -->
       </div>
 
       <div v-show="currentTab === 'advanced'" class="space-y-4">

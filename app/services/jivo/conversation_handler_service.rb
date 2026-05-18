@@ -153,6 +153,7 @@ class Jivo::ConversationHandlerService
         content: message_content,
         private: false
       )
+      conversation.update!(custom_attributes: conversation.custom_attributes.merge('ai_handoff' => true))
       conversation.bot_handoff!
     end
   end

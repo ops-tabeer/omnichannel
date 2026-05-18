@@ -433,18 +433,19 @@ const menuItems = computed(() => {
             navigationPath: 'jivo_documents',
           }),
         },
-        {
-          name: 'Jivo Scenarios',
-          label: t('JIVO.SIDEBAR.SCENARIOS'),
-          activeOn: [
-            'jivo_scenarios',
-            'jivo_scenario_new',
-            'jivo_scenario_edit',
-          ],
-          to: accountScopedRoute('jivo_assistants_dispatch', {
-            navigationPath: 'jivo_scenarios',
-          }),
-        },
+        // Temporarily hidden — re-enable when Scenarios feature is ready for prod.
+        // {
+        //   name: 'Jivo Scenarios',
+        //   label: t('JIVO.SIDEBAR.SCENARIOS'),
+        //   activeOn: [
+        //     'jivo_scenarios',
+        //     'jivo_scenario_new',
+        //     'jivo_scenario_edit',
+        //   ],
+        //   to: accountScopedRoute('jivo_assistants_dispatch', {
+        //     navigationPath: 'jivo_scenarios',
+        //   }),
+        // },
         {
           name: 'Jivo Playground',
           label: t('JIVO.SIDEBAR.PLAYGROUND'),
@@ -461,16 +462,17 @@ const menuItems = computed(() => {
             navigationPath: 'jivo_inboxes',
           }),
         },
-        {
-          name: 'Jivo Custom Tools',
-          label: t('JIVO.SIDEBAR.CUSTOM_TOOLS'),
-          activeOn: [
-            'jivo_custom_tools',
-            'jivo_custom_tool_new',
-            'jivo_custom_tool_edit',
-          ],
-          to: accountScopedRoute('jivo_custom_tools'),
-        },
+        // Temporarily hidden — re-enable when Custom Tools feature is ready for prod.
+        // {
+        //   name: 'Jivo Custom Tools',
+        //   label: t('JIVO.SIDEBAR.CUSTOM_TOOLS'),
+        //   activeOn: [
+        //     'jivo_custom_tools',
+        //     'jivo_custom_tool_new',
+        //     'jivo_custom_tool_edit',
+        //   ],
+        //   to: accountScopedRoute('jivo_custom_tools'),
+        // },
       ],
     },
     {
