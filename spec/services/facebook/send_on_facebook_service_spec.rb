@@ -72,8 +72,7 @@ describe Facebook::SendOnFacebookService do
         expect(bot).to have_received(:deliver).with({
                                                       recipient: { id: contact_inbox.source_id },
                                                       message: { text: message.content },
-                                                      messaging_type: 'MESSAGE_TAG',
-                                                      tag: 'ACCOUNT_UPDATE'
+                                                      messaging_type: 'RESPONSE'
                                                     }, { page_id: facebook_channel.page_id })
         expect(bot).to have_received(:deliver).with({
                                                       recipient: { id: contact_inbox.source_id },
@@ -85,8 +84,7 @@ describe Facebook::SendOnFacebookService do
                                                           }
                                                         }
                                                       },
-                                                      messaging_type: 'MESSAGE_TAG',
-                                                      tag: 'ACCOUNT_UPDATE'
+                                                      messaging_type: 'RESPONSE'
                                                     }, { page_id: facebook_channel.page_id })
       end
 
@@ -189,8 +187,7 @@ describe Facebook::SendOnFacebookService do
                                                           { content_type: 'text', payload: 'text 2', title: 'text 2' }
                                                         ]
                                                       },
-                                                      messaging_type: 'MESSAGE_TAG',
-                                                      tag: 'ACCOUNT_UPDATE'
+                                                      messaging_type: 'RESPONSE'
                                                     }, { page_id: facebook_channel.page_id })
       end
     end
