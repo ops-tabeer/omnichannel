@@ -99,7 +99,8 @@ Python fields, no Studio).
 | `partner_id` ✱ | find-or-create `res.partner` | required |
 | `email_from` ✱ | `contact.email`, else placeholder `noreply+conv<id>@chat.tabeertours.com` | required; replaced on `contact.updated` |
 | `phone` ✱ | `contact.phone_number`, else `additional_attributes['raw_phone_number']`, else placeholder `N/A` | required; replaced on `contact.updated` |
-| `user_id` | assignee → `res.users` by email | the salesperson |
+| `user_id` | assignee → `res.users` by login(email) | the salesperson |
+| `company_id` | the matched assignee user's `company_id` | lead lands in the assignee's company; falls back to bot's default company when no user matches |
 | `lead_assignment_state` | constant `"accepted"` | prevents Odoo from auto-reassigning the lead |
 | `assignment_deadline` | **not sent** (left empty) | leaving it unset stops the auto-reassign timer |
 | `external_source_id` | Chatwoot **conversation id** | dedup key + req-3 "managed" marker |
@@ -249,7 +250,7 @@ Implementation notes:
   to appear. Logo assets `public/dashboard/images/integrations/odoo{,-dark}.png` are
   the official Odoo CRM app icon (transparent background, same file for both themes).
 
-### Phase 2 — Create lead on Take (req 1 + 4)
+### Phase 2 — Create lead on Take (req 1 + 4) ✅ implemented
 - New `conversation.taken` event dispatched from the `take` controller action.
 - `HookListener` + `HookJob` routing; per-inbox `enabled_inbox_ids` gate.
 - `Crm::Odoo::ProcessorService#handle_taken`, `LeadMapper`, partner

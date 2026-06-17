@@ -143,6 +143,9 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
       @conversation,
       { account_id: @conversation.account_id, inbox_id: @conversation.inbox_id, message_type: :activity, content: content }
     )
+    Rails.configuration.dispatcher.dispatch(
+      Events::Types::CONVERSATION_TAKEN, Time.zone.now, conversation: @conversation, performed_by: Current.executed_by
+    )
     head :ok
   end
 

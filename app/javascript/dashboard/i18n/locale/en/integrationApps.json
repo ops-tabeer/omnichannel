@@ -55,8 +55,13 @@
     },
     "CONNECTED_AS": "Connected to Odoo as {user}",
     "INBOX_SYNC": {
-      "SAVE": "Save inboxes",
-      "SAVED": "Inbox sync settings updated"
+      "SAVE": "Save settings",
+      "SAVED": "Odoo settings updated"
+    },
+    "FALLBACK_USER": {
+      "LABEL": "Fallback salesperson",
+      "HELP": "Odoo login (email) to own the lead when the taking agent has no matching Odoo user. Optional.",
+      "PLACEHOLDER": "manager@yourco.com"
     },
     "CONNECT": {
       "BUTTON_TEXT": "Connect"

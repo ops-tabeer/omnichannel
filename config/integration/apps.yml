@@ -302,6 +302,7 @@ odoo:
           'db': { 'type': 'string' },
           'login': { 'type': 'string' },
           'api_key': { 'type': 'string' },
+          'fallback_user_login': { 'type': 'string' },
           'uid': { 'type': 'integer' },
           'connected_user': { 'type': 'string' },
           'enabled_inbox_ids': { 'type': 'array', 'items': { 'type': 'integer' } },
@@ -338,6 +339,12 @@ odoo:
         'name': 'api_key',
         'validation': 'required',
         'help': 'API key generated in Odoo under Preferences -> Account Security',
+      },
+      {
+        'label': 'Fallback Salesperson Login',
+        'type': 'text',
+        'name': 'fallback_user_login',
+        'help': 'Odoo login (email) to own the lead when the taking agent has no matching Odoo user. Optional.',
       },
     ]
   visible_properties:

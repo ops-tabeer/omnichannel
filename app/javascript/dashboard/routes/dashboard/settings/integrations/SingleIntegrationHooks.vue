@@ -32,10 +32,12 @@ const hook = computed(() => integration.value.hooks?.[0]);
 const connectedUser = computed(() => hook.value?.settings?.connected_user);
 
 const selectedInboxIds = ref([]);
+const fallbackUserLogin = ref('');
 watch(
-  () => hook.value?.settings?.enabled_inbox_ids,
-  enabledIds => {
-    selectedInboxIds.value = [...(enabledIds || [])];
+  () => hook.value?.settings,
+  settings => {
+    selectedInboxIds.value = [...(settings?.enabled_inbox_ids || [])];
+    fallbackUserLogin.value = settings?.fallback_user_login || '';
   },
   { immediate: true }
 );
@@ -46,7 +48,7 @@ onMounted(() => {
   }
 });
 
-const saveInboxes = async () => {
+const saveSettings = async () => {
   await store.dispatch('integrations/updateHook', {
     hookId: hook.value.id,
     hookData: {
@@ -54,6 +56,7 @@ const saveInboxes = async () => {
         settings: {
           ...hook.value.settings,
           enabled_inbox_ids: selectedInboxIds.value,
+          fallback_user_login: fallbackUserLogin.value,
         },
       },
     },
@@ -128,12 +131,24 @@ const saveInboxes = async () => {
           {{ inbox.name }}
         </label>
       </div>
+      <h4 class="text-sm font-medium text-n-slate-12 mb-1">
+        {{ $t('INTEGRATION_APPS.FALLBACK_USER.LABEL') }}
+      </h4>
+      <p class="text-n-slate-11 text-xs mb-2">
+        {{ $t('INTEGRATION_APPS.FALLBACK_USER.HELP') }}
+      </p>
+      <input
+        v-model="fallbackUserLogin"
+        type="text"
+        class="w-full mb-3 bg-n-alpha-2 text-n-slate-12 text-sm rounded-md border border-n-weak px-3 py-2"
+        :placeholder="$t('INTEGRATION_APPS.FALLBACK_USER.PLACEHOLDER')"
+      />
       <Button
         blue
         sm
         :label="$t('INTEGRATION_APPS.INBOX_SYNC.SAVE')"
         :is-loading="uiFlags.isUpdating"
-        @click="saveInboxes"
+        @click="saveSettings"
       />
     </div>
   </div>
