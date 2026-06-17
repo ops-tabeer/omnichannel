@@ -247,7 +247,7 @@ Implementation notes:
   preserved). Stored in hook `settings`; consumed by the Phase 2 per-inbox gate.
 - `crm_integration` feature flag must be enabled on the account for the integration
   to appear. Logo assets `public/dashboard/images/integrations/odoo{,-dark}.png` are
-  **placeholders** (copied from LeadSquared) pending the real Odoo logo.
+  the official Odoo CRM app icon (transparent background, same file for both themes).
 
 ### Phase 2 — Create lead on Take (req 1 + 4)
 - New `conversation.taken` event dispatched from the `take` controller action.
