@@ -98,8 +98,10 @@ Python fields, no Studio).
 |---|---|---|
 | `partner_id` ✱ | find-or-create `res.partner` | required |
 | `email_from` ✱ | `contact.email`, else placeholder `noreply+conv<id>@chat.tabeertours.com` | required; replaced on `contact.updated` |
-| `phone` ✱ | `contact.phone_number`, else placeholder `N/A` | required; replaced on `contact.updated` |
+| `phone` ✱ | `contact.phone_number`, else `additional_attributes['raw_phone_number']`, else placeholder `N/A` | required; replaced on `contact.updated` |
 | `user_id` | assignee → `res.users` by email | the salesperson |
+| `lead_assignment_state` | constant `"accepted"` | prevents Odoo from auto-reassigning the lead |
+| `assignment_deadline` | **not sent** (left empty) | leaving it unset stops the auto-reassign timer |
 | `external_source_id` | Chatwoot **conversation id** | dedup key + req-3 "managed" marker |
 | `communication_channel` | inbox channel → `messenger` / `whatsapp` / `website_chat` / `email` / `other` | derived |
 | `source_platform` | `facebook` (Messenger) / `instagram` / else `custom_api` | derived |
@@ -168,12 +170,25 @@ enabled for the relevant agents; no new code.
 `app/services/jivo/contact_enrichment_service.rb` extracts email/phone from chat
 messages into the contact. Email saves, but **phone often does not**, because
 `normalized_phone_number` calls `TelephoneNumber.parse(value)` with **no default
-country** — local-format numbers (e.g. `03001234567`) fail validation and are
-dropped. Agreed fix:
+country** — local-format numbers (e.g. `03001234567`) fail validation. The
+`Contact` model also hard-validates `phone_number` against strict E.164
+(`/\+[1-9]\d{1,14}\z/`), so a local-format number **cannot** be stored on
+`phone_number` at all. Implemented fix:
 
-- **Store raw digits** when the number cannot be parsed/validated (never drop it).
 - Scan recent incoming messages for email AND phone **separately**, so a phone sent
   in a different message than the trigger is still captured.
+- `normalized_phone_number` now returns `parsed.e164_number` (contiguous
+  `+923049356118`), **not** `international_number` (space-formatted `+92 304 ...`).
+  The space-formatted variant failed the model's `/\+[1-9]\d{1,14}\z/` validator and
+  raised on `update!` — so even valid numbers were being dropped before this fix.
+- Valid E.164 numbers are stored on `contact.phone_number` as before. When the
+  number can't be parsed to E.164, the **raw digits are stored in
+  `contact.additional_attributes['raw_phone_number']`** (never dropped) — the model
+  rejects them on `phone_number`. Email and phone are written so a rejected phone
+  never rolls back the email.
+- **Odoo consumption (Phase 2/4):** the lead/partner mapper uses
+  `contact.phone_number` when present, else falls back to
+  `additional_attributes['raw_phone_number']`, else the `N/A` placeholder.
 
 Better contact data → fewer Odoo placeholders.
 
