@@ -196,6 +196,51 @@ Better contact data → fewer Odoo placeholders.
 
 ---
 
+## Phased rollout
+
+Each phase is independently testable and shippable. Earlier phases deliver value
+without depending on later ones.
+
+### Phase 0 — Phone enrichment fix
+- `Jivo::ContactEnrichmentService`: store raw digits when unparseable; scan recent
+  messages for email and phone separately.
+- Small, self-contained, no Odoo dependency. Reduces placeholders later.
+- **Done when:** local-format phone numbers reliably save to the contact.
+
+### Phase 1 — Connection & setup (foundation, no triggers)
+- `Crm::Odoo::Api::Client` (JSON-RPC authenticate + `execute_kw`).
+- `odoo` block in `config/integration/apps.yml` (incl. inbox multi-select),
+  `Integrations::Hook#crm_integration?`, `Crm::SetupJob`, `Crm::Odoo::SetupService`.
+- **Done when:** the integration can be configured in the UI and validates
+  credentials against Odoo on connect. No leads created yet.
+
+### Phase 2 — Create lead on Take (req 1 + 4)
+- New `conversation.taken` event dispatched from the `take` controller action.
+- `HookListener` + `HookJob` routing; per-inbox `enabled_inbox_ids` gate.
+- `Crm::Odoo::ProcessorService#handle_taken`, `LeadMapper`, partner
+  find-or-create, placeholders, store lead/partner ids, chat reference link.
+- **Done when:** taking a handed-off conversation creates a correctly-mapped lead
+  with the right salesperson and chat link.
+
+### Phase 3 — Update salesperson on reassignment (req 2)
+- `assignee.changed` handling → update `user_id` when a lead already exists.
+- **Done when:** reassigning a taken conversation updates the lead's salesperson;
+  pre-Take changes are ignored.
+
+### Phase 4 — Handoff note + placeholder replacement
+- Post the AI handoff note to lead chatter on create (`message_post`).
+- `contact.updated` → replace placeholder email/phone with real values.
+- **Done when:** the handoff note appears in chatter and placeholders are healed.
+
+### Phase 5 — Odoo-side enforcement & email (req 3 + 5)
+- Deliver the Odoo automated-action snippet (block manual `user_id` change on
+  Chatwoot-managed leads) to the Odoo team.
+- Verify Chatwoot's `conversation_assignment` email is enabled for the agents.
+- **Done when:** manual salesperson edits in Odoo are blocked and assignees are
+  emailed on take/assign.
+
+---
+
 ## Later (enhancements, not in v1)
 
 - **Transcript on resolve → chatter:** on `conversation.resolved`, post the full
