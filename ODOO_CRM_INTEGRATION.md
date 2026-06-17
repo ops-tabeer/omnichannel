@@ -1,0 +1,206 @@
+# Odoo CRM Integration — Design & Plan
+
+Status: **Planned / agreed** (not yet implemented)
+Branch: `omni-dev`
+
+One-directional **Chatwoot → Odoo** lead sync, built inside the existing `Crm::`
+integration framework (mirrors the LeadSquared integration: processor + mappers +
+setup + API client under `app/services/crm/`, wired through
+`Integrations::Hook` → `HookListener` → `HookJob`).
+
+---
+
+## Goals (requirements)
+
+1. When a **handed-off** conversation is **Taken** by an agent, create the lead in
+   Odoo CRM with that agent as the assignee (salesperson).
+2. When the conversation is **reassigned** (e.g. by Fey/Jasmine), update the
+   salesperson on the same Odoo lead.
+3. **Block** changing the salesperson directly inside Odoo for Chatwoot-managed
+   leads — show an error telling the user to reassign from Chatwoot.
+4. Every synced lead must carry a **reference link** back to the originating chat.
+5. The assignee is **emailed** when a conversation is taken/assigned.
+
+---
+
+## How Chatwoot connects to Odoo
+
+- Uses Odoo's built-in **External API over JSON-RPC** (`POST {url}/jsonrpc`).
+  No endpoint is created on the Odoo side; the API ships with every instance.
+- Talks to Odoo with **HTTParty** (no `xmlrpc` gem — removed from Ruby 3.4 stdlib).
+- Authenticates as a **dedicated Odoo bot user**:
+  1. `service: "common", method: "authenticate"` → `uid`
+  2. `service: "object", method: "execute_kw"` for `crm.lead` / `res.partner` /
+     `res.users` operations.
+- Credentials stored in the hook `settings`; the `api_key` lives in the encrypted
+  `access_token` column. Server-side only, authenticated + TLS on every call.
+- The bot identity is also what makes requirement 3 enforceable — Odoo can allow
+  salesperson changes from the bot `uid` and block them from human users.
+
+### Connection settings (Odoo integration config)
+
+| Setting | Example | Purpose |
+|---|---|---|
+| `url` | `https://yourco.odoo.com` | Instance base URL |
+| `db` | `yourco-prod` | Database name |
+| `login` | `chatwoot-bot@yourco.com` | Dedicated bot user |
+| `api_key` | (generated in Odoo) | Auth secret (Preferences → Account Security) |
+| `enabled_inbox_ids` | `[1, 4]` | Inboxes allowed to sync (see scoping) |
+
+---
+
+## Triggers
+
+| Event | Condition | Action |
+|---|---|---|
+| **`conversation.taken`** (new event dispatched from the `take` action) | handed-off convo, inbox enabled, no Odoo lead yet | **CREATE** lead; salesperson = `conversation.assignee` |
+| `assignee.changed` | Odoo lead already exists, inbox enabled | **UPDATE** salesperson |
+| `assignee.changed` | no lead yet (pre-Take idle bounce) | **ignore** |
+| `contact.updated` | contact now has real email/phone, has a managed lead | **replace placeholder** email/phone on the lead |
+
+### Why "Take" and not assignment
+
+The custom **"Take" button** (`POST /:id/take`) sets a `taken_at` timestamp on a
+conversation that is **already assigned** to the agent. It is *not* a self-assign.
+`taken_at` is also the permanent stop for `AutoAssignment::IdleReassignmentService`
+— before Take, a handed-off conversation can bounce between agents (firing
+`assignee.changed` repeatedly); after Take it never auto-reassigns again. So:
+
+- **Take** is the deliberate "this agent now owns it" moment → create the lead.
+- Any `assignee.changed` *after* a lead exists is a real reassignment → update.
+- `assignee.changed` *before* Take (idle bouncing) has no lead yet → ignored.
+
+The salesperson is always `conversation.assignee` (matched to an Odoo `res.users`
+by **email**), even if an admin clicked Take on someone else's behalf.
+
+---
+
+## Records & dedup
+
+- **Lead = per conversation.** Odoo lead id stored in
+  `conversation.additional_attributes['odoo']`.
+- **Partner = per contact.** `res.partner` find-or-create:
+  1. Reuse `contact.additional_attributes['external']['odoo_partner_id']` if set.
+  2. Else search Odoo by **real** email, then real phone (skip placeholders).
+  3. Else create a partner, then store its id on the contact.
+
+This guarantees one partner per customer (across conversations) and one lead per
+conversation, with no duplicates on re-sync.
+
+---
+
+## `crm.lead` field mapping
+
+Target Odoo modules: `travel_agency_crm` + `lead_integrations` (Odoo 19, custom
+Python fields, no Studio).
+
+| Odoo field | Value from Chatwoot | Notes |
+|---|---|---|
+| `partner_id` ✱ | find-or-create `res.partner` | required |
+| `email_from` ✱ | `contact.email`, else placeholder `noreply+conv<id>@chat.tabeertours.com` | required; replaced on `contact.updated` |
+| `phone` ✱ | `contact.phone_number`, else placeholder `N/A` | required; replaced on `contact.updated` |
+| `user_id` | assignee → `res.users` by email | the salesperson |
+| `external_source_id` | Chatwoot **conversation id** | dedup key + req-3 "managed" marker |
+| `communication_channel` | inbox channel → `messenger` / `whatsapp` / `website_chat` / `email` / `other` | derived |
+| `source_platform` | `facebook` (Messenger) / `instagram` / else `custom_api` | derived |
+| `description` | chat **deep link** (req 4) + contact name | Html, clickable |
+| `name` | **not sent** | auto-set by the module's sequence on create |
+| `inquiry_type` | **not sent** (left unset) | view-required only; AI could classify later |
+| `lead_source` | **not sent** (left unset) | — |
+
+✱ = required on create (DB-level). Messenger leads often lack email/phone, so
+**placeholders** are sent and overwritten when real values arrive.
+
+Selection fields must be sent as exact stored values (see the module field
+inventory shared by the Odoo team).
+
+---
+
+## Handoff note → lead chatter
+
+When the lead is created (on Take), the **AI handoff note** is posted to the lead's
+chatter. The handoff note is a private message created by `Jivo::Tools::HandoffTool`
+with `sender` = the assistant (`sender_type = 'JivoAssistant'`), which distinguishes
+it from agents' own private notes (`sender_type = 'User'`).
+
+```
+execute_kw(db, uid, key, 'crm.lead', 'message_post', [[lead_id]],
+  { body: <note content>, message_type: 'comment', subtype_xmlid: 'mail.mt_note' })
+```
+
+`mail.mt_note` posts an **internal log note** (not emailed to followers).
+
+---
+
+## Per-inbox scoping
+
+A single account-level Odoo hook holds the connection. The integration settings
+include an **inbox multi-select** stored as `enabled_inbox_ids` in the hook
+settings. Every processor action is gated:
+
+```ruby
+return unless enabled_inbox_ids.include?(conversation.inbox_id)
+```
+
+Default is **explicit opt-in** — nothing syncs unless the inbox is enabled.
+
+---
+
+## Requirement 3 — block manual reassignment in Odoo (Odoo side)
+
+Enforced inside Odoo (Chatwoot cannot block edits made in Odoo). An **automated
+action / server action** on `crm.lead` write: when `external_source_id` is set
+(i.e. the lead came from Chatwoot) and `user_id` is being changed by a **non-bot**
+user, raise a `UserError` ("Reassign this lead from Chatwoot, not Odoo"). The bot
+user's own writes (Chatwoot syncs) are allowed. No extra custom field is needed —
+`external_source_id` presence is the marker. (Python snippet provided separately.)
+
+## Requirement 5 — email the assignee
+
+Use Chatwoot's built-in `conversation_assignment` email notification
+(`AgentNotifications::ConversationNotificationsMailer`). Just ensure the setting is
+enabled for the relevant agents; no new code.
+
+---
+
+## Related side-fix — phone enrichment
+
+`app/services/jivo/contact_enrichment_service.rb` extracts email/phone from chat
+messages into the contact. Email saves, but **phone often does not**, because
+`normalized_phone_number` calls `TelephoneNumber.parse(value)` with **no default
+country** — local-format numbers (e.g. `03001234567`) fail validation and are
+dropped. Agreed fix:
+
+- **Store raw digits** when the number cannot be parsed/validated (never drop it).
+- Scan recent incoming messages for email AND phone **separately**, so a phone sent
+  in a different message than the trigger is still captured.
+
+Better contact data → fewer Odoo placeholders.
+
+---
+
+## Components to build
+
+1. `Crm::Odoo::Api::Client` — JSON-RPC authenticate + `execute_kw`.
+2. `Crm::Odoo::ProcessorService` — `handle_taken`, `handle_assignee_changed`,
+   `handle_contact_updated` (placeholder replacement).
+3. `Crm::Odoo::Mappers::LeadMapper` — lead/partner field mapping.
+4. `Crm::Odoo::SetupService` — validate credentials on connect.
+5. Wiring — `config/integration/apps.yml` (`odoo` block + inbox multi-select),
+   `Integrations::Hook#crm_integration?`, `Crm::SetupJob`, `HookListener`
+   (`conversation.taken`, `assignee.changed`, `contact.updated` +
+   `supported_events_map`), `HookJob` routing.
+6. New `conversation.taken` event dispatched from the `take` controller action.
+7. Phone enrichment fix in `Jivo::ContactEnrichmentService`.
+8. Odoo automated-action snippet for requirement 3 (delivered to the Odoo team).
+
+---
+
+## Later (enhancements, not in v1)
+
+- **Transcript on resolve → chatter:** on `conversation.resolved`, post the full
+  chat transcript to the lead's chatter (mirrors LeadSquared's transcript activity).
+  Use the same `message_post`; gate behind an enable toggle.
+- **Activity log:** a structured per-conversation activity entry on the lead.
+- **AI-classified `inquiry_type`:** let the assistant classify the inquiry into one
+  of the module's selection values instead of leaving it unset.
