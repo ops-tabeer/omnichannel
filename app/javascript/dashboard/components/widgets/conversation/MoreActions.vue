@@ -15,6 +15,7 @@ import {
   CMD_SEND_TRANSCRIPT,
   CMD_UNMUTE_CONVERSATION,
 } from 'dashboard/helper/commandbar/events';
+import { useAccount } from 'dashboard/composables/useAccount';
 
 // No props needed as we're getting currentChat from the store directly
 const store = useStore();
@@ -24,6 +25,27 @@ const [showEmailActionsModal, toggleEmailModal] = useToggle(false);
 const [showActionsDropdown, toggleDropdown] = useToggle(false);
 
 const currentChat = computed(() => store.getters.getSelectedChat);
+const currentUser = computed(() => store.getters.getCurrentUser);
+const { currentAccount } = useAccount();
+const hideResolveAction = computed(
+  () => currentAccount.value?.custom_attributes?.hide_resolve_action === true
+);
+
+const showTakeButton = computed(() => {
+  const isAssignedToMe =
+    currentChat.value?.meta?.assignee?.id === currentUser.value?.id;
+  const isAdmin = currentUser.value?.role === 'administrator';
+  return (
+    currentChat.value?.status === 'open' &&
+    (isAssignedToMe || isAdmin) &&
+    !currentChat.value?.taken_at
+  );
+});
+
+const handleTake = () => {
+  store.dispatch('takeConversation', currentChat.value.id);
+  useAlert(t('CONVERSATION.HEADER.TAKE_ACTION_SUCCESS'));
+};
 
 const actionMenuItems = computed(() => {
   const items = [];
@@ -92,9 +114,19 @@ onUnmounted(() => {
 
 <template>
   <div class="relative flex items-center gap-2 actions--container">
+    <ButtonV4
+      v-show="showTakeButton"
+      size="sm"
+      variant="ghost"
+      color="slate"
+      icon="i-lucide-hand"
+      :label="$t('CONVERSATION.HEADER.TAKE_ACTION')"
+      @click="handleTake"
+    />
     <ResolveAction
       :conversation-id="currentChat.id"
       :status="currentChat.status"
+      :hide-resolve="hideResolveAction"
     />
     <div
       v-on-clickaway="() => toggleDropdown(false)"

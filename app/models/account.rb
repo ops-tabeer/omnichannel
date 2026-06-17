@@ -22,7 +22,7 @@
 #  index_accounts_on_status  (status)
 #
 
-class Account < ApplicationRecord
+class Account < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # used for single column multi flags
   include FlagShihTzu
   include Reportable
@@ -30,6 +30,30 @@ class Account < ApplicationRecord
   include CacheKeys
   include CaptainFeaturable
   include AccountEmailRateLimitable
+
+  def hide_resolve_action
+    ActiveModel::Type::Boolean.new.cast(custom_attributes['hide_resolve_action'])
+  end
+
+  def hide_resolve_action=(value)
+    self.custom_attributes = custom_attributes.merge('hide_resolve_action' => ActiveModel::Type::Boolean.new.cast(value))
+  end
+
+  def jivo_byo_key_allowed
+    ActiveModel::Type::Boolean.new.cast(custom_attributes['jivo_byo_key_allowed'])
+  end
+
+  def jivo_byo_key_allowed=(value)
+    self.custom_attributes = custom_attributes.merge('jivo_byo_key_allowed' => ActiveModel::Type::Boolean.new.cast(value))
+  end
+
+  def jivo_enabled
+    ActiveModel::Type::Boolean.new.cast(custom_attributes['jivo_enabled'])
+  end
+
+  def jivo_enabled=(value)
+    self.custom_attributes = custom_attributes.merge('jivo_enabled' => ActiveModel::Type::Boolean.new.cast(value))
+  end
 
   SETTINGS_PARAMS_SCHEMA = {
     'type': 'object',
@@ -89,11 +113,16 @@ class Account < ApplicationRecord
 
   store_accessor :settings, :audio_transcriptions, :auto_resolve_label
   store_accessor :settings, :captain_models, :captain_features
-  store_accessor :settings, :keep_pending_on_bot_failure
+  store_accessor :settings, :keep_pending_on_bot_failure, :jivo_v2_agent
 
   has_many :account_users, dependent: :destroy_async
   has_many :agent_bot_inboxes, dependent: :destroy_async
   has_many :agent_bots, dependent: :destroy_async
+  has_many :jivo_assistants, dependent: :destroy_async
+  has_many :jivo_inboxes, dependent: :destroy_async
+  has_many :jivo_documents, dependent: :destroy_async
+  has_many :jivo_assistant_responses, dependent: :destroy_async
+  has_many :jivo_custom_tools, dependent: :destroy_async
   has_many :api_channels, dependent: :destroy_async, class_name: '::Channel::Api'
   has_many :articles, dependent: :destroy_async, class_name: '::Article'
   has_many :assignment_policies, dependent: :destroy_async

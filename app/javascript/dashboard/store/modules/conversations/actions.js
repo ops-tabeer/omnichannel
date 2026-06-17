@@ -280,6 +280,15 @@ const actions = {
     }
   },
 
+  takeConversation: async ({ commit }, conversationId) => {
+    try {
+      await ConversationApi.takeConversation(conversationId);
+      commit(types.TAKE_CONVERSATION);
+    } catch (error) {
+      //
+    }
+  },
+
   createPendingMessageAndSend: async ({ dispatch }, data) => {
     const pendingMessage = createPendingMessage(data);
     dispatch('sendMessageWithData', pendingMessage);

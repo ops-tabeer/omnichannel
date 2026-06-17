@@ -189,6 +189,9 @@ gem 'pgvector'
 # Convert Website HTML to Markdown
 gem 'reverse_markdown'
 
+# Extract text from PDF documents (JIVO knowledge base PDF ingestion)
+gem 'pdf-reader', '~> 2.12'
+
 gem 'iso-639'
 gem 'ruby-openai'
 gem 'ai-agents'

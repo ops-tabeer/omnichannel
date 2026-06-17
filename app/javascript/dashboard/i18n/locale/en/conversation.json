@@ -88,6 +88,8 @@
       "RESOLVE_ACTION": "Resolve",
       "REOPEN_ACTION": "Reopen",
       "OPEN_ACTION": "Open",
+      "TAKE_ACTION": "Take",
+      "TAKE_ACTION_SUCCESS": "Conversation taken successfully",
       "MORE_ACTIONS": "More actions",
       "OPEN": "More",
       "CLOSE": "Close",

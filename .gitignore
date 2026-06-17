@@ -29,6 +29,8 @@ master.key
 
 # Ignore env files
 .env
+.env.dev
+!.env.dev.example
 
 public/uploads
 public/packs*
@@ -96,6 +98,7 @@ yarn-debug.log*
 .cursor
 .codex/
 CLAUDE.local.md
+INFRA.md
 
 # Histoire deployment
 .netlify
@@ -103,3 +106,6 @@ CLAUDE.local.md
 .pnpm-store/*
 local/
 Procfile.worktree
+
+# VPS custom docker-compose
+docker-compose.custom.yaml

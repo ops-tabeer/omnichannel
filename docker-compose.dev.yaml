@@ -1,0 +1,80 @@
+# Dev environment compose for dev-chat.orbitechsol.com
+#
+# Mirrors /opt/chatwoot/docker-compose.custom.yaml (production) byte-for-byte
+# except for the dev tag, ports, db name and env file. Always invoke with
+# project name `chatwoot-dev` so containers, volumes and the network sit in
+# their own namespace and never collide with prod.
+#
+#   docker compose -p chatwoot-dev -f docker-compose.dev.yaml --env-file .env.dev <cmd>
+#
+# Host port mapping (prod -> dev):
+#   Rails    127.0.0.1:3000  ->  127.0.0.1:3001
+#   Postgres 127.0.0.1:5433  ->  127.0.0.1:5434
+#   Redis    not exposed     ->  not exposed (matches prod)
+#
+# Nginx terminates TLS for dev-chat.orbitechsol.com and proxies to 127.0.0.1:3001.
+
+services:
+  rails:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: tabeer/chatwoot:dev
+    restart: always
+    ports:
+      - '127.0.0.1:3001:3000'
+    env_file: .env.dev
+    entrypoint: docker/entrypoints/rails.sh
+    command: bundle exec rails s -p 3000 -b 0.0.0.0
+    volumes:
+      - storage:/app/storage
+    extra_hosts:
+      # Lets dev rails reach host-bound services on the VPS (e.g. Evolution
+      # API on 127.0.0.1:8080) without joining the prod docker network.
+      # `evolution-api` is also aliased to the gateway so any inbox config
+      # auto-created with that hostname (Evolution's docker DNS name on
+      # prod's network) resolves correctly from dev too.
+      - 'host.docker.internal:host-gateway'
+      - 'evolution-api:host-gateway'
+    depends_on:
+      - postgres
+      - redis
+
+  sidekiq:
+    image: tabeer/chatwoot:dev
+    restart: always
+    env_file: .env.dev
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - storage:/app/storage
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+      - 'evolution-api:host-gateway'
+    depends_on:
+      - rails
+      - postgres
+      - redis
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: always
+    ports:
+      - '127.0.0.1:5434:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chatwoot_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+  redis:
+    image: redis:alpine
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage:

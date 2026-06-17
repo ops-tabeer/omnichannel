@@ -34,7 +34,10 @@ class AccountDashboard < Administrate::BaseDashboard
     locale: Field::Select.with_options(collection: LANGUAGES_CONFIG.map { |_x, y| y[:iso_639_1_code] }),
     status: Field::Select.with_options(collection: [%w[Active active], %w[Suspended suspended]]),
     account_users: Field::HasMany,
-    custom_attributes: Field::String
+    custom_attributes: Field::String,
+    hide_resolve_action: Field::Boolean,
+    jivo_enabled: Field::Boolean,
+    jivo_byo_key_allowed: Field::Boolean
   }.merge(enterprise_attribute_types).freeze
 
   # COLLECTION_ATTRIBUTES
@@ -70,6 +73,9 @@ class AccountDashboard < Administrate::BaseDashboard
     status
     conversations
     account_users
+    hide_resolve_action
+    jivo_enabled
+    jivo_byo_key_allowed
   ] + enterprise_show_page_attributes).freeze
 
   # FORM_ATTRIBUTES
@@ -87,6 +93,9 @@ class AccountDashboard < Administrate::BaseDashboard
     name
     locale
     status
+    hide_resolve_action
+    jivo_enabled
+    jivo_byo_key_allowed
   ] + enterprise_form_attributes).freeze
 
   # COLLECTION_FILTERS

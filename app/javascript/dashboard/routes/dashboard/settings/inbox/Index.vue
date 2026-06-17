@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import Avatar from 'next/avatar/Avatar.vue';
@@ -14,11 +14,22 @@ import {
 import ChannelName from './components/ChannelName.vue';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import InboxesAPI from 'dashboard/api/inboxes';
+import EvolutionReconnectModal from './components/EvolutionReconnectModal.vue';
 
 const getters = useStoreGetters();
 const store = useStore();
 const { t } = useI18n();
 const { isAdmin } = useAdmin();
+
+onMounted(async () => {
+  try {
+    const response = await InboxesAPI.getFromNetwork();
+    store.commit('inboxes/SET_INBOXES', response.data.payload);
+  } catch {
+    // fallback: use cached store data
+  }
+});
 
 const showDeletePopup = ref(false);
 const selectedInbox = ref({});
@@ -69,6 +80,30 @@ const confirmDeletion = () => {
 const openDelete = inbox => {
   showDeletePopup.value = true;
   selectedInbox.value = inbox;
+};
+
+const isEvolutionInbox = inbox =>
+  inbox.channel_type === 'Channel::Api' &&
+  inbox.additional_attributes?.evolution_api === true;
+
+const evolutionConnectionStatus = inbox =>
+  inbox.additional_attributes?.evolution_connection_status || null;
+
+const showReconnectModal = ref(false);
+const reconnectInbox = ref({});
+
+const openReconnect = inbox => {
+  reconnectInbox.value = inbox;
+  showReconnectModal.value = true;
+};
+
+const onReconnected = async () => {
+  try {
+    const response = await InboxesAPI.getFromNetwork();
+    store.commit('inboxes/SET_INBOXES', response.data.payload);
+  } catch {
+    // fallback: rely on existing store data
+  }
 };
 </script>
 
@@ -126,12 +161,65 @@ const openDelete = inbox => {
                     :channel-type="inbox.channel_type"
                     :medium="inbox.medium"
                   />
+                  <span
+                    v-if="isEvolutionInbox(inbox)"
+                    class="inline-flex items-center gap-1 mt-1 text-xs font-medium"
+                    :class="{
+                      'text-n-teal-11':
+                        evolutionConnectionStatus(inbox) === 'connected',
+                      'text-n-ruby-11':
+                        evolutionConnectionStatus(inbox) === 'disconnected',
+                      'text-n-slate-9': !evolutionConnectionStatus(inbox),
+                    }"
+                  >
+                    <span
+                      class="size-1.5 rounded-full"
+                      :class="{
+                        'bg-n-teal-10':
+                          evolutionConnectionStatus(inbox) === 'connected',
+                        'bg-n-ruby-9':
+                          evolutionConnectionStatus(inbox) === 'disconnected',
+                        'bg-n-slate-7': !evolutionConnectionStatus(inbox),
+                      }"
+                    />
+                    {{
+                      evolutionConnectionStatus(inbox) === 'connected'
+                        ? $t(
+                            'INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_CONNECTED'
+                          )
+                        : evolutionConnectionStatus(inbox) === 'disconnected'
+                          ? $t(
+                              'INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_DISCONNECTED'
+                            )
+                          : $t(
+                              'INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.STATUS_UNKNOWN'
+                            )
+                    }}
+                  </span>
                 </div>
               </div>
             </td>
 
             <td class="py-4">
               <div class="flex gap-1 justify-end">
+                <Button
+                  v-if="
+                    isAdmin &&
+                    isEvolutionInbox(inbox) &&
+                    evolutionConnectionStatus(inbox) === 'disconnected'
+                  "
+                  v-tooltip.top="
+                    $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.RECONNECT.BUTTON')
+                  "
+                  icon="i-lucide-refresh-cw"
+                  :label="
+                    $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.RECONNECT.BUTTON')
+                  "
+                  xs
+                  amber
+                  faded
+                  @click="openReconnect(inbox)"
+                />
                 <router-link
                   :to="{
                     name: 'settings_inbox_show',
@@ -174,6 +262,13 @@ const openDelete = inbox => {
       :confirm-place-holder-text="confirmPlaceHolderText"
       @on-confirm="confirmDeletion"
       @on-close="closeDelete"
+    />
+
+    <EvolutionReconnectModal
+      v-if="showReconnectModal"
+      v-model:show="showReconnectModal"
+      :inbox="reconnectInbox"
+      @reconnected="onReconnected"
     />
   </SettingsLayout>
 </template>

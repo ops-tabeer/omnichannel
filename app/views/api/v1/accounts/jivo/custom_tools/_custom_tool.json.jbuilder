@@ -1,0 +1,16 @@
+json.id resource.id
+json.slug resource.slug
+json.title resource.title
+json.description resource.description
+json.endpoint_url resource.endpoint_url
+json.http_method resource.http_method
+json.auth_type resource.auth_type
+json.auth_config resource.auth_config
+json.param_schema resource.param_schema
+json.request_template resource.request_template
+json.response_template resource.response_template
+json.enabled resource.enabled
+json.rate_limit_per_minute resource.rate_limit_per_minute
+json.account_id resource.account_id
+json.created_at resource.created_at.to_i
+json.updated_at resource.updated_at.to_i

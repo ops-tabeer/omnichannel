@@ -353,6 +353,42 @@
           "ERROR_MESSAGE": "We were not able to create the voice channel"
         }
       },
+      "EVOLUTION_WHATSAPP": {
+        "TITLE": "WhatsApp QR (Evolution API)",
+        "DESC": "Connect a WhatsApp number by scanning a QR code using Evolution API.",
+        "INSTANCE_NAME": {
+          "LABEL": "Instance Name",
+          "PLACEHOLDER": "Enter a unique instance name",
+          "ERROR": "Instance name is required"
+        },
+        "PHONE_NUMBER": {
+          "LABEL": "Phone Number",
+          "PLACEHOLDER": "e.g. 5511999999999",
+          "ERROR": "Phone number is required"
+        },
+        "REJECT_GROUPS": {
+          "LABEL": "Ignore group chats",
+          "HELP": "When enabled, messages from WhatsApp groups will be ignored"
+        },
+        "SUBMIT_BUTTON": "Generate QR Code",
+        "QR_INSTRUCTION": "Open WhatsApp on your phone, go to Settings → Linked Devices → Link a Device, then scan the QR code below.",
+        "CONNECTION_STATUS": "Status:",
+        "REFRESH_QR": "Refresh QR Code",
+        "CREATE_ERROR": "Could not create the WhatsApp instance. Please try again.",
+        "SETUP_ERROR": "Could not complete the inbox setup. Please try again.",
+        "QR_REFRESH_ERROR": "Could not refresh the QR code. Please try again.",
+        "STATUS_CONNECTED": "Connected",
+        "STATUS_DISCONNECTED": "Disconnected",
+        "STATUS_UNKNOWN": "Unknown",
+        "RECONNECT": {
+          "BUTTON": "Reconnect",
+          "TITLE": "Reconnect WhatsApp",
+          "DESC": "Scan the QR code to reconnect {inboxName}. All existing conversations will be preserved.",
+          "SUCCESS": "WhatsApp reconnected successfully",
+          "ERROR": "Could not start reconnection. Please try again.",
+          "CLOSE": "Close"
+        }
+      },
       "API_CHANNEL": {
         "TITLE": "API Channel",
         "DESC": "Integrate with API channel and start supporting your customers.",
@@ -485,6 +521,10 @@
           "VOICE": {
             "TITLE": "Voice",
             "DESCRIPTION": "Integrate with Twilio Voice"
+          },
+          "EVOLUTION_WHATSAPP": {
+            "TITLE": "WhatsApp QR",
+            "DESCRIPTION": "Connect WhatsApp by scanning a QR code"
           }
         }
       },
@@ -765,6 +805,17 @@
       "MAX_ASSIGNMENT_LIMIT": "Auto assignment limit",
       "MAX_ASSIGNMENT_LIMIT_RANGE_ERROR": "Please enter a value greater than 0",
       "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limit the maximum number of conversations from this inbox that can be auto assigned to an agent"
+    },
+    "IDLE_REASSIGNMENT": {
+      "TITLE": "Idle Reassignment",
+      "SUB_TITLE": "Automatically reassign conversations when the assigned agent does not respond within a set time",
+      "ENABLE_LABEL": "Enable idle reassignment",
+      "ENABLE_DESCRIPTION": "If the assigned agent does not reply within the threshold, the conversation will be reassigned to another available agent once",
+      "THRESHOLD_LABEL": "No response threshold (minutes)",
+      "THRESHOLD_PLACEHOLDER": "e.g. 15",
+      "THRESHOLD_ERROR": "Please enter a value greater than 0",
+      "UPDATE_SUCCESS": "Idle reassignment settings updated successfully",
+      "UPDATE_ERROR": "Failed to update idle reassignment settings"
     },
     "ASSIGNMENT": {
       "TITLE": "Conversation Assignment",

@@ -204,6 +204,16 @@
   description: 'The FireCrawl API key for the Captain AI service'
   locked: false
   type: secret
+- name: JIVO_FIRECRAWL_API_KEY
+  display_title: 'JIVO FireCrawl API Key (optional)'
+  description: 'The FireCrawl API key for JIVO multi-page knowledge base crawling. Falls back to single-page crawler if unset.'
+  locked: false
+  type: secret
+- name: JIVO_OPEN_AI_API_KEY
+  display_title: 'JIVO Platform OpenAI API Key'
+  description: 'Platform-provided OpenAI key used by JIVO assistants when the account is not allowed to bring their own key. Per-assistant keys still take precedence when allowed.'
+  locked: false
+  type: secret
 - name: CAPTAIN_CLOUD_PLAN_LIMITS
   display_title: 'Captain Cloud Plan Limits'
   description: 'The limits for the Captain AI service for different plans'
@@ -525,3 +535,17 @@
   value: 'https://us.cloud.langfuse.com'
   locked: false
 ## ---- End of LLM Observability ---- ##
+
+## ------ Evolution API Config ------ ##
+- name: EVOLUTION_API_URL
+  display_title: 'Evolution API URL'
+  description: 'The URL of your Evolution API instance (e.g., http://evolution-api:8080)'
+  value: ''
+  locked: false
+- name: EVOLUTION_API_KEY
+  display_title: 'Evolution API Key'
+  description: 'The API key for authenticating with Evolution API'
+  value: ''
+  locked: false
+  type: secret
+## ------ End of Evolution API Config ------ ##

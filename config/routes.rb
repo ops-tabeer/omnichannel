@@ -55,6 +55,31 @@ Rails.application.routes.draw do
           resources :agents, only: [:index, :create, :update, :destroy] do
             post :bulk_create, on: :collection
           end
+          namespace :jivo do
+            resources :assistants, only: [:index, :create, :show, :update, :destroy] do
+              member do
+                post :avatar
+                delete :avatar, action: :remove_avatar
+                post :playground
+              end
+              resources :inboxes, only: [:index, :create, :destroy], param: :inbox_id
+              resources :documents, only: [:index, :show, :create, :destroy] do
+                post :recrawl, on: :member
+              end
+              resources :assistant_responses, only: [:index, :show, :create, :update, :destroy]
+              resources :bulk_actions, only: [:create]
+              resources :scenarios, only: [:index, :show, :create, :update, :destroy]
+            end
+            resources :custom_tools, only: [:index, :show, :create, :update, :destroy]
+            resource :tasks, only: [], controller: 'tasks' do
+              post :rewrite
+              post :summarize
+              post :reply_suggestion
+              post :label_suggestion
+              post :follow_up
+              post :learn_from_conversation
+            end
+          end
           namespace :captain do
             resource :preferences, only: [:show, :update]
             resources :assistants do
@@ -151,6 +176,7 @@ Rails.application.routes.draw do
               post :update_last_seen
               post :unread
               post :custom_attributes
+              post :take
               get :attachments
               get :inbox_assistant
               get :reporting_events if ChatwootApp.enterprise?
@@ -293,6 +319,12 @@ Rails.application.routes.draw do
           namespace :whatsapp do
             resource :authorization, only: [:create]
           end
+
+          post 'evolution/create_instance', to: 'evolution#create_instance'
+          get 'evolution/refresh_qr', to: 'evolution#refresh_qr'
+          get 'evolution/connection_status', to: 'evolution#connection_status'
+          post 'evolution/complete_setup', to: 'evolution#complete_setup'
+          post 'evolution/reconnect', to: 'evolution#reconnect'
 
           resources :webhooks, only: [:index, :create, :update, :destroy]
           namespace :integrations do
@@ -565,6 +597,7 @@ Rails.application.routes.draw do
   post 'webhooks/instagram', to: 'webhooks/instagram#events'
   post 'webhooks/tiktok', to: 'webhooks/tiktok#events'
   post 'webhooks/shopify', to: 'webhooks/shopify#events'
+  post 'webhooks/jivo_firecrawl', to: 'webhooks/jivo_firecrawl#process_payload'
 
   namespace :twitter do
     resource :callback, only: [:show]

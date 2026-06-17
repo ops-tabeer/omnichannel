@@ -11,6 +11,9 @@ if resource.custom_attributes.present?
     json.timezone resource.custom_attributes['timezone'] if resource.custom_attributes['timezone'].present?
     json.logo resource.custom_attributes['logo'] if resource.custom_attributes['logo'].present?
     json.onboarding_step resource.custom_attributes['onboarding_step'] if resource.custom_attributes['onboarding_step'].present?
+    json.hide_resolve_action resource.custom_attributes['hide_resolve_action'] if resource.custom_attributes['hide_resolve_action'].present?
+    json.jivo_enabled resource.jivo_enabled
+    json.jivo_byo_key_allowed resource.jivo_byo_key_allowed
     json.marked_for_deletion_at resource.custom_attributes['marked_for_deletion_at'] if resource.custom_attributes['marked_for_deletion_at'].present?
     if resource.custom_attributes['marked_for_deletion_reason'].present?
       json.marked_for_deletion_reason resource.custom_attributes['marked_for_deletion_reason']

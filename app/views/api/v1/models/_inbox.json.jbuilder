@@ -11,6 +11,8 @@ json.csat_survey_enabled resource.csat_survey_enabled
 json.csat_config resource.csat_config
 json.enable_auto_assignment resource.enable_auto_assignment
 json.auto_assignment_config resource.auto_assignment_config
+json.auto_reassignment_enabled resource.auto_reassignment_enabled
+json.auto_reassignment_threshold resource.auto_reassignment_threshold
 json.out_of_office_message resource.out_of_office_message
 json.working_hours resource.weekly_schedule
 json.timezone resource.timezone
@@ -19,6 +21,8 @@ json.allow_messages_after_resolved resource.allow_messages_after_resolved
 json.lock_to_single_conversation resource.lock_to_single_conversation
 json.sender_name_type resource.sender_name_type
 json.business_name resource.business_name
+@jivo_tasks_available = Current.account.jivo_assistants.exists? unless defined?(@jivo_tasks_available)
+json.jivo_tasks_available @jivo_tasks_available
 
 if resource.portal.present?
   json.help_center do

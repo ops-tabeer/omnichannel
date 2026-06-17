@@ -17,11 +17,15 @@ import TagAgents from '../conversation/TagAgents.vue';
 import VariableList from '../conversation/VariableList.vue';
 import TagTools from '../conversation/TagTools.vue';
 import CopilotMenuBar from './CopilotMenuBar.vue';
+import JivoCopilotMenuBar from 'dashboard/components-next/jivo/copilot/JivoCopilotMenuBar.vue';
 
 import { useEmitter } from 'dashboard/composables/emitter';
 import { useI18n } from 'vue-i18n';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useCaptain } from 'dashboard/composables/useCaptain';
+import { useConfig } from 'dashboard/composables/useConfig';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
+import { setEditorSelection } from 'dashboard/composables/useEditorSelection';
 import { useTrack } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAlert } from 'dashboard/composables';
@@ -108,10 +112,26 @@ const emit = defineEmits([
   'input',
   'update:modelValue',
   'executeCopilotAction',
+  'executeJivoCopilotAction',
 ]);
 
 const { t } = useI18n();
+const store = useStore();
+const currentChat = useMapGetter('getSelectedChat');
 const { captainTasksEnabled } = useCaptain();
+const { isEnterprise } = useConfig();
+
+const isCaptainAvailable = computed(
+  () => isEnterprise && captainTasksEnabled.value
+);
+
+const jivoTasksEnabled = computed(() => {
+  const inboxId = currentChat.value?.inbox_id;
+  const inbox = store.getters['inboxes/getInbox'](inboxId);
+  const hasAssistant = !!inbox?.jivo_assistant_id;
+  const jivoAssistants = store.getters['jivoAssistants/getAssistants'];
+  return hasAssistant || jivoAssistants.length > 0;
+});
 
 const TYPING_INDICATOR_IDLE_TIME = 4000;
 const MAXIMUM_FILE_UPLOAD_SIZE = 4; // in MB
@@ -130,7 +150,8 @@ const editorSchema = computed(() => {
     : effectiveChannelType.value;
   const formatting = getFormattingForEditor(
     formatType,
-    captainTasksEnabled.value
+    isCaptainAvailable.value,
+    jivoTasksEnabled.value
   );
   return buildMessageSchema(formatting.marks, formatting.nodes);
 });
@@ -141,7 +162,8 @@ const editorMenuOptions = computed(() => {
     : effectiveChannelType.value || DEFAULT_FORMATTING;
   const formatting = getFormattingForEditor(
     formatType,
-    captainTasksEnabled.value
+    isCaptainAvailable.value,
+    jivoTasksEnabled.value
   );
 
   return formatting.menu;
@@ -214,6 +236,17 @@ const handleCopilotAction = actionKey => {
     emit('executeCopilotAction', actionKey);
   }
 
+  showSelectionMenu.value = false;
+};
+
+const handleJivoCopilotAction = (actionKey, data) => {
+  let content = data;
+  if (!content && isTextSelected.value && editorView?.state) {
+    const { from, to } = editorView.state.selection;
+    content = editorView.state.doc.textBetween(from, to).trim();
+  }
+
+  emit('executeJivoCopilotAction', actionKey, content);
   showSelectionMenu.value = false;
 };
 
@@ -500,9 +533,16 @@ function setMenubarPosition({ selection } = {}) {
   wrapper.style.setProperty('--selection-top', `${top}px`);
 }
 
+function publishEditorSelection(editorState) {
+  const { from, to } = editorState.selection;
+  const text = from !== to ? editorState.doc.textBetween(from, to, '\n') : '';
+  setEditorSelection({ from, to, text });
+}
+
 function checkSelection(editorState) {
   showSelectionMenu.value = false;
   const hasSelection = editorState.selection.from !== editorState.selection.to;
+  publishEditorSelection(editorState);
   if (hasSelection === isTextSelected.value) return;
 
   isTextSelected.value = hasSelection;
@@ -652,6 +692,17 @@ function insertContentIntoEditor(content, defaultFrom = 0) {
   );
 
   insertNodeIntoEditor(node, from, undefined);
+}
+
+function replaceSelectionInEditor(content) {
+  if (!editorView) return;
+  const { from, to } = editorView.state.selection;
+  const currentSchema = editorView.state.schema;
+  const sanitizedContent = stripUnsupportedFormatting(content, currentSchema);
+  const node = new MessageMarkdownTransformer(currentSchema).parse(
+    sanitizedContent
+  );
+  insertNodeIntoEditor(node, from, to);
 }
 
 /**
@@ -827,6 +878,7 @@ onMounted(() => {
 // Components using this
 // 1. SearchPopover.vue
 useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
+useEmitter(BUS_EVENTS.REPLACE_RICH_EDITOR_SELECTION, replaceSelectionInEditor);
 </script>
 
 <template>
@@ -863,12 +915,18 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
       @select-tool="content => insertSpecialContent('tool', content)"
     />
     <CopilotMenuBar
-      v-if="showSelectionMenu"
+      v-if="showSelectionMenu && isCaptainAvailable"
       v-on-click-outside="handleClickOutside"
       :has-selection="isTextSelected"
       :show-selection-menu="showSelectionMenu"
       :show-general-menu="false"
       @execute-copilot-action="handleCopilotAction"
+    />
+    <JivoCopilotMenuBar
+      v-if="showSelectionMenu && jivoTasksEnabled"
+      v-on-click-outside="handleClickOutside"
+      :has-selection="isTextSelected"
+      @execute-copilot-action="handleJivoCopilotAction"
     />
     <input
       ref="imageUpload"

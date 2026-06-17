@@ -20,6 +20,13 @@ import ButtonGroup from 'dashboard/components-next/buttonGroup/ButtonGroup.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ConversationResolveAttributesModal from 'dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue';
 
+const props = defineProps({
+  hideResolve: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 const store = useStore();
 const getters = useStoreGetters();
 const { t } = useI18n();
@@ -177,7 +184,7 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
       :class="!showOpenButton ? 'outline-n-container' : 'outline-transparent'"
     >
       <Button
-        v-if="isOpen"
+        v-if="isOpen && !props.hideResolve"
         :label="t('CONVERSATION.HEADER.RESOLVE_ACTION')"
         size="sm"
         color="slate"

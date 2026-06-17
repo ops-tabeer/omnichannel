@@ -5,14 +5,16 @@
 # Table name: inboxes
 #
 #  id                            :integer          not null, primary key
-#  allow_messages_after_resolved :boolean          default(TRUE)
-#  auto_assignment_config        :jsonb
-#  business_name                 :string
-#  channel_type                  :string
-#  csat_config                   :jsonb            not null
-#  csat_survey_enabled           :boolean          default(FALSE)
-#  email_address                 :string
-#  enable_auto_assignment        :boolean          default(TRUE)
+#  allow_messages_after_resolved  :boolean          default(TRUE)
+#  auto_assignment_config         :jsonb
+#  auto_reassignment_enabled      :boolean          default(FALSE), not null
+#  auto_reassignment_threshold    :integer
+#  business_name                  :string
+#  channel_type                   :string
+#  csat_config                    :jsonb            not null
+#  csat_survey_enabled            :boolean          default(FALSE)
+#  email_address                  :string
+#  enable_auto_assignment         :boolean          default(TRUE)
 #  enable_email_collect          :boolean          default(TRUE)
 #  greeting_enabled              :boolean          default(FALSE)
 #  greeting_message              :string
@@ -72,11 +74,14 @@ class Inbox < ApplicationRecord
   has_one :assignment_policy, through: :inbox_assignment_policy
   has_one :agent_bot_inbox, dependent: :destroy_async
   has_one :agent_bot, through: :agent_bot_inbox
+  has_one :jivo_inbox, dependent: :destroy_async
+  has_one :jivo_assistant, through: :jivo_inbox
   has_many :webhooks, dependent: :destroy_async
   has_many :hooks, dependent: :destroy_async, class_name: 'Integrations::Hook'
 
   enum sender_name_type: { friendly: 0, professional: 1 }
 
+  before_save :track_auto_reassignment_enabled_since
   after_destroy :delete_round_robin_agents
 
   after_create_commit :dispatch_create_event
@@ -171,6 +176,10 @@ class Inbox < ApplicationRecord
                                             status: 'enabled').count.positive?
   end
 
+  def active_jivo_assistant?
+    jivo_assistant.present? && account.jivo_enabled
+  end
+
   def inbox_type
     channel.name
   end
@@ -203,7 +212,19 @@ class Inbox < ApplicationRecord
     account.feature_enabled?('assignment_v2')
   end
 
+  def auto_reassignment_enabled_since
+    auto_assignment_config['auto_reassignment_enabled_since']&.then { |t| Time.zone.parse(t) } || created_at
+  end
+
   private
+
+  def track_auto_reassignment_enabled_since
+    return unless will_save_change_to_auto_reassignment_enabled?
+    return unless auto_reassignment_enabled?
+
+    config = auto_assignment_config || {}
+    self.auto_assignment_config = config.merge('auto_reassignment_enabled_since' => Time.current.iso8601)
+  end
 
   def default_name_for_blank_name
     email? ? display_name_from_email : ''

@@ -216,6 +216,10 @@ en:
   conversations:
     captain:
       handoff: 'Transferring to another agent for further assistance.'
+    jivo:
+      handoff: 'Transferring to another agent for further assistance.'
+      idle_reminder: 'Just checking in. Please reply when you are ready to continue.'
+      idle_resolve: 'Resolving the conversation as it has been inactive for a while. Please start a new conversation if you need further assistance.'
     messages:
       instagram_story_content: '%{story_sender} mentioned you in the story: '
       instagram_deleted_story_content: This story is no longer available.
@@ -250,6 +254,8 @@ en:
         self_assigned: '%{user_name} self-assigned this conversation'
         assigned: 'Assigned to %{assignee_name} by %{user_name}'
         removed: 'Conversation unassigned by %{user_name}'
+        auto_reassigned: 'Conversation auto-reassigned from %{old_agent_name} to %{new_agent_name} due to no response'
+        taken: '%{user_name} took this conversation'
       team:
         assigned: 'Assigned to %{team_name} by %{user_name}'
         assigned_with_assignee: 'Assigned to %{assignee_name} via %{team_name} by %{user_name}'
@@ -340,6 +346,10 @@ en:
       name: 'LeadSquared'
       short_description: 'Sync your contacts and conversations with LeadSquared CRM.'
       description: 'Sync your contacts and conversations with LeadSquared CRM. This integration automatically creates leads in LeadSquared when new contacts are added, and logs conversation activity to provide your sales team with complete context.'
+    odoo:
+      name: 'Odoo CRM'
+      short_description: 'Create and update leads in Odoo CRM when conversations are taken.'
+      description: 'Connect your Odoo CRM to automatically create a lead when an agent takes a handed-off conversation and keep the salesperson in sync on reassignment. Select which inboxes should sync to Odoo.'
   captain:
     copilot_message_required: Message is required
     copilot_error: 'Please connect an assistant to this inbox to use Copilot'
@@ -374,6 +384,12 @@ en:
       page_processing_error: 'Error processing pages %{start}-%{end}: %{error}'
     custom_tool:
       slug_generation_failed: 'Unable to generate unique slug after 5 attempts'
+  jivo:
+    tasks:
+      learn:
+        queued: 'Learning queued. Notes and FAQs will appear shortly.'
+    playground:
+      openai_key_missing: 'OpenAI API key is not configured for this assistant. Add the key in the assistant settings to use the playground.'
   public_portal:
     search:
       search_placeholder: Search for article by title or body...

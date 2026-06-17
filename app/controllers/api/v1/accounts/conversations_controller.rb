@@ -136,6 +136,16 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     @conversation.save!
   end
 
+  def take
+    @conversation.update!(taken_at: Time.current)
+    content = I18n.t('conversations.activity.assignee.taken', user_name: current_user.name)
+    ::Conversations::ActivityMessageJob.perform_later(
+      @conversation,
+      { account_id: @conversation.account_id, inbox_id: @conversation.inbox_id, message_type: :activity, content: content }
+    )
+    head :ok
+  end
+
   def destroy
     authorize @conversation, :destroy?
     ::DeleteObjectJob.perform_later(@conversation, Current.user, request.ip)

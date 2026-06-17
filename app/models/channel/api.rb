@@ -28,12 +28,24 @@ class Channel::Api < ApplicationRecord
   has_secure_token :hmac_token
   validate :ensure_valid_agent_reply_time_window
   validates :webhook_url, length: { maximum: Limits::URL_LENGTH_LIMIT }
+  after_destroy :cleanup_evolution_instance
 
   def name
     'API'
   end
 
   private
+
+  def cleanup_evolution_instance
+    return unless additional_attributes&.dig('evolution_api')
+
+    instance_name = additional_attributes['evolution_instance_name']
+    return if instance_name.blank?
+
+    EvolutionApi::ManageService.new.delete_instance(instance_name)
+  rescue StandardError => e
+    Rails.logger.error("[EvolutionAPI] Failed to delete instance #{instance_name}: #{e.message}")
+  end
 
   def ensure_valid_agent_reply_time_window
     return if additional_attributes['agent_reply_time_window'].blank?

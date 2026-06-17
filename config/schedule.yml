@@ -61,6 +61,12 @@ periodic_assignment_job:
   class: 'AutoAssignment::PeriodicAssignmentJob'
   queue: scheduled_jobs
 
+# executed every 5 minutes to reassign conversations where assigned agent has not replied
+idle_reassignment_job:
+  cron: '*/5 * * * *'
+  class: 'AutoAssignment::IdleReassignmentJob'
+  queue: scheduled_jobs
+
 # executed daily at 2230 UTC
 # removes old notifications (>1 month) and trims to 300 per user
 remove_old_notification_job:
@@ -74,3 +80,17 @@ remove_orphan_conversations_job:
   cron: '0 */12 * * *'
   class: 'Internal::RemoveOrphanConversationsJob'
   queue: housekeeping
+
+# executed every hour
+# to sync Evolution API WhatsApp connection status for all inboxes
+evolution_sync_connection_status_job:
+  cron: '0 * * * *'
+  class: 'EvolutionApi::SyncConnectionStatusJob'
+  queue: scheduled_jobs
+
+# executed every hour
+# to apply idle handoff/reminder/resolve actions for JIVO-enabled inboxes
+jivo_idle_conversation_action_job:
+  cron: '0 * * * *'
+  class: 'Jivo::IdleConversationActionJob'
+  queue: scheduled_jobs

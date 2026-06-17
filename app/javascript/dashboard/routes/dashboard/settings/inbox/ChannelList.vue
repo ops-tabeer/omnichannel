@@ -77,6 +77,20 @@ const channelList = computed(() => {
       description: t('INBOX_MGMT.ADD.AUTH.CHANNEL.INSTAGRAM.DESCRIPTION'),
       icon: 'i-woot-instagram',
     },
+    {
+      key: 'evolution_whatsapp',
+      title: t('INBOX_MGMT.ADD.AUTH.CHANNEL.EVOLUTION_WHATSAPP.TITLE'),
+      description: t(
+        'INBOX_MGMT.ADD.AUTH.CHANNEL.EVOLUTION_WHATSAPP.DESCRIPTION'
+      ),
+      icon: 'i-woot-whatsapp',
+    },
+    {
+      key: 'voice',
+      title: t('INBOX_MGMT.ADD.AUTH.CHANNEL.VOICE.TITLE'),
+      description: t('INBOX_MGMT.ADD.AUTH.CHANNEL.VOICE.DESCRIPTION'),
+      icon: 'i-ri-phone-fill',
+    },
   ];
 
   if (hasTiktokConfigured.value) {

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_06_140757) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -681,6 +681,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
     t.datetime "waiting_since"
     t.text "cached_label_list"
     t.bigint "assignee_agent_bot_id"
+    t.datetime "taken_at"
+    t.boolean "auto_reassigned", default: false, null: false
     t.index ["account_id", "display_id"], name: "index_conversations_on_account_id_and_display_id", unique: true
     t.index ["account_id", "id"], name: "index_conversations_on_id_and_account_id"
     t.index ["account_id", "inbox_id", "status", "assignee_id"], name: "conv_acid_inbid_stat_asgnid_idx"
@@ -877,6 +879,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
     t.integer "sender_name_type", default: 0, null: false
     t.string "business_name"
     t.jsonb "csat_config", default: {}, null: false
+    t.boolean "auto_reassignment_enabled", default: false, null: false
+    t.integer "auto_reassignment_threshold"
     t.index ["account_id"], name: "index_inboxes_on_account_id"
     t.index ["channel_id", "channel_type"], name: "index_inboxes_on_channel_id_and_channel_type"
     t.index ["portal_id"], name: "index_inboxes_on_portal_id"
@@ -903,6 +907,99 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "settings", default: {}
+  end
+
+  create_table "jivo_assistant_responses", force: :cascade do |t|
+    t.string "question", null: false
+    t.text "answer", null: false
+    t.vector "embedding", limit: 1536
+    t.bigint "jivo_assistant_id", null: false
+    t.bigint "account_id", null: false
+    t.bigint "documentable_id"
+    t.string "documentable_type"
+    t.integer "status", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_assistant_responses_on_account_id"
+    t.index ["documentable_id", "documentable_type"], name: "idx_jivo_resp_on_documentable"
+    t.index ["embedding"], name: "idx_jivo_resp_embedding", using: :ivfflat
+    t.index ["jivo_assistant_id"], name: "index_jivo_assistant_responses_on_jivo_assistant_id"
+    t.index ["status"], name: "index_jivo_assistant_responses_on_status"
+  end
+
+  create_table "jivo_assistants", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.jsonb "config", default: {}, null: false
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "response_guidelines", default: []
+    t.jsonb "guardrails", default: []
+    t.index ["account_id"], name: "index_jivo_assistants_on_account_id"
+  end
+
+  create_table "jivo_custom_tools", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "slug", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.string "http_method", default: "GET", null: false
+    t.text "endpoint_url", null: false
+    t.text "request_template"
+    t.text "response_template"
+    t.string "auth_type", default: "none"
+    t.jsonb "auth_config", default: {}
+    t.jsonb "param_schema", default: []
+    t.boolean "enabled", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "rate_limit_per_minute"
+    t.index ["account_id", "slug"], name: "index_jivo_custom_tools_on_account_id_and_slug", unique: true
+    t.index ["account_id"], name: "index_jivo_custom_tools_on_account_id"
+  end
+
+  create_table "jivo_documents", force: :cascade do |t|
+    t.string "name"
+    t.string "external_link"
+    t.text "content"
+    t.bigint "jivo_assistant_id", null: false
+    t.bigint "account_id", null: false
+    t.integer "status", default: 0, null: false
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_documents_on_account_id"
+    t.index ["jivo_assistant_id", "external_link"], name: "index_jivo_documents_on_assistant_and_link", unique: true
+    t.index ["jivo_assistant_id"], name: "index_jivo_documents_on_jivo_assistant_id"
+    t.index ["status"], name: "index_jivo_documents_on_status"
+  end
+
+  create_table "jivo_inboxes", force: :cascade do |t|
+    t.bigint "jivo_assistant_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_inboxes_on_account_id"
+    t.index ["inbox_id"], name: "index_jivo_inboxes_on_inbox_id", unique: true
+    t.index ["jivo_assistant_id"], name: "index_jivo_inboxes_on_jivo_assistant_id"
+  end
+
+  create_table "jivo_scenarios", force: :cascade do |t|
+    t.string "title"
+    t.text "description"
+    t.text "instruction"
+    t.jsonb "tools", default: []
+    t.boolean "enabled", default: true, null: false
+    t.bigint "jivo_assistant_id", null: false
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_jivo_scenarios_on_account_id"
+    t.index ["enabled"], name: "index_jivo_scenarios_on_enabled"
+    t.index ["jivo_assistant_id", "enabled"], name: "index_jivo_scenarios_on_jivo_assistant_id_and_enabled"
+    t.index ["jivo_assistant_id"], name: "index_jivo_scenarios_on_jivo_assistant_id"
   end
 
   create_table "labels", force: :cascade do |t|
@@ -1272,6 +1369,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "jivo_assistant_responses", "accounts"
+  add_foreign_key "jivo_assistant_responses", "jivo_assistants"
+  add_foreign_key "jivo_assistants", "accounts"
+  add_foreign_key "jivo_custom_tools", "accounts"
+  add_foreign_key "jivo_documents", "accounts"
+  add_foreign_key "jivo_documents", "jivo_assistants"
+  add_foreign_key "jivo_inboxes", "accounts"
+  add_foreign_key "jivo_inboxes", "inboxes"
+  add_foreign_key "jivo_inboxes", "jivo_assistants"
+  add_foreign_key "jivo_scenarios", "accounts"
+  add_foreign_key "jivo_scenarios", "jivo_assistants"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

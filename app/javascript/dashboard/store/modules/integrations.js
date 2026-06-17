@@ -124,6 +124,17 @@ export const actions = {
       throw new Error(error);
     }
   },
+  updateHook: async ({ commit }, { hookId, hookData }) => {
+    commit(types.default.SET_INTEGRATIONS_UI_FLAG, { isUpdating: true });
+    try {
+      const response = await IntegrationsAPI.updateHook(hookId, hookData);
+      commit(types.default.UPDATE_INTEGRATION_HOOKS, response.data);
+    } catch (error) {
+      throwErrorMessage(error);
+    } finally {
+      commit(types.default.SET_INTEGRATIONS_UI_FLAG, { isUpdating: false });
+    }
+  },
   deleteHook: async ({ commit }, { appId, hookId }) => {
     commit(types.default.SET_INTEGRATIONS_UI_FLAG, { isDeletingHook: true });
     try {
@@ -150,6 +161,17 @@ export const mutations = {
         return {
           ...record,
           hooks: [...record.hooks, data],
+        };
+      }
+      return record;
+    });
+  },
+  [types.default.UPDATE_INTEGRATION_HOOKS]: ($state, data) => {
+    $state.records = $state.records.map(record => {
+      if (record.id === data.app_id) {
+        return {
+          ...record,
+          hooks: record.hooks.map(hook => (hook.id === data.id ? data : hook)),
         };
       }
       return record;

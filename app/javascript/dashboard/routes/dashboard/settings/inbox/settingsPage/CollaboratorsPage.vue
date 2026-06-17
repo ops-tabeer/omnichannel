@@ -31,6 +31,9 @@ const selectedAgents = ref([]);
 const isAgentListUpdating = ref(false);
 const enableAutoAssignment = ref(false);
 const maxAssignmentLimit = ref(null);
+const enableIdleReassignment = ref(false);
+const idleReassignmentThreshold = ref(null);
+const isUpdatingIdleReassignment = ref(false);
 const assignmentPolicy = ref(null);
 const isLoadingPolicy = ref(false);
 const isDeletingPolicy = ref(false);
@@ -91,9 +94,15 @@ const rules = {
   maxAssignmentLimit: {
     minValue: minValue(1),
   },
+  idleReassignmentThreshold: {
+    minValue: minValue(1),
+  },
 };
 
-const v$ = useVuelidate(rules, { maxAssignmentLimit });
+const v$ = useVuelidate(rules, {
+  maxAssignmentLimit,
+  idleReassignmentThreshold,
+});
 
 const maxAssignmentLimitErrors = computed(() => {
   if (v$.value.maxAssignmentLimit.$error) {
@@ -299,10 +308,39 @@ const deleteAssignmentPolicy = async () => {
   }
 };
 
+const updateIdleReassignment = async () => {
+  v$.value.idleReassignmentThreshold.$touch();
+  if (
+    enableIdleReassignment.value &&
+    v$.value.idleReassignmentThreshold.$invalid
+  )
+    return;
+
+  isUpdatingIdleReassignment.value = true;
+  try {
+    await store.dispatch('inboxes/updateInbox', {
+      id: props.inbox.id,
+      formData: false,
+      auto_reassignment_enabled: enableIdleReassignment.value,
+      auto_reassignment_threshold: enableIdleReassignment.value
+        ? idleReassignmentThreshold.value
+        : null,
+    });
+    useAlert(t('INBOX_MGMT.IDLE_REASSIGNMENT.UPDATE_SUCCESS'));
+  } catch (error) {
+    useAlert(t('INBOX_MGMT.IDLE_REASSIGNMENT.UPDATE_ERROR'));
+  } finally {
+    isUpdatingIdleReassignment.value = false;
+  }
+};
+
 const setDefaults = () => {
   enableAutoAssignment.value = props.inbox.enable_auto_assignment;
   maxAssignmentLimit.value =
     props.inbox.auto_assignment_config?.max_assignment_limit || null;
+  enableIdleReassignment.value = props.inbox.auto_reassignment_enabled || false;
+  idleReassignmentThreshold.value =
+    props.inbox.auto_reassignment_threshold || null;
   fetchAttachedAgents();
   if (showAdvancedAssignmentUI.value) {
     fetchAssignmentPolicy();
@@ -641,6 +679,48 @@ onMounted(() => {
           />
         </div>
       </template>
+    </SettingsSection>
+
+    <SettingsSection
+      :title="$t('INBOX_MGMT.IDLE_REASSIGNMENT.TITLE')"
+      :sub-title="$t('INBOX_MGMT.IDLE_REASSIGNMENT.SUB_TITLE')"
+    >
+      <div class="flex items-start gap-3">
+        <Switch v-model="enableIdleReassignment" class="flex-shrink-0 mt-0.5" />
+        <div class="flex-grow">
+          <label class="text-sm text-n-slate-12 font-medium mb-1">
+            {{ $t('INBOX_MGMT.IDLE_REASSIGNMENT.ENABLE_LABEL') }}
+          </label>
+          <p class="text-sm text-n-slate-11">
+            {{ $t('INBOX_MGMT.IDLE_REASSIGNMENT.ENABLE_DESCRIPTION') }}
+          </p>
+        </div>
+      </div>
+
+      <div v-if="enableIdleReassignment" class="mt-4">
+        <woot-input
+          v-model="idleReassignmentThreshold"
+          type="number"
+          :class="{ error: v$.idleReassignmentThreshold.$error }"
+          :error="
+            v$.idleReassignmentThreshold.$error
+              ? $t('INBOX_MGMT.IDLE_REASSIGNMENT.THRESHOLD_ERROR')
+              : ''
+          "
+          :label="$t('INBOX_MGMT.IDLE_REASSIGNMENT.THRESHOLD_LABEL')"
+          :placeholder="
+            $t('INBOX_MGMT.IDLE_REASSIGNMENT.THRESHOLD_PLACEHOLDER')
+          "
+          @blur="v$.idleReassignmentThreshold.$touch"
+        />
+      </div>
+
+      <NextButton
+        class="mt-4"
+        :label="$t('INBOX_MGMT.SETTINGS_POPUP.UPDATE')"
+        :is-loading="isUpdatingIdleReassignment"
+        @click="updateIdleReassignment"
+      />
     </SettingsSection>
 
     <woot-modal

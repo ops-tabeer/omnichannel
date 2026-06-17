@@ -57,4 +57,7 @@ module Events::Types
 
   # copilot events
   COPILOT_MESSAGE_CREATED = 'copilot.message.created'
+
+  # evolution api events
+  EVOLUTION_CONNECTED = 'evolution.connected'
 end

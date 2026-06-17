@@ -52,4 +52,10 @@ module Redis::RedisKeys
 
   ## Account Email Rate Limiting
   ACCOUNT_OUTBOUND_EMAIL_COUNT_KEY = 'OUTBOUND_EMAIL_COUNT::%<account_id>d::%<date>s'.freeze
+
+  ## JIVO custom tool per-minute rate limiting
+  JIVO_TOOL_RATE_LIMIT_KEY = 'JIVO_TOOL_RATE_LIMIT::%<account_id>d::%<tool_slug>s'.freeze
+
+  ## JIVO translation query cache
+  JIVO_TRANSLATION_CACHE_KEY = 'JIVO_TRANSLATION::%<assistant_id>d::%<target>s::%<digest>s'.freeze
 end

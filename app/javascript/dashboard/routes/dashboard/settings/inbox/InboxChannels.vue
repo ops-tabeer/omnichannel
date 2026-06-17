@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useMapGetter } from 'dashboard/composables/store';
@@ -9,6 +9,14 @@ import PageHeader from '../SettingsSubPageHeader.vue';
 
 const { t } = useI18n();
 const route = useRoute();
+const wrapperRef = ref(null);
+
+watch(
+  () => route.name,
+  () => {
+    wrapperRef.value?.closest('.overflow-auto')?.scrollTo(0, 0);
+  }
+);
 const { replaceInstallationName } = useBranding();
 
 const globalConfig = useMapGetter('globalConfig/get');
@@ -59,7 +67,7 @@ const items = computed(() => {
 </script>
 
 <template>
-  <div class="mx-2 flex flex-col gap-6 mb-8">
+  <div ref="wrapperRef" class="mx-2 flex flex-col gap-6 mb-8">
     <PageHeader class="block lg:hidden !mb-0" :header-title="pageTitle" />
     <div
       class="grid grid-cols-1 lg:grid-cols-8 lg:divide-x lg:divide-n-weak rounded-xl border border-n-weak min-h-[52rem]"

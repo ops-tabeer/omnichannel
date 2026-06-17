@@ -15,6 +15,8 @@ import ReplyBottomPanel from 'dashboard/components/widgets/WootWriter/ReplyBotto
 import CopilotReplyBottomPanel from 'dashboard/components/widgets/WootWriter/CopilotReplyBottomPanel.vue';
 import ArticleSearchPopover from 'dashboard/routes/dashboard/helpcenter/components/ArticleSearch/SearchPopover.vue';
 import CopilotEditorSection from './CopilotEditorSection.vue';
+import JivoCopilotEditorSection from 'dashboard/components-next/jivo/copilot/JivoCopilotEditorSection.vue';
+import JivoCopilotReplyBottomPanel from 'dashboard/components-next/jivo/copilot/JivoCopilotReplyBottomPanel.vue';
 import MessageSignatureMissingAlert from './MessageSignatureMissingAlert.vue';
 import ReplyBoxBanner from './ReplyBoxBanner.vue';
 import QuotedEmailPreview from './QuotedEmailPreview.vue';
@@ -52,6 +54,7 @@ import {
   getEffectiveChannelType,
 } from 'dashboard/helper/editorHelper';
 import { useCopilotReply } from 'dashboard/composables/useCopilotReply';
+import { useJivoCopilotReply } from 'dashboard/composables/useJivoCopilotReply';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
 import { isFileTypeAllowedForChannel } from 'shared/helpers/FileHelper';
 
@@ -80,6 +83,8 @@ export default {
     QuotedEmailPreview,
     CopilotEditorSection,
     CopilotReplyBottomPanel,
+    JivoCopilotEditorSection,
+    JivoCopilotReplyBottomPanel,
   },
   mixins: [inboxMixin, fileUploadMixin, keyboardEventListenerMixins],
   props: {
@@ -100,6 +105,7 @@ export default {
 
     const replyEditor = useTemplateRef('replyEditor');
     const copilot = useCopilotReply();
+    const jivoCopilot = useJivoCopilotReply();
     const shortcutKey = useKbd(['$mod', '+', 'enter']);
 
     return {
@@ -110,6 +116,7 @@ export default {
       fetchQuotedReplyFlagFromUISettings,
       replyEditor,
       copilot,
+      jivoCopilot,
       shortcutKey,
     };
   },
@@ -422,7 +429,11 @@ export default {
       );
     },
     isDefaultEditorMode() {
-      return !this.showAudioRecorderEditor && !this.copilot.isActive.value;
+      return (
+        !this.showAudioRecorderEditor &&
+        !this.copilot.isActive.value &&
+        !this.jivoCopilot.isActive.value
+      );
     },
     isEditorDisabled() {
       return (
@@ -442,6 +453,7 @@ export default {
         this.setCCAndToEmailsFromLastChat();
         // Reset Copilot editor state (includes cancelling ongoing generation)
         this.copilot.reset();
+        this.jivoCopilot.reset();
       }
 
       if (this.isOnPrivateNote) {
@@ -501,6 +513,7 @@ export default {
     );
 
     this.fetchAndSetReplyTo();
+    this.$store.dispatch('jivoAssistants/get');
     emitter.on(BUS_EVENTS.TOGGLE_REPLY_TO_MESSAGE, this.fetchAndSetReplyTo);
 
     // A hacky fix to solve the drag and drop
@@ -668,6 +681,8 @@ export default {
           action: () => {
             if (this.copilot.isActive.value && this.isFocused) {
               this.onSubmitCopilotReply();
+            } else if (this.jivoCopilot.isActive.value && this.isFocused) {
+              this.onSubmitJivoCopilotReply();
             } else if (this.isAValidEvent('cmd_enter')) {
               this.onSendReply();
             }
@@ -944,7 +959,12 @@ export default {
       this.onFocus();
     },
     executeCopilotAction(action, data) {
+      this.jivoCopilot.reset(false);
       this.copilot.execute(action, data);
+    },
+    executeJivoCopilotAction(action, data) {
+      this.copilot.reset(false);
+      this.jivoCopilot.execute(action, data);
     },
     clearMessage() {
       this.message = '';
@@ -1217,6 +1237,11 @@ export default {
       this.message = acceptedMessage;
       this.setCopilotAcceptedMessage(acceptedMessage);
     },
+    onSubmitJivoCopilotReply() {
+      const acceptedMessage = this.jivoCopilot.accept();
+      this.message = acceptedMessage;
+      this.setCopilotAcceptedMessage(acceptedMessage);
+    },
   },
 };
 </script>
@@ -1230,6 +1255,7 @@ export default {
       :is-reply-restricted="isReplyRestricted"
       :disabled="
         (copilot.isActive.value && copilot.isButtonDisabled.value) ||
+        (jivoCopilot.isActive.value && jivoCopilot.isButtonDisabled.value) ||
         showAudioRecorderEditor
       "
       :is-editor-disabled="isEditorDisabled"
@@ -1240,6 +1266,7 @@ export default {
       @toggle-popout="togglePopout"
       @toggle-copilot="copilot.toggleEditor"
       @execute-copilot-action="executeCopilotAction"
+      @execute-jivo-copilot-action="executeJivoCopilotAction"
     />
     <ArticleSearchPopover
       v-if="showArticleSearchPopover && connectedPortalSlug"
@@ -1256,7 +1283,14 @@ export default {
       leave-from-class="opacity-100 translate-y-0 scale-100"
       leave-to-class="opacity-0 translate-y-2 scale-[0.98]"
     >
-      <div :key="copilot.editorTransitionKey.value" class="reply-box__top">
+      <div
+        :key="
+          jivoCopilot.isActive.value
+            ? jivoCopilot.editorTransitionKey.value
+            : copilot.editorTransitionKey.value
+        "
+        class="reply-box__top"
+      >
         <ReplyToMessage
           v-if="shouldShowReplyToMessage"
           :message="inReplyTo"
@@ -1299,6 +1333,19 @@ export default {
           @content-ready="copilot.setContentReady"
           @send="copilot.sendFollowUp"
         />
+        <JivoCopilotEditorSection
+          v-else-if="jivoCopilot.isActive.value && !showAudioRecorderEditor"
+          :show-copilot-editor="jivoCopilot.showEditor.value"
+          :is-generating-content="jivoCopilot.isGenerating.value"
+          :generated-content="jivoCopilot.generatedContent.value"
+          :is-popout="popOutReplyBox"
+          :placeholder="$t('JIVO.COPILOT.MSG_INPUT')"
+          @focus="onFocus"
+          @blur="onBlur"
+          @clear-selection="clearEditorSelection"
+          @content-ready="jivoCopilot.setContentReady"
+          @send="jivoCopilot.sendFollowUp"
+        />
         <WootMessageEditor
           v-else-if="!showAudioRecorderEditor"
           v-model="message"
@@ -1325,6 +1372,7 @@ export default {
           @toggle-variables-menu="toggleVariablesMenu"
           @clear-selection="clearEditorSelection"
           @execute-copilot-action="executeCopilotAction"
+          @execute-jivo-copilot-action="executeJivoCopilotAction"
         />
 
         <QuotedEmailPreview
@@ -1372,6 +1420,13 @@ export default {
         :is-generating-content="copilot.isButtonDisabled.value"
         @submit="onSubmitCopilotReply"
         @cancel="copilot.reset"
+      />
+      <JivoCopilotReplyBottomPanel
+        v-else-if="jivoCopilot.isActive.value"
+        key="jivo-copilot-bottom-panel"
+        :is-generating-content="jivoCopilot.isButtonDisabled.value"
+        @submit="onSubmitJivoCopilotReply"
+        @cancel="jivoCopilot.reset"
       />
       <ReplyBottomPanel
         v-else

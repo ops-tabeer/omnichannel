@@ -2,6 +2,11 @@ import { createStore } from 'vuex';
 
 import accounts from './modules/accounts';
 import agentBots from './modules/agentBots';
+import jivoAssistants from './modules/jivoAssistants';
+import jivoDocuments from './modules/jivoDocuments';
+import jivoResponses from './modules/jivoResponses';
+import jivoScenarios from './modules/jivoScenarios';
+import jivoCustomTools from './modules/jivoCustomTools';
 import agentCapacityPolicies from './modules/agentCapacityPolicies';
 import agents from './modules/agents';
 import assignmentPolicies from './modules/assignmentPolicies';
@@ -65,6 +70,11 @@ export default createStore({
   modules: {
     accounts,
     agentBots,
+    jivoAssistants,
+    jivoDocuments,
+    jivoResponses,
+    jivoScenarios,
+    jivoCustomTools,
     agentCapacityPolicies,
     agents,
     assignmentPolicies,
