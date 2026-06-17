@@ -284,3 +284,66 @@ leadsquared:
       'conversation_activity_score',
       'transcript_activity_score',
     ]
+
+odoo:
+  id: odoo
+  feature_flag: crm_integration
+  logo: odoo.png
+  i18n_key: odoo
+  action: /odoo
+  hook_type: account
+  allow_multiple_hooks: false
+  settings_json_schema:
+    {
+      'type': 'object',
+      'properties':
+        {
+          'url': { 'type': 'string' },
+          'db': { 'type': 'string' },
+          'login': { 'type': 'string' },
+          'api_key': { 'type': 'string' },
+          'uid': { 'type': 'integer' },
+          'connected_user': { 'type': 'string' },
+          'enabled_inbox_ids': { 'type': 'array', 'items': { 'type': 'integer' } },
+        },
+      'required': ['url', 'db', 'login'],
+      'additionalProperties': false,
+    }
+  settings_form_schema:
+    [
+      {
+        'label': 'Odoo URL',
+        'type': 'text',
+        'name': 'url',
+        'validation': 'required',
+        'help': 'Your Odoo instance base URL, e.g. https://yourco.odoo.com',
+      },
+      {
+        'label': 'Database',
+        'type': 'text',
+        'name': 'db',
+        'validation': 'required',
+        'help': 'The Odoo database name',
+      },
+      {
+        'label': 'Bot Login',
+        'type': 'text',
+        'name': 'login',
+        'validation': 'required',
+        'help': 'Login (email) of the dedicated Odoo bot user',
+      },
+      {
+        'label': 'API Key',
+        'type': 'text',
+        'name': 'api_key',
+        'validation': 'required',
+        'help': 'API key generated in Odoo under Preferences -> Account Security',
+      },
+    ]
+  visible_properties:
+    [
+      'url',
+      'db',
+      'login',
+      'enabled_inbox_ids',
+    ]

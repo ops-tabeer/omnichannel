@@ -19,6 +19,7 @@ class Integrations::Hook < ApplicationRecord
 
   attr_readonly :app_id, :account_id, :inbox_id, :hook_type
   before_validation :ensure_hook_type
+  before_create :secure_odoo_api_key
   after_create :trigger_setup_if_crm
 
   # TODO: Remove guard once encryption keys become mandatory (target 3-4 releases out).
@@ -29,6 +30,7 @@ class Integrations::Hook < ApplicationRecord
   validates :inbox_id, presence: true, if: -> { hook_type == 'inbox' }
   validate :validate_settings_json_schema
   validate :ensure_feature_enabled
+  validate :validate_odoo_connection, on: :create
   validates :app_id, uniqueness: { scope: [:account_id], unless: -> { app.present? && app.params[:allow_multiple_hooks].present? } }
 
   # TODO: This seems to be only used for slack at the moment
@@ -105,6 +107,28 @@ class Integrations::Hook < ApplicationRecord
   end
 
   def crm_integration?
-    %w[leadsquared].include?(app_id)
+    %w[leadsquared odoo].include?(app_id)
+  end
+
+  # Verify the Odoo credentials before the hook is created so a bad connection
+  # surfaces as a form error instead of a silent async failure.
+  def validate_odoo_connection
+    return unless app_id == 'odoo'
+    return if %w[url db login api_key].any? { |key| settings[key].blank? }
+
+    Crm::Odoo::SetupService.new(self).validate_connection!
+  rescue Crm::Odoo::Api::Client::ApiError => e
+    errors.add(:base, "Could not connect to Odoo: #{e.message}")
+  end
+
+  # Move the Odoo api key out of the plaintext settings into the encrypted
+  # access_token column before the record is persisted, so it is never stored in
+  # settings nor returned to the client (the serializer exposes settings to admins).
+  def secure_odoo_api_key
+    return unless app_id == 'odoo'
+    return if settings['api_key'].blank?
+
+    self.access_token = settings['api_key']
+    self.settings = settings.except('api_key')
   end
 end

@@ -216,18 +216,38 @@ Better contact data → fewer Odoo placeholders.
 Each phase is independently testable and shippable. Earlier phases deliver value
 without depending on later ones.
 
-### Phase 0 — Phone enrichment fix
+### Phase 0 — Phone enrichment fix ✅ implemented
 - `Jivo::ContactEnrichmentService`: store raw digits when unparseable; scan recent
   messages for email and phone separately.
 - Small, self-contained, no Odoo dependency. Reduces placeholders later.
 - **Done when:** local-format phone numbers reliably save to the contact.
 
-### Phase 1 — Connection & setup (foundation, no triggers)
+### Phase 1 — Connection & setup (foundation, no triggers) ✅ implemented
 - `Crm::Odoo::Api::Client` (JSON-RPC authenticate + `execute_kw`).
 - `odoo` block in `config/integration/apps.yml` (incl. inbox multi-select),
   `Integrations::Hook#crm_integration?`, `Crm::SetupJob`, `Crm::Odoo::SetupService`.
 - **Done when:** the integration can be configured in the UI and validates
   credentials against Odoo on connect. No leads created yet.
+
+Implementation notes:
+- **Synchronous validation on connect:** `Integrations::Hook#validate_odoo_connection`
+  (a `validate ... on: :create`) calls `SetupService#validate_connection!`, which
+  authenticates the bot user and reads its display name. Bad credentials block the
+  create with a form error ("Could not connect to Odoo: …") instead of a silent
+  failure; on success the resolved `uid` + `connected_user` (bot name) are stored.
+- The async `Crm::SetupJob` then **moves `api_key` from `settings` into the encrypted
+  `access_token` column** and strips it from settings (reusing the uid/connected_user
+  from validation, so no second auth round-trip).
+- **"Connected as" status:** `SingleIntegrationHooks.vue` shows
+  "Connected to Odoo as &lt;bot user&gt;" from `hook.settings.connected_user`.
+- Inbox multi-select: `enabled_inbox_ids` rendered as a checkbox group in
+  `NewHook.vue` (connect form) **and** editable after connection on the
+  `SingleIntegrationHooks.vue` card (Save → `integrations/updateHook` →
+  `PATCH /integrations/hooks/:id`, sends full merged settings so other keys are
+  preserved). Stored in hook `settings`; consumed by the Phase 2 per-inbox gate.
+- `crm_integration` feature flag must be enabled on the account for the integration
+  to appear. Logo assets `public/dashboard/images/integrations/odoo{,-dark}.png` are
+  **placeholders** (copied from LeadSquared) pending the real Odoo logo.
 
 ### Phase 2 — Create lead on Take (req 1 + 4)
 - New `conversation.taken` event dispatched from the `take` controller action.

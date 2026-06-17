@@ -35,11 +35,26 @@ export default {
       values: {},
     };
   },
+  created() {
+    if (this.isIntegrationOdoo && !this.inboxesList.length) {
+      this.$store.dispatch('inboxes/get');
+    }
+  },
   computed: {
     ...mapGetters({
       uiFlags: 'integrations/getUIFlags',
       dialogFlowEnabledInboxes: 'inboxes/dialogFlowEnabledInboxes',
+      inboxesList: 'inboxes/getInboxes',
     }),
+    isIntegrationOdoo() {
+      return this.integration.id === 'odoo';
+    },
+    allInboxes() {
+      return this.inboxesList.map(inbox => ({
+        label: inbox.name,
+        value: inbox.id,
+      }));
+    },
     inboxes() {
       return this.dialogFlowEnabledInboxes
         .filter(inbox => {
@@ -133,6 +148,14 @@ export default {
       @submit="submitForm"
     >
       <FormKit v-for="item in formItems" :key="item.name" v-bind="item" />
+      <FormKit
+        v-if="isIntegrationOdoo"
+        :options="allInboxes"
+        type="checkbox"
+        name="enabled_inbox_ids"
+        :label="$t('INTEGRATION_APPS.ADD.FORM.ENABLED_INBOXES.LABEL')"
+        :help="$t('INTEGRATION_APPS.ADD.FORM.ENABLED_INBOXES.HELP')"
+      />
       <FormKit
         v-if="isHookTypeInbox"
         :options="inboxes"

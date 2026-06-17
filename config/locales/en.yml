@@ -346,6 +346,10 @@ en:
       name: 'LeadSquared'
       short_description: 'Sync your contacts and conversations with LeadSquared CRM.'
       description: 'Sync your contacts and conversations with LeadSquared CRM. This integration automatically creates leads in LeadSquared when new contacts are added, and logs conversation activity to provide your sales team with complete context.'
+    odoo:
+      name: 'Odoo CRM'
+      short_description: 'Create and update leads in Odoo CRM when conversations are taken.'
+      description: 'Connect your Odoo CRM to automatically create a lead when an agent takes a handed-off conversation and keep the salesperson in sync on reassignment. Select which inboxes should sync to Odoo.'
   captain:
     copilot_message_required: Message is required
     copilot_error: 'Please connect an assistant to this inbox to use Copilot'
