@@ -23,15 +23,33 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
     lead_data = Crm::Odoo::Mappers::LeadMapper.map(conversation, partner_id, salesperson_fields(conversation.assignee), partner_values)
     new_lead_id = @client.execute_kw('crm.lead', 'create', [lead_data])
     store_conversation_metadata(conversation, { 'lead_id' => new_lead_id })
-  rescue Crm::Odoo::Api::Client::ApiError => e
-    ChatwootExceptionTracker.new(e, account: @account).capture_exception
-    Rails.logger.error "Odoo API error creating lead for conversation ##{conversation.id}: #{e.message}"
   rescue StandardError => e
-    ChatwootExceptionTracker.new(e, account: @account).capture_exception
-    Rails.logger.error "Error creating Odoo lead for conversation ##{conversation.id}: #{e.message}"
+    notify_sync_failure(conversation, e)
   end
 
   private
+
+  # Track + log the failure and email account admins with the full context so a lead
+  # that fails to reach Odoo (API error, validation, uniqueness clash, …) is visible.
+  def notify_sync_failure(conversation, error)
+    ChatwootExceptionTracker.new(error, account: @account).capture_exception
+    Rails.logger.error "Odoo lead sync failed for conversation ##{conversation.id}: #{error.message}"
+    AdministratorNotifications::IntegrationsNotificationMailer
+      .with(account: @account)
+      .odoo_lead_sync_failed(sync_failure_meta(conversation, error))
+      .deliver_later
+  end
+
+  def sync_failure_meta(conversation, error)
+    {
+      'conversation_display_id' => conversation.display_id,
+      'inbox_name' => conversation.inbox.name,
+      'contact_name' => conversation.contact&.name,
+      'assignee_email' => conversation.assignee&.email,
+      'error' => error.message,
+      'conversation_url' => "#{ENV.fetch('FRONTEND_URL', nil)}/app/accounts/#{@account.id}/conversations/#{conversation.display_id}"
+    }
+  end
 
   def inbox_enabled?(conversation)
     Array(@hook.settings['enabled_inbox_ids']).include?(conversation.inbox_id)
