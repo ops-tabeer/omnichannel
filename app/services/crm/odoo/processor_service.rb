@@ -23,6 +23,8 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
     lead_data = Crm::Odoo::Mappers::LeadMapper.map(conversation, partner_id, salesperson_fields(conversation.assignee), partner_values)
     new_lead_id = @client.execute_kw('crm.lead', 'create', [lead_data])
     store_conversation_metadata(conversation, { 'lead_id' => new_lead_id })
+    post_handoff_note(new_lead_id, conversation)
+    enrich_lead(new_lead_id, conversation)
   rescue StandardError => e
     notify_sync_failure(conversation, e)
   end
@@ -55,6 +57,68 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
              'Conversation unassigned via Omni.'
            end
     @client.execute_kw('crm.lead', 'message_post', [[lead]], { body: body, subtype_xmlid: 'mail.mt_note' })
+  end
+
+  # Posts the AI handoff reason (the assistant's private note on the conversation) to the
+  # new lead's chatter as an internal note. The note is only written when the AI handed off
+  # with a reason, so there is nothing to post otherwise.
+  def post_handoff_note(lead, conversation)
+    note = handoff_message(conversation)&.content
+    return if note.blank?
+
+    @client.execute_kw('crm.lead', 'message_post', [[lead]],
+                       { body: "AI handoff reason: #{note}", subtype_xmlid: 'mail.mt_note' })
+  end
+
+  # The handoff note is the latest private message authored by the Jivo assistant
+  # (created by Jivo::Tools::HandoffTool with the escalation reason).
+  def handoff_message(conversation)
+    conversation.messages
+                .where(private: true, sender_type: 'JivoAssistant')
+                .order(created_at: :desc)
+                .first
+  end
+
+  # Best-effort: classify the lead (inquiry type + nationality/destination country) from
+  # the AI handoff note via the assistant's LLM. Failures are logged and swallowed so they
+  # never bubble up to the create rescue (which would email a false "sync failed").
+  def enrich_lead(lead, conversation)
+    message = handoff_message(conversation)
+    return if message&.sender.blank?
+
+    content = enrichment_content(message.content, conversation)
+    extracted = Crm::Odoo::LeadEnrichmentService.new(assistant: message.sender, content: content).extract
+    values = enrichment_write_values(extracted)
+    return if values.blank?
+
+    @client.execute_kw('crm.lead', 'write', [[lead], values])
+  rescue StandardError => e
+    Rails.logger.error "[ODOO] lead enrichment failed for conversation ##{conversation.id}: #{e.message}"
+    ChatwootExceptionTracker.new(e, account: @account).capture_exception
+  end
+
+  # Feed the assistant the handoff note plus the full conversation transcript so fields the
+  # customer stated but the one-line note omitted (e.g. nationality) are still picked up.
+  def enrichment_content(note, conversation)
+    "# Handoff note\n\n#{note}\n\n# Conversation\n\n#{conversation.to_llm_text}"
+  end
+
+  # Maps the LLM extraction to crm.lead fields: inquiry_type is a selection key; nationality
+  # and destination are many2one res.country, resolved from a country name to its record id.
+  def enrichment_write_values(extracted)
+    values = {}
+    values[:inquiry_type] = extracted['inquiry_type'] if extracted['inquiry_type'].present?
+    nationality_id = country_id(extracted['nationality'])
+    values[:nationality_id] = nationality_id if nationality_id
+    destination_id = country_id(extracted['destination'])
+    values[:destination_location] = destination_id if destination_id
+    values
+  end
+
+  def country_id(name)
+    return if name.blank?
+
+    @client.execute_kw('res.country', 'search', [[['name', '=ilike', name]]], { limit: 1 }).to_a.first
   end
 
   # Track + log the failure and email account admins with the full context so a lead

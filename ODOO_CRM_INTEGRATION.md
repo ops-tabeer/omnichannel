@@ -274,10 +274,25 @@ Implementation notes:
 - **Done when:** reassigning a taken conversation updates the lead's salesperson and
   logs a chatter note; pre-Take changes are ignored.
 
-### Phase 4 — Handoff note + placeholder replacement
-- Post the AI handoff note to lead chatter on create (`message_post`).
-- `contact.updated` → replace placeholder email/phone with real values.
-- **Done when:** the handoff note appears in chatter and placeholders are healed.
+### Phase 4 — Handoff note + lead enrichment + placeholder replacement
+- ✅ **Handoff note → chatter:** `handle_taken` posts the AI handoff reason (latest
+  private `JivoAssistant` message) to the lead chatter via `message_post`
+  (`mail.mt_note`), body `"AI handoff reason: <reason>"`. Skipped when no reason.
+- ✅ **Lead enrichment (LLM):** `Crm::Odoo::LeadEnrichmentService` (mirrors
+  `Jivo::Llm::ContactAttributesService`; uses the handoff assistant's OpenAI key + model,
+  JSON mode, temp 0) extracts `inquiry_type` (selection key), `nationality`, `destination`
+  (canonical country names) from the **handoff note + full conversation transcript**
+  (`conversation.to_llm_text`). `ProcessorService#enrich_lead` resolves the two country
+  names → `res.country` ids (`=ilike`) and writes `inquiry_type` / `nationality_id` /
+  `destination_location` onto the lead. Best-effort: its own rescue logs + Sentry only, so
+  it never triggers a false "sync failed" email or blocks lead creation. (Odoo field facts:
+  `inquiry_type` selection w/ 13 keys; `nationality_id`/`destination_location`/`origin_location`
+  are many2one → `res.country`.) Deferred optimisation: have the agent emit these fields as
+  handoff-tool params (zero extra call) — not done to avoid domain leakage into core Jivo.
+- ⬜ **Placeholder healing:** `contact.updated` → replace placeholder email/phone with real
+  values on the partner (and decide lead-vs-partner). STILL PENDING.
+- **Done when:** the handoff note appears in chatter, the lead is auto-classified, and
+  placeholders are healed.
 
 ### Phase 5 — Odoo-side enforcement & email (req 3 + 5)
 - Deliver the Odoo automated-action snippet (block manual `user_id` change on
