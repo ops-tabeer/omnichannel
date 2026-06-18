@@ -313,11 +313,16 @@ Implementation notes:
   linked contact's email/phone edits sync to Odoo. ✅ Phase 4 complete.
 
 ### Phase 5 — Odoo-side enforcement & email (req 3 + 5)
-- Deliver the Odoo automated-action snippet (block manual `user_id` change on
-  Chatwoot-managed leads) to the Odoo team.
-- Verify Chatwoot's `conversation_assignment` email is enabled for the agents.
-- **Done when:** manual salesperson edits in Odoo are blocked and assignees are
-  emailed on take/assign.
+- ✅ **Req 5 — lead-created email:** `AdministratorNotifications::IntegrationsNotificationMailer
+  #odoo_lead_created` (view `odoo_lead_created.liquid`) emails the **assignee** when a lead is
+  created on Take, with a deep link to the Odoo lead (`<hook url>/odoo/crm/<lead_id>`) and the
+  conversation. Sent from `ProcessorService#notify_lead_created` after a successful create.
+- ⬜ **Req 3 — Odoo automated action (Odoo team deploys, not in repo):** block manual
+  `user_id` (Salesperson) change on Chatwoot-managed leads. Marker = `chatwoot_conversation_url`
+  is set (only Chatwoot-created leads have it). Allow the bot user (`ops@tabeertours.com`);
+  raise `UserError` for anyone else. Base.automation on `crm.lead`, watched field `user_id`.
+- **Done when:** manual salesperson edits in Odoo are blocked and assignees are emailed
+  when their lead is created.
 
 ---
 

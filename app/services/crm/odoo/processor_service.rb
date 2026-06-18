@@ -23,6 +23,7 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
     lead_data = Crm::Odoo::Mappers::LeadMapper.map(conversation, partner_id, salesperson_fields(conversation.assignee), partner_values)
     new_lead_id = @client.execute_kw('crm.lead', 'create', [lead_data])
     store_conversation_metadata(conversation, { 'lead_id' => new_lead_id })
+    notify_lead_created(conversation, new_lead_id)
     Crm::Odoo::LeadArtifactsService.new(@client, @account).apply(new_lead_id, conversation)
   rescue StandardError => e
     notify_sync_failure(conversation, e)
@@ -94,6 +95,25 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
              'Conversation unassigned via Omni.'
            end
     @client.execute_kw('crm.lead', 'message_post', [[lead]], { body: body, subtype_xmlid: 'mail.mt_note' })
+  end
+
+  # Emails the assignee that their Odoo CRM lead was created, with a deep link to it.
+  def notify_lead_created(conversation, lead_id)
+    AdministratorNotifications::IntegrationsNotificationMailer
+      .with(account: @account)
+      .odoo_lead_created(lead_created_meta(conversation, lead_id))
+      .deliver_later
+  end
+
+  def lead_created_meta(conversation, lead_id)
+    {
+      'conversation_display_id' => conversation.display_id,
+      'inbox_name' => conversation.inbox.name,
+      'contact_name' => conversation.contact&.name,
+      'assignee_email' => conversation.assignee&.email,
+      'lead_url' => "#{@hook.settings['url'].to_s.chomp('/')}/odoo/crm/#{lead_id}",
+      'conversation_url' => "#{ENV.fetch('FRONTEND_URL', nil)}/app/accounts/#{@account.id}/conversations/#{conversation.display_id}"
+    }
   end
 
   # Track + log the failure and email account admins with the full context so a lead
