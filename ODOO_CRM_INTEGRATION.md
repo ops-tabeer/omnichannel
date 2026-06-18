@@ -300,10 +300,17 @@ Implementation notes:
   in `Crm::Odoo::LeadArtifactsService`; `ProcessorService#handle_taken` just calls
   `.apply(lead_id, conversation)`. Handoff-note failures still propagate (→ sync-failure
   email); enrichment + summary swallow their own errors.
-- ⬜ **Placeholder healing:** `contact.updated` → replace placeholder email/phone with real
-  values on the partner (and decide lead-vs-partner). STILL PENDING.
-- **Done when:** the handoff note + summary appear, the lead is auto-classified, and
-  placeholders are healed.
+- ✅ **Contact → partner sync (placeholder healing + corrections):** `contact.updated` →
+  `ProcessorService#handle_contact_updated`. Gated on the contact being linked
+  (`external.odoo_partner_id`). Reads the partner's current email/phone and writes the
+  contact's value for a field only when it **changed** and is **not already used by another
+  partner** (uniqueness guard → skip taken values; never trips Odoo's email/phone
+  constraint). Updates the **partner only** — the lead's email/phone follow the partner in
+  this Odoo. Won't clear a value on blank. Works for both placeholder→real and real→corrected.
+  Best-effort (log + Sentry). Wired via `HookListener` (`contact.updated` added to the odoo
+  map; `contact_updated` handler already existed) + `HookJob#process_odoo_integration`.
+- **Done when:** the handoff note + summary appear, the lead is auto-classified, and a
+  linked contact's email/phone edits sync to Odoo. ✅ Phase 4 complete.
 
 ### Phase 5 — Odoo-side enforcement & email (req 3 + 5)
 - Deliver the Odoo automated-action snippet (block manual `user_id` change on

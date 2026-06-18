@@ -45,7 +45,45 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
     notify_sync_failure(conversation, e)
   end
 
+  # Syncs a linked contact's real email/phone onto its Odoo partner when the contact is
+  # updated (manually or by AI enrichment). A field is skipped when its value is already
+  # used by another partner, so Odoo's email/phone uniqueness constraint never trips. The
+  # lead's email/phone follow the partner in Odoo, so we only touch the partner. Best-effort.
+  def handle_contact_updated(contact)
+    partner_id = contact.additional_attributes.dig('external', 'odoo_partner_id')
+    return if partner_id.blank?
+
+    current = @client.execute_kw('res.partner', 'read', [[partner_id]], { fields: %w[email phone] }).to_a.first || {}
+    values = {}
+    add_partner_value(values, :email, contact.email.presence, current['email'], partner_id)
+    add_partner_value(values, :phone, contact_phone(contact), current['phone'], partner_id)
+    return if values.blank?
+
+    @client.execute_kw('res.partner', 'write', [[partner_id], values])
+  rescue StandardError => e
+    Rails.logger.error "[ODOO] contact sync failed for contact ##{contact.id}: #{e.message}"
+    ChatwootExceptionTracker.new(e, account: @account).capture_exception
+  end
+
   private
+
+  def contact_phone(contact)
+    contact.phone_number.presence || contact.additional_attributes['raw_phone_number'].presence
+  end
+
+  # Adds field => new_value to the partner write only when it actually changed and the value
+  # isn't already taken by another Odoo partner (the uniqueness guard).
+  def add_partner_value(values, field, new_value, current_value, partner_id)
+    return if new_value.blank? || new_value == current_value
+    return if partner_field_taken?(field, new_value, partner_id)
+
+    values[field] = new_value
+  end
+
+  def partner_field_taken?(field, value, partner_id)
+    @client.execute_kw('res.partner', 'search',
+                       [[[field.to_s, '=', value], ['id', '!=', partner_id]]], { limit: 1 }).to_a.any?
+  end
 
   # Logs the reassignment as an internal note (mail.mt_note) on the lead's chatter so
   # Odoo users can see the salesperson was changed from the Omni conversation.
