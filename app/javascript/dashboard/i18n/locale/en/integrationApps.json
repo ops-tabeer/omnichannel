@@ -61,7 +61,7 @@
     "FALLBACK_USER": {
       "LABEL": "Fallback salesperson",
       "HELP": "Odoo login (email) to own the lead when the taking agent has no matching Odoo user. Optional.",
-      "PLACEHOLDER": "manager@yourco.com"
+      "PLACEHOLDER": "manager{'@'}yourco.com"
     },
     "CONNECT": {
       "BUTTON_TEXT": "Connect"
