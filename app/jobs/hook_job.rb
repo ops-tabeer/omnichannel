@@ -74,12 +74,23 @@ class HookJob < MutexApplicationJob
   end
 
   def process_odoo_integration_with_lock(hook, event_name, event_data)
-    return unless ['conversation.taken'].include?(event_name)
+    return unless ['conversation.taken', 'assignee.changed'].include?(event_name)
     return unless hook.feature_allowed?
 
     key = format(::Redis::Alfred::CRM_PROCESS_MUTEX, hook_id: hook.id)
     with_lock(key) do
-      Crm::Odoo::ProcessorService.new(hook).handle_taken(event_data[:conversation])
+      process_odoo_integration(hook, event_name, event_data)
+    end
+  end
+
+  def process_odoo_integration(hook, event_name, event_data)
+    processor = Crm::Odoo::ProcessorService.new(hook)
+
+    case event_name
+    when 'conversation.taken'
+      processor.handle_taken(event_data[:conversation])
+    when 'assignee.changed'
+      processor.handle_assignee_changed(event_data[:conversation])
     end
   end
 

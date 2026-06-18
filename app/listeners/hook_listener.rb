@@ -39,6 +39,11 @@ class HookListener < BaseListener
     execute_account_hooks(event, conversation.account, conversation: conversation)
   end
 
+  def assignee_changed(event)
+    conversation = extract_conversation_and_account(event)[0]
+    execute_account_hooks(event, conversation.account, conversation: conversation)
+  end
+
   private
 
   def execute_hooks(event, message)
@@ -68,7 +73,7 @@ class HookListener < BaseListener
       'dialogflow' => ['message.created', 'message.updated'],
       'google_translate' => ['message.created'],
       'leadsquared' => ['contact.updated', 'conversation.created', 'conversation.resolved'],
-      'odoo' => ['conversation.taken']
+      'odoo' => ['conversation.taken', 'assignee.changed']
     }
 
     return false unless supported_events_map.key?(hook.app_id)

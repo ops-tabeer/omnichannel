@@ -27,7 +27,35 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
     notify_sync_failure(conversation, e)
   end
 
+  # Re-points an existing lead's salesperson when the conversation is reassigned and
+  # logs the change to the lead's chatter. Only acts once a lead exists (set on Take),
+  # so the assignee.changed that fires alongside the initial Take — and any pre-Take
+  # idle bounce — is ignored.
+  def handle_assignee_changed(conversation)
+    return unless inbox_enabled?(conversation)
+
+    lead = lead_id(conversation)
+    return if lead.blank?
+
+    fields = salesperson_fields(conversation.assignee)
+    @client.execute_kw('crm.lead', 'write', [[lead], fields]) if fields.present?
+    post_reassignment_note(lead, conversation.assignee)
+  rescue StandardError => e
+    notify_sync_failure(conversation, e)
+  end
+
   private
+
+  # Logs the reassignment as an internal note (mail.mt_note) on the lead's chatter so
+  # Odoo users can see the salesperson was changed from the Omni conversation.
+  def post_reassignment_note(lead, assignee)
+    body = if assignee&.name.present?
+             "Conversation reassigned to #{assignee.name} via Omni."
+           else
+             'Conversation unassigned via Omni.'
+           end
+    @client.execute_kw('crm.lead', 'message_post', [[lead]], { body: body, subtype_xmlid: 'mail.mt_note' })
+  end
 
   # Track + log the failure and email account admins with the full context so a lead
   # that fails to reach Odoo (API error, validation, uniqueness clash, …) is visible.

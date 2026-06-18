@@ -258,10 +258,21 @@ Implementation notes:
 - **Done when:** taking a handed-off conversation creates a correctly-mapped lead
   with the right salesperson and chat link.
 
-### Phase 3 — Update salesperson on reassignment (req 2)
-- `assignee.changed` handling → update `user_id` when a lead already exists.
-- **Done when:** reassigning a taken conversation updates the lead's salesperson;
-  pre-Take changes are ignored.
+### Phase 3 — Update salesperson on reassignment (req 2) ✅ implemented
+- `assignee.changed` wired through `HookListener` (`assignee_changed`) +
+  `HookJob#process_odoo_integration` (shared dispatcher with Take, same per-hook
+  `CRM_PROCESS_MUTEX`).
+- `Crm::Odoo::ProcessorService#handle_assignee_changed`: per-inbox gate; only acts
+  when a lead already exists (the `assignee.changed` that fires alongside the initial
+  Take, and any pre-Take idle bounce, are ignored). Reuses `salesperson_fields`
+  (assignee Odoo user → `fallback_user_login` → none) and `write`s `user_id`/`company_id`
+  when one resolves.
+- Posts a chatter note via `message_post` (`subtype_xmlid: mail.mt_note`, internal log
+  note) on every genuine reassignment — even when no Odoo user resolves — so the change
+  is visible in Odoo: "Conversation reassigned to &lt;agent&gt; via Omni." /
+  "Conversation unassigned via Omni." Failures route through `notify_sync_failure`.
+- **Done when:** reassigning a taken conversation updates the lead's salesperson and
+  logs a chatter note; pre-Take changes are ignored.
 
 ### Phase 4 — Handoff note + placeholder replacement
 - Post the AI handoff note to lead chatter on create (`message_post`).
