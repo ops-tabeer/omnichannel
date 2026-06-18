@@ -289,9 +289,20 @@ Implementation notes:
   `inquiry_type` selection w/ 13 keys; `nationality_id`/`destination_location`/`origin_location`
   are many2one → `res.country`.) Deferred optimisation: have the agent emit these fields as
   handoff-tool params (zero extra call) — not done to avoid domain leakage into core Jivo.
+- ✅ **Conversation summary:** reuses `Jivo::Tasks::SummarizeService` (same logic as the
+  JIVO summary button) and adds it to the lead — **rich HTML in the Notes (`description`)
+  field** and a **clean plaintext copy in the chatter**. (This Odoo instance's `message_post`
+  runs every body through `plaintext2html`, escaping HTML, so the chatter can only show
+  plaintext; the `description` html field keeps the rendered markup.) Markdown rendered via
+  `ChatwootMarkdownRenderer` (`render_message` for Notes, `render_markdown_to_plain_text`
+  for chatter). Best-effort with its own rescue.
+- **Refactor:** the post-create chatter/LLM steps (handoff note + enrichment + summary) live
+  in `Crm::Odoo::LeadArtifactsService`; `ProcessorService#handle_taken` just calls
+  `.apply(lead_id, conversation)`. Handoff-note failures still propagate (→ sync-failure
+  email); enrichment + summary swallow their own errors.
 - ⬜ **Placeholder healing:** `contact.updated` → replace placeholder email/phone with real
   values on the partner (and decide lead-vs-partner). STILL PENDING.
-- **Done when:** the handoff note appears in chatter, the lead is auto-classified, and
+- **Done when:** the handoff note + summary appear, the lead is auto-classified, and
   placeholders are healed.
 
 ### Phase 5 — Odoo-side enforcement & email (req 3 + 5)
