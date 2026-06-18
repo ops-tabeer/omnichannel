@@ -4,13 +4,17 @@ class Api::V1::Accounts::Jivo::AssistantResponsesController < Api::V1::Accounts:
   before_action :current_account
   before_action :check_authorization
   before_action :assistant
+  before_action :set_current_page, only: [:index]
   before_action :assistant_response, only: [:show, :update, :destroy]
+
+  RESULTS_PER_PAGE = 10
 
   def index
     scope = @assistant.responses.ordered
     scope = scope.where(status: params[:status]) if params[:status].present?
     scope = search_scope(scope) if params[:query].present?
-    @responses = scope
+    @responses_count = scope.count
+    @responses = scope.page(@current_page).per(RESULTS_PER_PAGE)
   end
 
   def show; end
@@ -36,6 +40,10 @@ class Api::V1::Accounts::Jivo::AssistantResponsesController < Api::V1::Accounts:
 
   def assistant_response
     @response = @assistant.responses.find(params[:id])
+  end
+
+  def set_current_page
+    @current_page = params[:page].presence || 1
   end
 
   def permitted_params

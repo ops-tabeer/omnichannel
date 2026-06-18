@@ -6,8 +6,9 @@ class JivoResponsesAPI extends ApiClient {
     super('jivo/assistants', { accountScoped: true });
   }
 
-  list(assistantId, { status, query } = {}) {
+  list(assistantId, { status, query, page = 1 } = {}) {
     const params = {
+      page,
       ...(status ? { status } : {}),
       ...(query ? { query } : {}),
     };

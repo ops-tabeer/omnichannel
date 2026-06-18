@@ -5,6 +5,7 @@ import { throwErrorMessage } from '../utils/api';
 const types = {
   SET_UI_FLAG: 'SET_JIVO_RESPONSES_UI_FLAG',
   SET_RECORDS: 'SET_JIVO_RESPONSES',
+  SET_META: 'SET_JIVO_RESPONSES_META',
   ADD_RECORD: 'ADD_JIVO_RESPONSE',
   EDIT_RECORD: 'EDIT_JIVO_RESPONSE',
   DELETE_RECORD: 'DELETE_JIVO_RESPONSE',
@@ -13,6 +14,10 @@ const types = {
 
 export const state = {
   records: [],
+  meta: {
+    totalCount: 0,
+    page: 1,
+  },
   uiFlags: {
     isFetching: false,
     isCreating: false,
@@ -24,18 +29,22 @@ export const state = {
 
 export const getters = {
   getResponses: $state => $state.records,
+  getMeta: $state => $state.meta,
   getUIFlags: $state => $state.uiFlags,
 };
 
 export const actions = {
-  get: async ({ commit }, { assistantId, status, query }) => {
+  get: async ({ commit }, { assistantId, status, query, page }) => {
     commit(types.SET_UI_FLAG, { isFetching: true });
     try {
       const response = await JivoResponsesAPI.list(assistantId, {
         status,
         query,
+        page,
       });
-      commit(types.SET_RECORDS, response.data);
+      const { payload, meta } = response.data;
+      commit(types.SET_RECORDS, payload);
+      commit(types.SET_META, meta);
     } catch (error) {
       throwErrorMessage(error);
     } finally {
@@ -123,6 +132,13 @@ export const actions = {
 export const mutations = {
   [types.SET_UI_FLAG]($state, flags) {
     $state.uiFlags = { ...$state.uiFlags, ...flags };
+  },
+  [types.SET_META]($state, meta) {
+    $state.meta = {
+      ...$state.meta,
+      totalCount: Number(meta.total_count),
+      page: Number(meta.page),
+    };
   },
   [types.SET_RECORDS]: MutationHelpers.set,
   [types.ADD_RECORD]: MutationHelpers.create,

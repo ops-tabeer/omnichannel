@@ -7,11 +7,24 @@ import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAccount } from 'dashboard/composables/useAccount';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 import BackButton from 'dashboard/components/widgets/BackButton.vue';
 import JivoAssistantSwitcher from './JivoAssistantSwitcher.vue';
 import JivoNotEnabled from './JivoNotEnabled.vue';
 
 defineProps({
+  currentPage: {
+    type: Number,
+    default: 1,
+  },
+  totalCount: {
+    type: Number,
+    default: 0,
+  },
+  itemsPerPage: {
+    type: Number,
+    default: 10,
+  },
   headerTitle: {
     type: String,
     default: '',
@@ -36,9 +49,13 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  showPaginationFooter: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-defineEmits(['click']);
+const emit = defineEmits(['click', 'update:currentPage']);
 
 const route = useRoute();
 const { uiSettings, updateUISettings } = useUISettings();
@@ -65,6 +82,10 @@ const activeAssistantName = computed(
 
 const toggleSwitcher = () => {
   showSwitcherDropdown.value = !showSwitcherDropdown.value;
+};
+
+const handlePageChange = page => {
+  emit('update:currentPage', page);
 };
 
 watch(
@@ -176,5 +197,16 @@ watch(
         </template>
       </div>
     </main>
+    <footer
+      v-if="showPaginationFooter && !featureNotEnabled"
+      class="sticky bottom-0 z-10 px-4 pb-4"
+    >
+      <PaginationFooter
+        :current-page="currentPage"
+        :total-items="totalCount"
+        :items-per-page="itemsPerPage"
+        @update:current-page="handlePageChange"
+      />
+    </footer>
   </section>
 </template>

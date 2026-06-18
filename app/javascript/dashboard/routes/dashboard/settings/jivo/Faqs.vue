@@ -18,6 +18,7 @@ const { t } = useI18n();
 const assistantId = computed(() => Number(route.params.assistantId));
 
 const responses = useMapGetter('jivoResponses/getResponses');
+const responseMeta = useMapGetter('jivoResponses/getMeta');
 const uiFlags = useMapGetter('jivoResponses/getUIFlags');
 
 const formDialogRef = ref(null);
@@ -29,16 +30,34 @@ const selectedIds = ref([]);
 const statusFilter = ref('pending');
 const searchQuery = ref('');
 const pendingAction = ref(null);
+const itemsPerPage = 10;
 
 const statusOptions = computed(() => [
-  { value: 'pending', label: t('JIVO.FAQS.FILTERS.PENDING') },
-  { value: 'approved', label: t('JIVO.FAQS.FILTERS.APPROVED') },
-  { value: 'all', label: t('JIVO.FAQS.FILTERS.ALL') },
+  {
+    value: 'pending',
+    label: t('JIVO.FAQS.FILTERS.PENDING'),
+    icon: 'i-lucide-clock-3',
+  },
+  {
+    value: 'approved',
+    label: t('JIVO.FAQS.FILTERS.APPROVED'),
+    icon: 'i-lucide-circle-check',
+  },
+  {
+    value: 'all',
+    label: t('JIVO.FAQS.FILTERS.ALL'),
+    icon: 'i-lucide-list-filter',
+  },
 ]);
 
 const selectedCount = computed(() => selectedIds.value.length);
 const selectionActive = computed(() => selectedCount.value > 0);
 const visibleIds = computed(() => responses.value.map(faq => faq.id));
+const currentPage = computed(() => responseMeta.value.page || 1);
+const totalCount = computed(() => responseMeta.value.totalCount || 0);
+const showPaginationFooter = computed(
+  () => !uiFlags.value.isFetching && responses.value.length > 0
+);
 const allRowsSelected = computed(
   () =>
     visibleIds.value.length > 0 &&
@@ -96,13 +115,14 @@ const isConfirming = computed(
     uiFlags.value.isUpdating
 );
 
-const refresh = async () => {
+const refresh = async (page = currentPage.value) => {
   try {
     selectedIds.value = [];
     await store.dispatch('jivoResponses/get', {
       assistantId: assistantId.value,
       status: statusFilter.value === 'all' ? undefined : statusFilter.value,
       query: searchQuery.value.trim() || undefined,
+      page,
     });
   } catch (error) {
     useAlert(error.message || t('JIVO.FAQS.LOAD_FAILED'));
@@ -140,6 +160,7 @@ const submit = async () => {
       });
       useAlert(t('JIVO.FAQS.UPDATED'));
     }
+    await refresh(formMode.value === 'create' ? 1 : currentPage.value);
     formDialogRef.value?.close();
   } catch (error) {
     useAlert(error.message || t('JIVO.FAQS.SAVE_FAILED'));
@@ -168,12 +189,24 @@ const handleConfirm = async () => {
     reject: 'bulkReject',
     delete: 'bulkDelete',
   };
+  const selectedVisibleCount = ids.filter(id =>
+    visibleIds.value.includes(id)
+  ).length;
+  const actionRemovesRows =
+    kind !== 'approve' || statusFilter.value === 'pending';
+  const pageToFetch =
+    actionRemovesRows &&
+    selectedVisibleCount >= responses.value.length &&
+    currentPage.value > 1
+      ? currentPage.value - 1
+      : currentPage.value;
+
   try {
     await store.dispatch(`jivoResponses/${actionMap[kind]}`, {
       assistantId: assistantId.value,
       ids,
     });
-    await refresh();
+    await refresh(pageToFetch);
     if (kind === 'approve') useAlert(t('JIVO.FAQS.BULK.APPROVED'));
     else if (kind === 'reject') useAlert(t('JIVO.FAQS.BULK.REJECTED'));
     else useAlert(t('JIVO.FAQS.BULK.DELETED'));
@@ -199,21 +232,27 @@ const clearSelection = () => {
   selectedIds.value = [];
 };
 
-const onStatusFilterChange = () => refresh();
+const onStatusFilterChange = value => {
+  if (statusFilter.value === value) return;
+  statusFilter.value = value;
+  refresh(1);
+};
+
+const onPageChange = page => refresh(page);
 
 let searchTimer;
 const onSearchInput = () => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(refresh, 400);
+  searchTimer = setTimeout(() => refresh(1), 400);
 };
 
 watch(assistantId, id => {
-  if (id) refresh();
+  if (id) refresh(1);
 });
 
 onMounted(async () => {
   await store.dispatch('jivoAssistants/get');
-  if (assistantId.value) await refresh();
+  if (assistantId.value) await refresh(1);
 });
 </script>
 
@@ -223,6 +262,11 @@ onMounted(async () => {
     :button-label="t('JIVO.FAQS.ADD_NEW')"
     :is-fetching="uiFlags.isFetching"
     :is-empty="!responses.length"
+    :current-page="currentPage"
+    :total-count="totalCount"
+    :items-per-page="itemsPerPage"
+    :show-pagination-footer="showPaginationFooter"
+    @update:current-page="onPageChange"
     @click="openCreateForm"
   >
     <template #search>
@@ -238,22 +282,35 @@ onMounted(async () => {
 
     <template #subHeader>
       <div class="flex flex-wrap items-center justify-between gap-3 pb-3">
-        <label class="flex items-center gap-2 text-sm text-n-slate-11">
-          {{ t('JIVO.FAQS.FILTERS.STATUS_LABEL') }}
-          <select
-            v-model="statusFilter"
-            class="rounded-md border border-n-weak bg-n-alpha-black2 px-3 py-1.5 text-sm text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
-            @change="onStatusFilterChange"
+        <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+          <span class="text-sm text-n-slate-11">
+            {{ t('JIVO.FAQS.FILTERS.STATUS_LABEL') }}
+          </span>
+          <div
+            role="radiogroup"
+            :aria-label="t('JIVO.FAQS.FILTERS.STATUS_LABEL')"
+            class="inline-flex w-full overflow-x-auto rounded-lg border border-n-weak bg-n-alpha-black2 p-1 sm:w-auto"
           >
-            <option
+            <button
               v-for="option in statusOptions"
               :key="option.value"
-              :value="option.value"
+              type="button"
+              role="radio"
+              :aria-checked="statusFilter === option.value"
+              :disabled="uiFlags.isFetching"
+              class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-n-brand disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+              :class="
+                statusFilter === option.value
+                  ? 'bg-n-solid-2 text-n-slate-12 shadow-sm'
+                  : 'text-n-slate-11 hover:bg-n-alpha-2 hover:text-n-slate-12'
+              "
+              @click="onStatusFilterChange(option.value)"
             >
+              <span class="size-4" :class="option.icon" />
               {{ option.label }}
-            </option>
-          </select>
-        </label>
+            </button>
+          </div>
+        </div>
 
         <label
           v-if="responses.length"
