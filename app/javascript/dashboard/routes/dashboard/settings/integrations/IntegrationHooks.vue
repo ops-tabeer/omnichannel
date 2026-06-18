@@ -71,6 +71,12 @@ export default {
       return this.$t('INTEGRATION_APPS.DELETE.CANCEL_BUTTON_TEXT');
     },
   },
+  mounted() {
+    // Fetch the integrations list so getIntegration(integrationId) resolves on a direct
+    // load / reload / post-connect render of this page (otherwise the store is empty and
+    // the page renders blank).
+    this.$store.dispatch('integrations/get');
+  },
   methods: {
     openAddHookModal() {
       this.showAddHookModal = true;
