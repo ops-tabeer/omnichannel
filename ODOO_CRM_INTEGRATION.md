@@ -317,10 +317,24 @@ Implementation notes:
   #odoo_lead_created` (view `odoo_lead_created.liquid`) emails the **assignee** when a lead is
   created on Take, with a deep link to the Odoo lead (`<hook url>/odoo/crm/<lead_id>`) and the
   conversation. Sent from `ProcessorService#notify_lead_created` after a successful create.
-- ⬜ **Req 3 — Odoo automated action (Odoo team deploys, not in repo):** block manual
+- ✅ **Req 3 — Odoo automation rule (deployed on the Odoo side, not app code):** blocks manual
   `user_id` (Salesperson) change on Chatwoot-managed leads. Marker = `chatwoot_conversation_url`
-  is set (only Chatwoot-created leads have it). Allow the bot user (`ops@tabeertours.com`);
-  raise `UserError` for anyone else. Base.automation on `crm.lead`, watched field `user_id`.
+  is set (only Chatwoot-created leads have it). Allows the bot user (`ops@tabeertours.com`) and
+  Odoo admins; raises `UserError` for anyone else. Settings → Technical → Automation Rules:
+  model `crm.lead`, Trigger **On create and edit** (Odoo 19's update trigger), **When updating:
+  Salesperson** (so it fires only on `user_id` change), action **Execute Code**:
+
+  ```python
+  BOT_LOGIN = "ops@tabeertours.com"
+  for record in records:
+      if (record.chatwoot_conversation_url
+              and env.user.login != BOT_LOGIN
+              and not env.user.has_group('base.group_system')):
+          raise UserError(
+              "This lead is managed by Chatwoot. "
+              "Reassign the conversation in Chatwoot — the salesperson here updates automatically."
+          )
+  ```
 - **Done when:** manual salesperson edits in Odoo are blocked and assignees are emailed
   when their lead is created.
 
