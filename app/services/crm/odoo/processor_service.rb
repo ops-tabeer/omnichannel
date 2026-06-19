@@ -97,7 +97,8 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
     @client.execute_kw('crm.lead', 'message_post', [[lead]], { body: body, subtype_xmlid: 'mail.mt_note' })
   end
 
-  # Emails the assignee that their Odoo CRM lead was created, with a deep link to it.
+  # Emails the lead recipient (assignee, or the fallback salesperson when the conversation
+  # has no assignee) that their Odoo CRM lead was created, with a deep link to it.
   def notify_lead_created(conversation, lead_id)
     AdministratorNotifications::IntegrationsNotificationMailer
       .with(account: @account)
@@ -110,7 +111,9 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
       'conversation_display_id' => conversation.display_id,
       'inbox_name' => conversation.inbox.name,
       'contact_name' => conversation.contact&.name,
-      'assignee_email' => conversation.assignee&.email,
+      # Recipient: the assignee, else the configured fallback salesperson (who owns the lead
+      # in Odoo when there is no assignee). Falls back to account admins when both are blank.
+      'assignee_email' => conversation.assignee&.email || @hook.settings['fallback_user_login'].presence,
       'lead_url' => "#{@hook.settings['url'].to_s.chomp('/')}/odoo/crm/#{lead_id}",
       'conversation_url' => "#{ENV.fetch('FRONTEND_URL', nil)}/app/accounts/#{@account.id}/conversations/#{conversation.display_id}"
     }
