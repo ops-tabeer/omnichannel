@@ -41,6 +41,10 @@
           "LABEL": "Select Inbox",
           "PLACEHOLDER": "Select Inbox"
         },
+        "ENABLED_INBOXES": {
+          "LABEL": "Inboxes to sync",
+          "HELP": "Only conversations from the selected inboxes will be synced to Odoo"
+        },
         "SUBMIT": "Create",
         "CANCEL": "Cancel"
       },
@@ -48,6 +52,16 @@
         "SUCCESS_MESSAGE": "Integration hook added successfully",
         "ERROR_MESSAGE": "Could not connect to Woot Server, Please try again later"
       }
+    },
+    "CONNECTED_AS": "Connected to Odoo as {user}",
+    "INBOX_SYNC": {
+      "SAVE": "Save settings",
+      "SAVED": "Odoo settings updated"
+    },
+    "FALLBACK_USER": {
+      "LABEL": "Fallback salesperson",
+      "HELP": "Odoo login (email) to own the lead when the taking agent has no matching Odoo user. Optional.",
+      "PLACEHOLDER": "manager{'@'}yourco.com"
     },
     "CONNECT": {
       "BUTTON_TEXT": "Connect"

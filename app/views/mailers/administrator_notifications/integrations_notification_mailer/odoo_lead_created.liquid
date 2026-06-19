@@ -1,0 +1,13 @@
+<p>Hello,</p>
+
+<p>A new lead has been created in Odoo CRM for a conversation assigned to you.</p>
+
+<ul>
+  <li><strong>Conversation:</strong> #{{ meta.conversation_display_id }}</li>
+  <li><strong>Inbox:</strong> {{ meta.inbox_name }}</li>
+  <li><strong>Contact:</strong> {{ meta.contact_name }}</li>
+</ul>
+
+<p>
+Open the lead in Odoo CRM <a href="{{ action_url }}">here</a>, or view the <a href="{{ meta.conversation_url }}">conversation</a>.
+</p>

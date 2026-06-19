@@ -6,6 +6,14 @@ class HookJob < MutexApplicationJob
   def perform(hook, event_name, event_data = {})
     return if hook.disabled?
 
+    route_event(hook, event_name, event_data)
+  rescue StandardError => e
+    Rails.logger.error e
+  end
+
+  private
+
+  def route_event(hook, event_name, event_data)
     case hook.app_id
     when 'slack'
       process_slack_integration(hook, event_name, event_data)
@@ -15,12 +23,10 @@ class HookJob < MutexApplicationJob
       google_translate_integration(hook, event_name, event_data)
     when 'leadsquared'
       process_leadsquared_integration_with_lock(hook, event_name, event_data)
+    when 'odoo'
+      process_odoo_integration_with_lock(hook, event_name, event_data)
     end
-  rescue StandardError => e
-    Rails.logger.error e
   end
-
-  private
 
   def process_slack_integration(hook, event_name, event_data)
     return unless ['message.created'].include?(event_name)
@@ -64,6 +70,29 @@ class HookJob < MutexApplicationJob
     key = format(::Redis::Alfred::CRM_PROCESS_MUTEX, hook_id: hook.id)
     with_lock(key) do
       process_leadsquared_integration(hook, event_name, event_data)
+    end
+  end
+
+  def process_odoo_integration_with_lock(hook, event_name, event_data)
+    return unless ['conversation.taken', 'assignee.changed', 'contact.updated'].include?(event_name)
+    return unless hook.feature_allowed?
+
+    key = format(::Redis::Alfred::CRM_PROCESS_MUTEX, hook_id: hook.id)
+    with_lock(key) do
+      process_odoo_integration(hook, event_name, event_data)
+    end
+  end
+
+  def process_odoo_integration(hook, event_name, event_data)
+    processor = Crm::Odoo::ProcessorService.new(hook)
+
+    case event_name
+    when 'conversation.taken'
+      processor.handle_taken(event_data[:conversation])
+    when 'assignee.changed'
+      processor.handle_assignee_changed(event_data[:conversation])
+    when 'contact.updated'
+      processor.handle_contact_updated(event_data[:contact])
     end
   end
 

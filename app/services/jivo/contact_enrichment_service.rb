@@ -5,6 +5,7 @@ class Jivo::ContactEnrichmentService
   PHONE_REGEX = /\+?\d[\d\s().-]{6,}\d/
   NAME_SIGNAL_REGEX = /\b(my name is|i am|i'm|this is)\b/i
   ENRICHED_MESSAGE_ID_KEY = 'jivo_contact_enriched_message_id'.freeze
+  RAW_PHONE_ATTRIBUTE = 'raw_phone_number'.freeze
 
   pattr_initialize [:conversation!, :assistant!]
 
@@ -55,9 +56,11 @@ class Jivo::ContactEnrichmentService
   end
 
   def recent_incoming_messages
-    scope = conversation.messages.incoming.where(private: false)
-    scope = scope.where('id > ?', checked_message_id) if checked_message_id.positive?
-    scope.order(id: :desc).limit(RECENT_MESSAGE_LIMIT)
+    @recent_incoming_messages ||= begin
+      scope = conversation.messages.incoming.where(private: false)
+      scope = scope.where('id > ?', checked_message_id) if checked_message_id.positive?
+      scope.order(id: :desc).limit(RECENT_MESSAGE_LIMIT).to_a
+    end
   end
 
   def checked_message_id
@@ -66,9 +69,17 @@ class Jivo::ContactEnrichmentService
 
   def deterministic_attributes
     [
-      { 'attribute' => 'email', 'value' => message_content[EMAIL_REGEX].to_s },
-      { 'attribute' => 'phone_number', 'value' => message_content[PHONE_REGEX].to_s }
+      { 'attribute' => 'email', 'value' => scan_recent_messages(EMAIL_REGEX) },
+      { 'attribute' => 'phone_number', 'value' => scan_recent_messages(PHONE_REGEX) }
     ]
+  end
+
+  def scan_recent_messages(regex)
+    recent_incoming_messages.each do |message|
+      match = message.content.to_s[regex]
+      return match if match.present?
+    end
+    ''
   end
 
   def should_call_llm?
@@ -89,8 +100,12 @@ class Jivo::ContactEnrichmentService
       next unless SUPPORTED_ATTRIBUTES.include?(attribute)
       next if value.blank?
 
-      applied_value = send("extract_#{attribute}", value)
-      updates[attribute] = applied_value if applied_value.present?
+      if attribute == 'phone_number'
+        apply_phone(value, updates)
+      else
+        applied_value = send("extract_#{attribute}", value)
+        updates[attribute] = applied_value if applied_value.present?
+      end
     end
 
     return if updates.blank?
@@ -118,22 +133,31 @@ class Jivo::ContactEnrichmentService
     account.contacts.where.not(id: contact.id).where('LOWER(email) = ?', email).pick(:id).present?
   end
 
-  def extract_phone_number(value)
-    phone_number = normalized_phone_number(value)
-    return nil if contact.phone_number.present?
-    return nil if phone_number.blank?
-    return nil if account.contacts.where.not(id: contact.id).exists?(phone_number: phone_number)
+  # Stores a valid E.164 number on the phone_number column; otherwise keeps the raw
+  # digits in additional_attributes (the Contact model rejects non-E.164 phone_number)
+  # so a local-format number sent in chat is never dropped before reaching Odoo.
+  def apply_phone(value, updates)
+    return if contact.phone_number.present?
 
-    phone_number
+    phone_number = normalized_phone_number(value)
+    if phone_number.present?
+      return if account.contacts.where.not(id: contact.id).exists?(phone_number: phone_number)
+
+      updates['phone_number'] = phone_number
+    elsif contact.additional_attributes[RAW_PHONE_ATTRIBUTE].blank?
+      updates['additional_attributes'] = contact.additional_attributes.merge(RAW_PHONE_ATTRIBUTE => value.gsub(/[^\d+]/, ''))
+    end
   end
 
   def normalized_phone_number(value)
     compact_value = value.to_s.gsub(/[^\d+]/, '')
+    return nil if compact_value.blank?
+
     parsed = TelephoneNumber.parse(compact_value)
-    return parsed.international_number if parsed.valid?
+    return parsed.e164_number if parsed.valid?
 
     parsed = TelephoneNumber.parse("+#{compact_value}") unless compact_value.start_with?('+')
-    return parsed.international_number if parsed&.valid?
+    return parsed.e164_number if parsed&.valid?
 
     nil
   end
