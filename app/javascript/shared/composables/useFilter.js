@@ -135,12 +135,16 @@ export const useFilter = ({ filteri18nKey, attributeModel }) => {
         attribute_key: 'inbox_id',
         attribute_model: 'standard',
         filter_operator: 'equal_to',
-        values: [
-          {
-            id: conversationInbox,
-            name: inbox.name,
-          },
-        ],
+        // inbox_id is a `searchSelect` (single-select) in the new filter UI, which
+        // expects a single object value (like team below) — not an array. The
+        // SingleSelect matches the prefilled value to an option via strict id equality
+        // (`option.id === value.id`), so use the inbox's numeric id — not
+        // `conversationInbox`, which arrives as a string route param and would never
+        // match. Mirrors team's single-object shape.
+        values: {
+          id: inbox.id,
+          name: inbox.name,
+        },
         query_operator: 'and',
         custom_attribute_type: '',
       });
