@@ -26,4 +26,10 @@ class AdministratorNotifications::IntegrationsNotificationMailer < Administrator
     subject = "A new lead was created in Odoo CRM (conversation ##{meta['conversation_display_id']})"
     send_notification(subject, to: meta['assignee_email'], action_url: meta['lead_url'], meta: meta)
   end
+
+  def openai_disconnect
+    subject = 'Your OpenAI integration was disconnected'
+    action_url = settings_url('integrations/openai')
+    send_notification(subject, action_url: action_url)
+  end
 end

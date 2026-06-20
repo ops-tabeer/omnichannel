@@ -3,16 +3,29 @@
 # Table name: jivo_assistant_responses
 #
 #  id                :bigint           not null, primary key
-#  question          :string           not null
 #  answer            :text             not null
-#  embedding         :vector(1536)
-#  status            :integer          default(1), not null
-#  documentable_id   :bigint
 #  documentable_type :string
+#  embedding         :vector(1536)
+#  question          :string           not null
+#  status            :integer          default("approved"), not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  account_id        :bigint           not null
+#  documentable_id   :bigint
 #  jivo_assistant_id :bigint           not null
+#
+# Indexes
+#
+#  idx_jivo_resp_embedding                              (embedding) USING ivfflat
+#  idx_jivo_resp_on_documentable                        (documentable_id,documentable_type)
+#  index_jivo_assistant_responses_on_account_id         (account_id)
+#  index_jivo_assistant_responses_on_jivo_assistant_id  (jivo_assistant_id)
+#  index_jivo_assistant_responses_on_status             (status)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id)
+#  fk_rails_...  (jivo_assistant_id => jivo_assistants.id)
 #
 
 class JivoAssistantResponse < ApplicationRecord

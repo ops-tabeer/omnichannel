@@ -13,6 +13,18 @@
 #  account_id        :bigint           not null
 #  jivo_assistant_id :bigint           not null
 #
+# Indexes
+#
+#  index_jivo_scenarios_on_account_id                     (account_id)
+#  index_jivo_scenarios_on_enabled                        (enabled)
+#  index_jivo_scenarios_on_jivo_assistant_id              (jivo_assistant_id)
+#  index_jivo_scenarios_on_jivo_assistant_id_and_enabled  (jivo_assistant_id,enabled)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id)
+#  fk_rails_...  (jivo_assistant_id => jivo_assistants.id)
+#
 
 class JivoScenario < ApplicationRecord
   include JivoToolsHelpers

@@ -180,6 +180,7 @@ const onReconnected = async () => {
               <ChannelName
                 :channel-type="inbox.channel_type"
                 :medium="inbox.medium"
+                :voice-enabled="inbox.voice_enabled"
                 class="text-body-main text-n-slate-11"
               />
               <span

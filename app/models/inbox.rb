@@ -5,16 +5,16 @@
 # Table name: inboxes
 #
 #  id                            :integer          not null, primary key
-#  allow_messages_after_resolved  :boolean          default(TRUE)
-#  auto_assignment_config         :jsonb
-#  auto_reassignment_enabled      :boolean          default(FALSE), not null
-#  auto_reassignment_threshold    :integer
-#  business_name                  :string
-#  channel_type                   :string
-#  csat_config                    :jsonb            not null
-#  csat_survey_enabled            :boolean          default(FALSE)
-#  email_address                  :string
-#  enable_auto_assignment         :boolean          default(TRUE)
+#  allow_messages_after_resolved :boolean          default(TRUE)
+#  auto_assignment_config        :jsonb
+#  auto_reassignment_enabled     :boolean          default(FALSE), not null
+#  auto_reassignment_threshold   :integer
+#  business_name                 :string
+#  channel_type                  :string
+#  csat_config                   :jsonb            not null
+#  csat_survey_enabled           :boolean          default(FALSE)
+#  email_address                 :string
+#  enable_auto_assignment        :boolean          default(TRUE)
 #  enable_email_collect          :boolean          default(TRUE)
 #  greeting_enabled              :boolean          default(FALSE)
 #  greeting_message              :string
@@ -107,12 +107,16 @@ class Inbox < ApplicationRecord
 
   # Sanitizes inbox name for balanced email provider compatibility
   # ALLOWS: /'._- and Unicode letters/numbers/emojis
-  # REMOVES: Forbidden chars (\<>@") + spam-trigger symbols (!#$%&*+=?^`{|}~)
+  # REMOVES: Forbidden chars (\<>@"()) + spam-trigger symbols (!#$%&*+=?^`{|}~)
   def sanitized_name
     return default_name_for_blank_name if name.blank?
 
     sanitized = apply_sanitization_rules(name)
     sanitized.blank? && email? ? display_name_from_email : sanitized
+  end
+
+  def sanitized_business_name
+    sanitize_raw_name(business_name) || sanitized_name
   end
 
   def sms?
@@ -216,6 +220,15 @@ class Inbox < ApplicationRecord
     auto_assignment_config['auto_reassignment_enabled_since']&.then { |t| Time.zone.parse(t) } || created_at
   end
 
+  # Callers (Reauthorizable) only invoke this on a real transition, so the previous
+  # value is always the inverse of the new boolean value.
+  def dispatch_reauthorization_event(reauthorization_required)
+    return if ENV['ENABLE_INBOX_EVENTS'].blank?
+
+    changed_attributes = { reauthorization_required: [!reauthorization_required, reauthorization_required] }
+    Rails.configuration.dispatcher.dispatch(INBOX_UPDATED, Time.zone.now, inbox: self, changed_attributes: changed_attributes)
+  end
+
   private
 
   def track_auto_reassignment_enabled_since
@@ -230,8 +243,15 @@ class Inbox < ApplicationRecord
     email? ? display_name_from_email : ''
   end
 
+  def sanitize_raw_name(raw)
+    return nil if raw.blank?
+
+    result = apply_sanitization_rules(raw)
+    result.presence
+  end
+
   def apply_sanitization_rules(name)
-    name.gsub(/[\\<>@"!#$%&*+=?^`{|}~:;]/, '')         # Remove forbidden chars
+    name.gsub(/[\\<>@"!#$%&*+=?^`{|}~:;()]/, '')        # Remove forbidden chars
         .gsub(/[\x00-\x1F\x7F]/, ' ')                   # Replace control chars with spaces
         .gsub(/\A[[:punct:]]+|[[:punct:]]+\z/, '')      # Remove leading/trailing punctuation
         .gsub(/\s+/, ' ')                               # Normalize spaces

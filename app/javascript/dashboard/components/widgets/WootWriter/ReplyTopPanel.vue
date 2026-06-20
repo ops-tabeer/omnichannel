@@ -57,10 +57,14 @@ export default {
       type: String,
       default: undefined,
     },
+    hasContent: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: [
     'setReplyMode',
-    'togglePopout',
+    'toggleEditorSize',
     'executeCopilotAction',
     'executeJivoCopilotAction',
   ],
@@ -92,6 +96,7 @@ export default {
       () => isEnterprise && captainTasksEnabled.value
     );
     const showCopilotMenu = ref(false);
+    const copilotToggleRef = ref(null);
 
     const handleCopilotAction = (actionKey, data) => {
       emit('executeCopilotAction', actionKey, data || props.editorContent);
@@ -140,11 +145,11 @@ export default {
     const keyboardEvents = {
       'Alt+KeyP': {
         action: () => handleNoteClick(),
-        allowOnFocusedInput: true,
+        allowOnFocusedInput: false,
       },
       'Alt+KeyL': {
         action: () => handleReplyClick(),
-        allowOnFocusedInput: true,
+        allowOnFocusedInput: false,
       },
     };
     useKeyboardEvents(keyboardEvents);
@@ -161,6 +166,7 @@ export default {
       isCaptainAvailable,
       handleCopilotAction,
       showCopilotMenu,
+      copilotToggleRef,
       toggleCopilotMenu,
       handleClickOutside,
       jivoTasksEnabled,
@@ -214,6 +220,7 @@ export default {
     <div v-if="hasAnyAIEnabled" class="flex items-center gap-2">
       <div v-if="isCaptainAvailable" class="relative">
         <NextButton
+          ref="copilotToggleRef"
           ghost
           :disabled="disabled || isEditorDisabled"
           :class="{
@@ -226,9 +233,12 @@ export default {
         />
         <CopilotMenuBar
           v-if="showCopilotMenu"
-          v-on-click-outside="handleClickOutside"
+          v-on-click-outside="[
+            handleClickOutside,
+            { ignore: [copilotToggleRef] },
+          ]"
           :has-selection="false"
-          :editor-content="editorContent"
+          :has-content="hasContent"
           :conversation-id="conversationId"
           class="ltr:right-0 rtl:left-0 bottom-full mb-2"
           @execute-copilot-action="handleCopilotAction"
@@ -259,7 +269,7 @@ export default {
         class="text-n-slate-11"
         sm
         icon="i-lucide-maximize-2"
-        @click="$emit('togglePopout')"
+        @click="$emit('toggleEditorSize')"
       />
     </div>
   </div>

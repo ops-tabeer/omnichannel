@@ -3,15 +3,27 @@
 # Table name: jivo_documents
 #
 #  id                :bigint           not null, primary key
-#  name              :string
-#  external_link     :string           not null
 #  content           :text
-#  status            :integer          default(0), not null
-#  metadata          :jsonb            default({})
+#  external_link     :string
+#  metadata          :jsonb
+#  name              :string
+#  status            :integer          default("in_progress"), not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  account_id        :bigint           not null
 #  jivo_assistant_id :bigint           not null
+#
+# Indexes
+#
+#  index_jivo_documents_on_account_id          (account_id)
+#  index_jivo_documents_on_assistant_and_link  (jivo_assistant_id,external_link) UNIQUE
+#  index_jivo_documents_on_jivo_assistant_id   (jivo_assistant_id)
+#  index_jivo_documents_on_status              (status)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id)
+#  fk_rails_...  (jivo_assistant_id => jivo_assistants.id)
 #
 
 class JivoDocument < ApplicationRecord

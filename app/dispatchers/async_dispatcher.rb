@@ -18,6 +18,7 @@ class AsyncDispatcher < BaseDispatcher
       JivoListener.instance,
       NotificationListener.instance,
       ParticipationListener.instance,
+      Conversations::UnreadCounts::Listener.instance,
       ReportingEventListener.instance,
       WebhookListener.instance
     ]

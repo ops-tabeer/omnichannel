@@ -2,13 +2,23 @@
 #
 # Table name: jivo_assistants
 #
-#  id          :bigint           not null, primary key
-#  config      :jsonb            not null, default: {}
-#  description :text
-#  name        :string           not null
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#  account_id  :bigint           not null
+#  id                  :bigint           not null, primary key
+#  config              :jsonb            not null
+#  description         :text
+#  guardrails          :jsonb
+#  name                :string           not null
+#  response_guidelines :jsonb
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
+#  account_id          :bigint           not null
+#
+# Indexes
+#
+#  index_jivo_assistants_on_account_id  (account_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id)
 #
 
 class JivoAssistant < ApplicationRecord

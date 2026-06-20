@@ -2,21 +2,31 @@
 #
 # Table name: jivo_custom_tools
 #
-#  id                :bigint           not null, primary key
-#  auth_config       :jsonb
-#  auth_type         :string           default("none")
-#  description       :text
-#  enabled           :boolean          default(TRUE), not null
-#  endpoint_url      :text             not null
-#  http_method       :string           default("GET"), not null
-#  param_schema      :jsonb
-#  request_template  :text
-#  response_template :text
-#  slug              :string           not null
-#  title             :string           not null
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  account_id        :bigint           not null
+#  id                    :bigint           not null, primary key
+#  auth_config           :jsonb
+#  auth_type             :string           default("none")
+#  description           :text
+#  enabled               :boolean          default(TRUE), not null
+#  endpoint_url          :text             not null
+#  http_method           :string           default("GET"), not null
+#  param_schema          :jsonb
+#  rate_limit_per_minute :integer
+#  request_template      :text
+#  response_template     :text
+#  slug                  :string           not null
+#  title                 :string           not null
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  account_id            :bigint           not null
+#
+# Indexes
+#
+#  index_jivo_custom_tools_on_account_id           (account_id)
+#  index_jivo_custom_tools_on_account_id_and_slug  (account_id,slug) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id)
 #
 
 class JivoCustomTool < ApplicationRecord

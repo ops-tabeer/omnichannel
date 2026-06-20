@@ -89,6 +89,27 @@ describe Facebook::SendOnFacebookService do
                                                     }, { page_id: facebook_channel.page_id })
       end
 
+      it 'sends as a standard RESPONSE without a tag by default' do
+        message = create(:message, message_type: 'outgoing', inbox: facebook_inbox, account: account, conversation: conversation)
+        described_class.new(message: message).perform
+        expect(bot).to have_received(:deliver).with(
+          hash_including(messaging_type: 'RESPONSE'),
+          { page_id: facebook_channel.page_id }
+        )
+        expect(bot).not_to have_received(:deliver).with(hash_including(:tag), anything)
+      end
+
+      it 'sends with HUMAN_AGENT tag when ENABLE_MESSENGER_CHANNEL_HUMAN_AGENT is enabled' do
+        with_modified_env ENABLE_MESSENGER_CHANNEL_HUMAN_AGENT: 'true' do
+          message = create(:message, message_type: 'outgoing', inbox: facebook_inbox, account: account, conversation: conversation)
+          described_class.new(message: message).perform
+          expect(bot).to have_received(:deliver).with(
+            hash_including(messaging_type: 'MESSAGE_TAG', tag: 'HUMAN_AGENT'),
+            { page_id: facebook_channel.page_id }
+          )
+        end
+      end
+
       it 'if message is sent with multiple attachments' do
         message = build(:message, content: nil, message_type: 'outgoing', inbox: facebook_inbox, account: account, conversation: conversation)
         avatar = message.attachments.new(account_id: message.account_id, file_type: :image)

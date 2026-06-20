@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useIntegrationHook } from 'dashboard/composables/useIntegrationHook';
 import { useStore, useMapGetter } from 'dashboard/composables/store';

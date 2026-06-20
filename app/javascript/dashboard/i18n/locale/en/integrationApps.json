@@ -50,6 +50,7 @@
           "HELP": "Only conversations from the selected inboxes will be synced to Odoo"
         },
         "SUBMIT": "Create",
+        "VALIDATING_OPENAI": "Validating with OpenAI...",
         "CANCEL": "Cancel"
       },
       "API": {
