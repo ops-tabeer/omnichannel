@@ -34,8 +34,8 @@ const evolutionConnectionStatus = computed(() => {
 </script>
 
 <template>
-  <span class="size-5 grid place-content-center rounded-full bg-n-alpha-2">
-    <ChannelIcon :inbox="inbox" class="size-3" />
+  <span class="size-4 grid place-content-center rounded-full">
+    <ChannelIcon :inbox="inbox" class="size-4" />
   </span>
   <div class="flex-1 truncate min-w-0">{{ label }}</div>
   <div

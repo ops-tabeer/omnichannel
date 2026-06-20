@@ -65,6 +65,7 @@ class Account < ApplicationRecord # rubocop:disable Metrics/ClassLength
         'audio_transcriptions': { 'type': %w[boolean null] },
         'auto_resolve_label': { 'type': %w[string null] },
         'keep_pending_on_bot_failure': { 'type': %w[boolean null] },
+        'captain_auto_resolve_mode': { 'type': %w[string null], 'enum': ['evaluated', 'legacy', 'disabled', nil] },
         'conversation_required_attributes': {
           'type': %w[array null],
           'items': { 'type': 'string' }
@@ -108,12 +109,16 @@ class Account < ApplicationRecord # rubocop:disable Metrics/ClassLength
   validates_with JsonSchemaValidator,
                  schema: SETTINGS_PARAMS_SCHEMA,
                  attribute_resolver: ->(record) { record.settings }
+  validate :validate_reporting_timezone
 
   store_accessor :settings, :auto_resolve_after, :auto_resolve_message, :auto_resolve_ignore_waiting
 
   store_accessor :settings, :audio_transcriptions, :auto_resolve_label
   store_accessor :settings, :captain_models, :captain_features
   store_accessor :settings, :keep_pending_on_bot_failure, :jivo_v2_agent
+  store_accessor :settings, :reporting_timezone
+  store_accessor :settings, :captain_auto_resolve_mode
+  include AccountCaptainAutoResolve
 
   has_many :account_users, dependent: :destroy_async
   has_many :agent_bot_inboxes, dependent: :destroy_async
@@ -239,6 +244,12 @@ class Account < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def validate_limit_keys
     # method overridden in enterprise module
+  end
+
+  def validate_reporting_timezone
+    return if reporting_timezone.blank? || ActiveSupport::TimeZone[reporting_timezone].present?
+
+    errors.add(:reporting_timezone, I18n.t('errors.account.reporting_timezone.invalid'))
   end
 
   def remove_account_sequences
