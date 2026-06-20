@@ -7,6 +7,12 @@ Reference docs at the repo root — read the relevant one (on demand) before wor
 - `ODOO_CRM_INTEGRATION.md` — Chatwoot → Odoo CRM lead-sync integration: design, field mapping, all phases (lead-on-take, reassignment, handoff note, LLM enrichment, summary, contact→partner sync, emails, Odoo-side salesperson lock).
 - `INFRA.md` — Infrastructure & deployment: production (`/opt/chatwoot`, `docker-compose.custom.yaml`) and dev (`dev-chat.orbitechsol.com`, `/opt/chatwoot-dev`, `docker-compose.dev.yaml`) Docker setup, deploy commands, daily ops, troubleshooting.
 - `JIVO_AI_FEATURES.md` — JIVO AI assistant feature set and behavior.
+- `PERFORMANCE_AND_UPGRADE.md` — "system is slow" investigation (root cause: origin in France vs UAE/PH agents; nginx gzip + HTTP/2 applied; Cloudflare/relocate pending; archive feature parked) and the v4.11.1 → v4.12.1 → v4.15.1 upstream upgrade (per-file conflict resolutions, backup branches, verification, known issues).
+
+## Access & Operations
+
+- **Never SSH into servers directly** (production `72.61.193.158` or dev). Do NOT run `ssh`/`scp`/`rsync` to remote hosts, and do not execute remote VPS/Docker/nginx/DB commands yourself. The user runs all SSH and server-side commands. Provide ready-to-paste commands for the user to run instead.
+- Local commands (this workstation) and git are fine to run directly.
 
 ## Build / Test / Lint
 
