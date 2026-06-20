@@ -1,5 +1,13 @@
 # Chatwoot Development Guidelines
 
+## Project Documentation
+
+Reference docs at the repo root — read the relevant one (on demand) before working in that area:
+
+- `ODOO_CRM_INTEGRATION.md` — Chatwoot → Odoo CRM lead-sync integration: design, field mapping, all phases (lead-on-take, reassignment, handoff note, LLM enrichment, summary, contact→partner sync, emails, Odoo-side salesperson lock).
+- `INFRA.md` — Infrastructure & deployment: production (`/opt/chatwoot`, `docker-compose.custom.yaml`) and dev (`dev-chat.orbitechsol.com`, `/opt/chatwoot-dev`, `docker-compose.dev.yaml`) Docker setup, deploy commands, daily ops, troubleshooting.
+- `JIVO_AI_FEATURES.md` — JIVO AI assistant feature set and behavior.
+
 ## Build / Test / Lint
 
 - **Setup**: `bundle install && pnpm install`
