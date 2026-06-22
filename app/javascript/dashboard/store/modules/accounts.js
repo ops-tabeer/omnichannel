@@ -152,7 +152,11 @@ export const actions = {
     }
   },
 
-  limits: async ({ commit }) => {
+  limits: async ({ commit, rootGetters }) => {
+    // The limits endpoint only responds on Chatwoot Cloud; on self-hosted it
+    // always 404s. Skip the request so it doesn't spam the console/network.
+    if (!rootGetters['globalConfig/isOnChatwootCloud']) return;
+
     commit(types.default.SET_ACCOUNT_UI_FLAG, { isFetchingLimits: true });
     try {
       const response = await EnterpriseAccountAPI.getLimits();
