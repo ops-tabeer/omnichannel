@@ -41,13 +41,31 @@ class Jivo::OpenaiMessageBuilderService
     transcription = audio_transcripts_text
     parts << text_part(transcription) if transcription.present?
 
+    parts.concat(shared_link_parts)
     parts << text_part('User has shared an attachment') if other_attachments_present?
 
     parts
   end
 
+  # Shared posts/links (e.g. a Facebook post) arrive as fallback attachments with no
+  # downloadable image — surface their title so the assistant understands the content.
+  def shared_link_parts
+    titles = @message.attachments.filter_map do |att|
+      att.fallback_title.presence if att.file_type.to_sym == :fallback
+    end
+    return [] if titles.blank?
+
+    [text_part("Customer shared a post/link: #{titles.join(' | ')}")]
+  end
+
   def other_attachments_present?
-    @message.attachments.any? { |att| !image_like?(att) && att.file_type.to_sym != :audio }
+    @message.attachments.any? do |att|
+      next false if att.file_type.to_sym == :audio
+      next false if image_like?(att)
+      next false if att.file_type.to_sym == :fallback && att.fallback_title.present?
+
+      true
+    end
   end
 
   def image_attachment_parts
