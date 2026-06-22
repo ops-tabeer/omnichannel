@@ -315,7 +315,7 @@ const menuItems = computed(() => {
         },
       ],
     },
-    {
+    /* {
       name: 'Captain',
       icon: 'i-woot-captain',
       label: t('SIDEBAR.CAPTAIN'),
@@ -385,7 +385,7 @@ const menuItems = computed(() => {
           }),
         },
       ],
-    },
+    }, */
     {
       name: 'Jivo AI',
       label: t('JIVO.SIDEBAR.LABEL'),
