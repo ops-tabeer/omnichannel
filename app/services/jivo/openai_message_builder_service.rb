@@ -1,6 +1,10 @@
 class Jivo::OpenaiMessageBuilderService
   pattr_initialize [:message!, [:assistant]]
 
+  # Shared posts/stories/reels arrive with a semantic file_type (ig_post, share, etc.)
+  # but still carry a real downloaded image. Treat those as images for the vision/OCR model.
+  IMAGE_LIKE_FILE_TYPES = %i[image ig_post ig_reel ig_story share story_mention].freeze
+
   def self.extract_text_and_attachments(content)
     return [content, []] unless content.is_a?(Array)
 
@@ -37,13 +41,17 @@ class Jivo::OpenaiMessageBuilderService
     transcription = audio_transcripts_text
     parts << text_part(transcription) if transcription.present?
 
-    parts << text_part('User has shared an attachment') if @message.attachments.where.not(file_type: %i[image audio]).exists?
+    parts << text_part('User has shared an attachment') if other_attachments_present?
 
     parts
   end
 
+  def other_attachments_present?
+    @message.attachments.any? { |att| !image_like?(att) && att.file_type.to_sym != :audio }
+  end
+
   def image_attachment_parts
-    images = @message.attachments.where(file_type: :image)
+    images = @message.attachments.select { |att| image_like?(att) }
     return [] if images.blank?
     return image_ocr_text_parts(images) unless vision_capable?
 
@@ -51,6 +59,14 @@ class Jivo::OpenaiMessageBuilderService
       url = attachment_url(att)
       image_part(url) if url.present?
     end
+  end
+
+  def image_like?(attachment)
+    file_type = attachment.file_type.to_sym
+    return true if file_type == :image
+    return false unless IMAGE_LIKE_FILE_TYPES.include?(file_type)
+
+    attachment.file.attached? && attachment.file.content_type.to_s.start_with?('image')
   end
 
   def vision_capable?
