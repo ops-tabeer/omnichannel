@@ -22,16 +22,35 @@ const qrCodeBase64 = ref('');
 const instanceName = ref('');
 const connectionState = ref('waiting');
 const isLoading = ref(false);
+const step = ref('options');
+const importHistory = ref(false);
+const historyDays = ref(365);
 
 const closeModal = () => {
   emit('update:show', false);
 };
 
+const resetState = () => {
+  step.value = 'options';
+  qrCodeBase64.value = '';
+  instanceName.value = '';
+  connectionState.value = 'waiting';
+  const attrs = props.inbox.additional_attributes || {};
+  importHistory.value = Boolean(attrs.evolution_import_messages);
+  historyDays.value = attrs.evolution_days_limit_import_messages || 365;
+};
+
 const initReconnect = async () => {
+  step.value = 'qr';
   isLoading.value = true;
   connectionState.value = 'waiting';
   try {
-    const response = await EvolutionChannel.reconnect(props.inbox.id);
+    const response = await EvolutionChannel.reconnect(props.inbox.id, {
+      import_messages: importHistory.value,
+      days_limit_import_messages: importHistory.value
+        ? Number(historyDays.value)
+        : 0,
+    });
     qrCodeBase64.value = response.data.qrcode;
     instanceName.value = response.data.instance_name;
   } catch (error) {
@@ -67,11 +86,7 @@ watch(
   () => props.show,
   newVal => {
     if (newVal) {
-      initReconnect();
-    } else {
-      qrCodeBase64.value = '';
-      instanceName.value = '';
-      connectionState.value = 'waiting';
+      resetState();
     }
   }
 );
@@ -79,7 +94,7 @@ watch(
 onMounted(() => {
   emitter.on(BUS_EVENTS.EVOLUTION_CONNECTED, onEvolutionConnected);
   if (props.show) {
-    initReconnect();
+    resetState();
   }
 });
 
@@ -104,7 +119,43 @@ onUnmounted(() => {
         "
       />
 
-      <div class="flex flex-col items-center gap-6 p-6">
+      <div v-if="step === 'options'" class="flex flex-col gap-4 p-6">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="importHistory"
+            type="checkbox"
+            class="size-4 rounded border-n-slate-7 text-p-600 focus:ring-p-500"
+          />
+          <span class="text-sm text-n-slate-12">
+            {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.IMPORT_HISTORY.LABEL') }}
+          </span>
+        </label>
+        <p class="text-xs text-n-slate-10 -mt-3 ml-6">
+          {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.IMPORT_HISTORY.HELP') }}
+        </p>
+
+        <label v-if="importHistory">
+          {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.HISTORY_DAYS.LABEL') }}
+          <input v-model="historyDays" type="number" min="1" />
+        </label>
+
+        <div class="flex gap-2 justify-end mt-2">
+          <NextButton
+            faded
+            slate
+            :label="$t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.RECONNECT.CLOSE')"
+            @click="closeModal"
+          />
+          <NextButton
+            solid
+            blue
+            :label="$t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.RECONNECT.BUTTON')"
+            @click="initReconnect"
+          />
+        </div>
+      </div>
+
+      <div v-else class="flex flex-col items-center gap-6 p-6">
         <div v-if="isLoading" class="flex items-center justify-center size-64">
           <span class="spinner" />
         </div>

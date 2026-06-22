@@ -383,6 +383,13 @@
           "LABEL": "Ignore group chats",
           "HELP": "When enabled, messages from WhatsApp groups will be ignored"
         },
+        "IMPORT_HISTORY": {
+          "LABEL": "Import message history",
+          "HELP": "When enabled, past WhatsApp conversations will be imported after connecting"
+        },
+        "HISTORY_DAYS": {
+          "LABEL": "Days of history to import"
+        },
         "SUBMIT_BUTTON": "Generate QR Code",
         "QR_INSTRUCTION": "Open WhatsApp on your phone, go to Settings → Linked Devices → Link a Device, then scan the QR code below.",
         "CONNECTION_STATUS": "Status:",

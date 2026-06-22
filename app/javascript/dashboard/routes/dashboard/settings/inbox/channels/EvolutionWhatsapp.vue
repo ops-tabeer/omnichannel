@@ -17,6 +17,8 @@ const router = useRouter();
 const instanceName = ref('');
 const phoneNumber = ref('');
 const rejectGroups = ref(true);
+const importHistory = ref(true);
+const historyDays = ref(365);
 const isCreating = ref(false);
 const qrCodeBase64 = ref('');
 const showQrCode = ref(false);
@@ -64,6 +66,10 @@ async function completeSetup() {
       instance_name: instanceName.value.trim(),
       phone_number: phoneNumber.value.trim(),
       inbox_name: `WhatsApp - ${phoneNumber.value.trim()}`,
+      import_messages: importHistory.value,
+      days_limit_import_messages: importHistory.value
+        ? Number(historyDays.value)
+        : 0,
     });
     router.replace({
       name: 'settings_inboxes_add_agents',
@@ -169,6 +175,29 @@ onUnmounted(() => {
         <p class="text-xs text-n-slate-10 mt-1 ml-6">
           {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.REJECT_GROUPS.HELP') }}
         </p>
+      </div>
+
+      <div class="flex-shrink-0 flex-grow-0 mt-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="importHistory"
+            type="checkbox"
+            class="size-4 rounded border-n-slate-7 text-p-600 focus:ring-p-500"
+          />
+          <span class="text-sm text-n-slate-12">
+            {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.IMPORT_HISTORY.LABEL') }}
+          </span>
+        </label>
+        <p class="text-xs text-n-slate-10 mt-1 ml-6">
+          {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.IMPORT_HISTORY.HELP') }}
+        </p>
+      </div>
+
+      <div v-if="importHistory" class="flex-shrink-0 flex-grow-0 mt-4">
+        <label>
+          {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.HISTORY_DAYS.LABEL') }}
+          <input v-model="historyDays" type="number" min="1" />
+        </label>
       </div>
 
       <div class="w-full mt-4">

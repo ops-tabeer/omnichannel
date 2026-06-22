@@ -26,9 +26,10 @@ class EvolutionChannel extends ApiClient {
     return axios.post(`${this.baseUrl()}/evolution/complete_setup`, params);
   }
 
-  reconnect(inboxId) {
+  reconnect(inboxId, params = {}) {
     return axios.post(`${this.baseUrl()}/evolution/reconnect`, {
       inbox_id: inboxId,
+      ...params,
     });
   }
 }
