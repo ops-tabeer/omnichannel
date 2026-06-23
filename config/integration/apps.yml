@@ -390,4 +390,6 @@ odoo:
       'db',
       'login',
       'enabled_inbox_ids',
+      'fallback_user_login',
+      'connected_user',
     ]
