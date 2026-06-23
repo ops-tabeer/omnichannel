@@ -23,6 +23,8 @@ const instanceName = ref('');
 const connectionState = ref('waiting');
 const isLoading = ref(false);
 const step = ref('options');
+// History import is built but not finalized — keep the wiring, hide the UI for now.
+const SHOW_IMPORT_HISTORY = false;
 const importHistory = ref(false);
 const historyDays = ref(365);
 
@@ -120,7 +122,10 @@ onUnmounted(() => {
       />
 
       <div v-if="step === 'options'" class="flex flex-col gap-4 p-6">
-        <label class="flex items-center gap-2 cursor-pointer">
+        <label
+          v-if="SHOW_IMPORT_HISTORY"
+          class="flex items-center gap-2 cursor-pointer"
+        >
           <input
             v-model="importHistory"
             type="checkbox"
@@ -130,11 +135,14 @@ onUnmounted(() => {
             {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.IMPORT_HISTORY.LABEL') }}
           </span>
         </label>
-        <p class="text-xs text-n-slate-10 -mt-3 ml-6">
+        <p
+          v-if="SHOW_IMPORT_HISTORY"
+          class="text-xs text-n-slate-10 -mt-3 ml-6"
+        >
           {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.IMPORT_HISTORY.HELP') }}
         </p>
 
-        <label v-if="importHistory">
+        <label v-if="SHOW_IMPORT_HISTORY && importHistory">
           {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.HISTORY_DAYS.LABEL') }}
           <input v-model="historyDays" type="number" min="1" />
         </label>

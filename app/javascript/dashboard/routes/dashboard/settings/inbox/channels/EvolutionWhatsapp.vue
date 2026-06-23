@@ -17,7 +17,9 @@ const router = useRouter();
 const instanceName = ref('');
 const phoneNumber = ref('');
 const rejectGroups = ref(true);
-const importHistory = ref(true);
+// History import is built but not finalized — keep the wiring, hide the UI for now.
+const SHOW_IMPORT_HISTORY = false;
+const importHistory = ref(false);
 const historyDays = ref(365);
 const isCreating = ref(false);
 const qrCodeBase64 = ref('');
@@ -177,7 +179,7 @@ onUnmounted(() => {
         </p>
       </div>
 
-      <div class="flex-shrink-0 flex-grow-0 mt-4">
+      <div v-if="SHOW_IMPORT_HISTORY" class="flex-shrink-0 flex-grow-0 mt-4">
         <label class="flex items-center gap-2 cursor-pointer">
           <input
             v-model="importHistory"
@@ -193,7 +195,10 @@ onUnmounted(() => {
         </p>
       </div>
 
-      <div v-if="importHistory" class="flex-shrink-0 flex-grow-0 mt-4">
+      <div
+        v-if="SHOW_IMPORT_HISTORY && importHistory"
+        class="flex-shrink-0 flex-grow-0 mt-4"
+      >
         <label>
           {{ $t('INBOX_MGMT.ADD.EVOLUTION_WHATSAPP.HISTORY_DAYS.LABEL') }}
           <input v-model="historyDays" type="number" min="1" />
