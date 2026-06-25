@@ -29,6 +29,9 @@ class NotificationListener < BaseListener
 
   def assignee_changed(event)
     conversation, account = extract_conversation_and_account(event)
+
+    Jivo::AssigneeMentionService.new(conversation: conversation).perform
+
     assignee = conversation.assignee
 
     # NOTE:  The issue was that when a team change results in an assignee being set to nil,
