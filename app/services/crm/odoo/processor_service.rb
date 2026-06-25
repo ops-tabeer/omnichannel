@@ -171,8 +171,10 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
   def user_fields_for_login(login)
     return {} if login.blank?
 
-    rows = @client.execute_kw('res.users', 'search_read', [[['login', '=ilike', login]]], { fields: %w[id company_id], limit: 1 })
-    user = rows.to_a.first
+    # =ilike matches case-insensitively but treats _ and % as wildcards, so verify
+    # an exact case-insensitive login match in Ruby to avoid false positives.
+    rows = @client.execute_kw('res.users', 'search_read', [[['login', '=ilike', login]]], { fields: %w[id login company_id] })
+    user = rows.to_a.find { |row| row['login'].to_s.casecmp?(login.to_s) }
     return {} if user.blank?
 
     { user_id: user['id'], company_id: many2one_id(user['company_id']) }.compact
