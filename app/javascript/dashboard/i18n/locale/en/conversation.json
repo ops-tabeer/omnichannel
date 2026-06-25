@@ -103,6 +103,7 @@
       "OPEN_ACTION": "Open",
       "TAKE_ACTION": "Take",
       "TAKE_ACTION_SUCCESS": "Conversation taken successfully",
+      "TAKE_ACTION_ERROR": "You can't take this conversation — it may have been reassigned. Refreshing…",
       "MORE_ACTIONS": "More actions",
       "OPEN": "More",
       "CLOSE": "Close",

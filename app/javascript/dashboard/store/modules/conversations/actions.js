@@ -283,12 +283,10 @@ const actions = {
   },
 
   takeConversation: async ({ commit }, conversationId) => {
-    try {
-      await ConversationApi.takeConversation(conversationId);
-      commit(types.TAKE_CONVERSATION);
-    } catch (error) {
-      //
-    }
+    // Let errors propagate (e.g. 403 when the conversation was reassigned) so the
+    // caller can surface them and refresh the stale view, instead of ghosting.
+    await ConversationApi.takeConversation(conversationId);
+    commit(types.TAKE_CONVERSATION);
   },
 
   createPendingMessageAndSend: async ({ dispatch }, data) => {

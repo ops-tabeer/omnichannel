@@ -42,9 +42,16 @@ const showTakeButton = computed(() => {
   );
 });
 
-const handleTake = () => {
-  store.dispatch('takeConversation', currentChat.value.id);
-  useAlert(t('CONVERSATION.HEADER.TAKE_ACTION_SUCCESS'));
+const handleTake = async () => {
+  try {
+    await store.dispatch('takeConversation', currentChat.value.id);
+    useAlert(t('CONVERSATION.HEADER.TAKE_ACTION_SUCCESS'));
+  } catch (error) {
+    // Reassigned out from under a stale view: tell the agent and refresh so the
+    // assignee/button correct themselves.
+    useAlert(t('CONVERSATION.HEADER.TAKE_ACTION_ERROR'));
+    store.dispatch('getConversation', currentChat.value.id);
+  }
 };
 
 const actionMenuItems = computed(() => {
