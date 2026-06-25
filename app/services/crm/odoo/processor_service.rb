@@ -171,7 +171,7 @@ class Crm::Odoo::ProcessorService < Crm::BaseProcessorService
   def user_fields_for_login(login)
     return {} if login.blank?
 
-    rows = @client.execute_kw('res.users', 'search_read', [[['login', '=', login]]], { fields: %w[id company_id], limit: 1 })
+    rows = @client.execute_kw('res.users', 'search_read', [[['login', '=ilike', login]]], { fields: %w[id company_id], limit: 1 })
     user = rows.to_a.first
     return {} if user.blank?
 
