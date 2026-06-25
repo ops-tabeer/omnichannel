@@ -139,6 +139,8 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   end
 
   def take
+    authorize @conversation, :take?
+    @conversation.assignee = current_user
     @conversation.update!(taken_at: Time.current)
     content = I18n.t('conversations.activity.assignee.taken', user_name: current_user.name)
     ::Conversations::ActivityMessageJob.perform_later(

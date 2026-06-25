@@ -11,6 +11,13 @@ class ConversationPolicy < ApplicationPolicy
     administrator? || agent_bot? || agent_can_view_conversation?
   end
 
+  # Only the current assignee or an admin may take a conversation. Enforced server-side
+  # so a stale UI (e.g. after an idle reassignment) can't take a conversation it no
+  # longer owns and create an Odoo lead for the wrong agent.
+  def take?
+    administrator? || assigned_to_user?
+  end
+
   private
 
   def agent_can_view_conversation?
