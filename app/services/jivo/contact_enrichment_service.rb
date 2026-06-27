@@ -30,13 +30,15 @@ class Jivo::ContactEnrichmentService
   delegate :account, :contact, to: :conversation
 
   def should_attempt_enrichment?
-    enrichment_message.present? &&
-      missing_supported_attribute? &&
+    # Check the cheap DB condition before enrichment_message, which may OCR shared
+    # images — so a fully-enriched contact never triggers OCR work.
+    missing_supported_attribute? &&
+      enrichment_message.present? &&
       enrichment_signal_present?
   end
 
   def enrichment_message
-    @enrichment_message ||= recent_incoming_messages.find { |message| enrichment_signal_present?(message.content.to_s) }
+    @enrichment_message ||= recent_incoming_messages.find { |message| enrichment_signal_present?(searchable_content(message)) }
   end
 
   def missing_supported_attribute?
@@ -52,7 +54,31 @@ class Jivo::ContactEnrichmentService
   end
 
   def message_content
-    @message_content ||= enrichment_message.content.to_s
+    @message_content ||= searchable_content(enrichment_message)
+  end
+
+  # Message text plus any text OCR'd from shared images, so a phone/email a customer
+  # sends inside an image (not typed) is still detected and saved. ImageOcrService
+  # returns cached OCR text or runs it once and caches, so re-scans stay cheap.
+  def searchable_content(message)
+    return '' if message.blank?
+
+    @searchable_content ||= {}
+    @searchable_content[message.id] ||= [message.content.to_s, *image_ocr_texts(message)].join("\n")
+  end
+
+  def image_ocr_texts(message)
+    message.attachments.select { |att| image_like?(att) }.filter_map do |att|
+      Jivo::Messages::ImageOcrService.new(attachment: att, assistant: assistant).perform.presence
+    end
+  end
+
+  def image_like?(attachment)
+    file_type = attachment.file_type.to_sym
+    return true if file_type == :image
+    return false unless Jivo::OpenaiMessageBuilderService::IMAGE_LIKE_FILE_TYPES.include?(file_type)
+
+    attachment.file.attached? && attachment.file.content_type.to_s.start_with?('image')
   end
 
   def recent_incoming_messages
@@ -76,7 +102,7 @@ class Jivo::ContactEnrichmentService
 
   def scan_recent_messages(regex)
     recent_incoming_messages.each do |message|
-      match = message.content.to_s[regex]
+      match = searchable_content(message)[regex]
       return match if match.present?
     end
     ''
