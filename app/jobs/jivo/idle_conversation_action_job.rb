@@ -49,8 +49,10 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     I18n.with_locale(conversation.account.locale) do
       if attempt_count(conversation) >= assistant.idle_reminder_limit_value
         escalate(conversation, assistant)
+      elsif assistant.idle_use_ai_enabled?
+        ai_follow_up(conversation, assistant)
       else
-        send_follow_up(conversation, assistant)
+        post_follow_up(conversation, assistant, assistant.idle_message_text)
       end
     end
   rescue StandardError => e
@@ -58,19 +60,35 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     ChatwootExceptionTracker.new(e, account: conversation.account).capture_exception
   end
 
-  def send_follow_up(conversation, assistant)
-    create_outgoing_message(conversation, assistant)
+  # AI decides: follow_up (send + count), handoff (escalate now), or wait (count, and
+  # hand off in the same run if this wait reaches the limit). Any failure degrades to wait.
+  def ai_follow_up(conversation, assistant)
+    result = Jivo::Tasks::IdleFollowUpService.new(assistant: assistant, conversation: conversation).perform
+
+    case result[:action]
+    when 'follow_up'
+      post_follow_up(conversation, assistant, result[:message])
+    when 'handoff'
+      handoff(conversation, assistant)
+    else # 'wait' (and any safe fallback)
+      increment_attempt(conversation)
+      escalate(conversation, assistant) if attempt_count(conversation) >= assistant.idle_reminder_limit_value
+    end
+  end
+
+  def post_follow_up(conversation, assistant, content)
+    create_outgoing_message(conversation, assistant, content.presence || assistant.idle_message_text)
     increment_attempt(conversation)
   end
 
+  # Deterministic backstop once the limit is hit: handoff (default) or leave pending (none).
   def escalate(conversation, assistant)
-    case assistant.on_limit_action_value
-    when JivoAssistant::IDLE_ACTION_HANDOFF
-      Jivo::HandoffService.new(conversation: conversation, assistant: assistant, reason: handoff_reason).perform
-    when JivoAssistant::IDLE_ACTION_RESOLVE
-      conversation.resolved!
-    end
-    # ON_LIMIT_ACTION_NONE: leave it pending; nothing to do.
+    handoff(conversation, assistant) if assistant.on_limit_action_value == JivoAssistant::IDLE_ACTION_HANDOFF
+  end
+
+  # Direct handoff — used by the AI 'handoff' action and the limit backstop.
+  def handoff(conversation, assistant)
+    Jivo::HandoffService.new(conversation: conversation, assistant: assistant, reason: handoff_reason).perform
   end
 
   def handoff_reason
@@ -90,13 +108,13 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     )
   end
 
-  def create_outgoing_message(conversation, assistant)
+  def create_outgoing_message(conversation, assistant, content)
     conversation.messages.create!(
       message_type: :outgoing,
       account_id: conversation.account_id,
       inbox_id: conversation.inbox_id,
       sender: assistant,
-      content: assistant.idle_message_text,
+      content: content,
       private: false
     )
   end

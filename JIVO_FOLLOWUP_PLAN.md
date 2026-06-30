@@ -177,17 +177,17 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - Spacing is automatic (sent message bumps `last_activity_at`); limit=2 → 2 nudges then handoff on cycle 3.
 - **Done when:** an eligible pending chat gets up to N static nudges, then escalates; nothing fires before cutoff. ✓ (still UI-hidden until Phase 4)
 
-### Phase 3 — AI follow-up mode  ·  Status: 🔧 in progress (omni-dev)
-- ✅ **Shared handoff extracted** — `Jivo::HandoffService.new(conversation:, assistant:, reason:).perform` (optional private note → `ai_handoff` → `bot_handoff!` → OOO). The V2 `HandoffTool` and the idle job now both use it; idle escalation passes `conversations.jivo.idle_handoff_reason`. V1 conversation handler still has its own `perform_handoff` — refactor to this service later.
-- **Goal:** prompt-driven, scenario-aware follow-up with action set `follow_up`/`handoff`/`wait`.
-- ✅ Added `idle_use_ai` + `idle_prompt` (store_accessor + controller permit + `idle_use_ai_enabled?`).
-- ✅ Built `Jivo::Tasks::IdleFollowUpService < Jivo::Tasks::BaseTaskService` — reuses `OpenaiMessageBuilderService` for context + JSON response. Returns `{success, action, message}`; any failure/invalid → safe `wait`. Not yet wired into the job.
-- ⏭️ Loop branches on the action: `follow_up` → send + count; `handoff` → escalate; `wait` → record checked-marker only.
-- **Skip-loop guard:** add a "last checked" marker (e.g. `jivo_idle_followup_checked_id`); only call the AI when a new incoming message exists since it.
-- **Align with Phase 2:** drop `resolve` from `on_limit_action`/`escalate` (backstop = `handoff`/`none`); remove now-unused `IDLE_ACTION_RESOLVE` if dead.
-- Static path unchanged when AI OFF.
-- Reuse language + brevity rules from `Jivo::Prompts::V1ConversationPrompt`.
-- **Done when:** prompt "if no number ask for it, if number present hand off" → missing-number chats get an AI nudge, number-present chats hand off, nothing re-calls the AI without a new customer message.
+### Phase 3 — AI follow-up mode  ·  Status: ✅ (omni-dev)
+- ✅ **Shared handoff extracted** — `Jivo::HandoffService` (optional private note → `ai_handoff` → `bot_handoff!` → OOO). V2 `HandoffTool` and the idle job use it; V1 to adopt later.
+- ✅ `idle_use_ai` + `idle_prompt` config (+ `idle_use_ai_enabled?`).
+- ✅ `Jivo::Tasks::IdleFollowUpService` — returns `{action, message}`, degrades to safe `wait`.
+- ✅ Wired into the job loop:
+  - count ≥ limit → `escalate` (deterministic backstop, **no AI call**).
+  - else AI ON → `ai_follow_up`: `follow_up` (send + count), `handoff` (direct, always), `wait` (count; **same-cycle handoff** if it reaches the limit).
+  - else AI OFF → static `idle_message` + count.
+- ✅ **No skip-loop guard needed** — `wait` counts toward the limit, so calls are capped at `idle_reminder_limit` per conversation and a handoff always terminates it. (Decision changed from the earlier guard approach.)
+- ✅ Dropped `resolve` everywhere (`on_limit_action` = `handoff`/`none`; removed `IDLE_ACTION_RESOLVE` + dead `idle_resolve` string).
+- **Done when:** prompt "if no number ask for it, if number present hand off" → missing-number chats get an AI nudge, number-present chats hand off, and a chat is never AI-called more than `limit` times before handoff. ✓ (still UI-hidden until Phase 4)
 
 ### Phase 4 — Settings UI (un-hide + finalize)  ·  Status: ☐
 - **Goal:** expose the feature to admins.

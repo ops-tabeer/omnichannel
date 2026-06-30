@@ -50,13 +50,12 @@ class JivoAssistant < ApplicationRecord
   before_save :stamp_idle_action_enabled_at
 
   IDLE_ACTION_HANDOFF = 'handoff'.freeze
-  IDLE_ACTION_RESOLVE = 'resolve'.freeze
   DEFAULT_IDLE_TIMEOUT_MINUTES = 60
   DEFAULT_IDLE_REMINDER_LIMIT = 3
 
-  # What to do once the follow-up attempts are exhausted.
+  # What to do once the follow-up attempts are exhausted (no auto-resolve).
   ON_LIMIT_ACTION_NONE = 'none'.freeze
-  ON_LIMIT_ACTIONS = [IDLE_ACTION_HANDOFF, IDLE_ACTION_RESOLVE, ON_LIMIT_ACTION_NONE].freeze
+  ON_LIMIT_ACTIONS = [IDLE_ACTION_HANDOFF, ON_LIMIT_ACTION_NONE].freeze
   DEFAULT_ON_LIMIT_ACTION = IDLE_ACTION_HANDOFF
 
   NON_VISION_MODEL_PATTERNS = [
@@ -120,13 +119,9 @@ class JivoAssistant < ApplicationRecord
     idle_reminder_limit.to_i.positive? ? idle_reminder_limit.to_i : DEFAULT_IDLE_REMINDER_LIMIT
   end
 
-  # Escalation after the follow-up limit is hit. Falls back to a legacy idle_action of
-  # handoff/resolve, else the default (handoff).
+  # Escalation after the follow-up limit is hit: handoff (default) or none.
   def on_limit_action_value
-    return on_limit_action if ON_LIMIT_ACTIONS.include?(on_limit_action)
-    return idle_action if [IDLE_ACTION_HANDOFF, IDLE_ACTION_RESOLVE].include?(idle_action)
-
-    DEFAULT_ON_LIMIT_ACTION
+    ON_LIMIT_ACTIONS.include?(on_limit_action) ? on_limit_action : DEFAULT_ON_LIMIT_ACTION
   end
 
   def idle_action_enabled_at_value
