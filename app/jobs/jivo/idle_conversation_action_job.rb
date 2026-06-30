@@ -1,6 +1,8 @@
 class Jivo::IdleConversationActionJob < ApplicationJob
   queue_as :scheduled_jobs
 
+  ATTEMPT_COUNT_KEY = 'jivo_idle_reminder_count'.freeze
+
   def perform
     JivoInbox.includes(:jivo_assistant, :inbox).find_each do |jivo_inbox|
       assistant = jivo_inbox.jivo_assistant
@@ -53,7 +55,7 @@ class Jivo::IdleConversationActionJob < ApplicationJob
       when JivoAssistant::IDLE_ACTION_HANDOFF
         handoff_to_agent(conversation)
       when JivoAssistant::IDLE_ACTION_REMINDER
-        increment_reminder_count(conversation)
+        increment_attempt(conversation)
       end
     end
   rescue StandardError => e
@@ -64,14 +66,18 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   def reminder_limit_reached?(conversation, assistant)
     return false unless assistant.idle_action_value == JivoAssistant::IDLE_ACTION_REMINDER
 
-    sent = conversation.custom_attributes['jivo_idle_reminder_count'].to_i
-    sent >= assistant.idle_reminder_limit_value
+    attempt_count(conversation) >= assistant.idle_reminder_limit_value
   end
 
-  def increment_reminder_count(conversation)
-    sent = conversation.custom_attributes['jivo_idle_reminder_count'].to_i
+  # Follow-up attempts already made on this conversation. Read/incremented here so the
+  # static (and later AI) follow-up loops share one source of truth for the count.
+  def attempt_count(conversation)
+    conversation.custom_attributes[ATTEMPT_COUNT_KEY].to_i
+  end
+
+  def increment_attempt(conversation)
     conversation.update!(
-      custom_attributes: conversation.custom_attributes.merge('jivo_idle_reminder_count' => sent + 1)
+      custom_attributes: conversation.custom_attributes.merge(ATTEMPT_COUNT_KEY => attempt_count(conversation) + 1)
     )
   end
 

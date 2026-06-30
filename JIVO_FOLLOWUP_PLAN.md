@@ -97,19 +97,28 @@ For each JIVO inbox whose assistant has feature_idle_action = true:
       .pending
       .where(last_activity_at < idle_timeout_minutes.ago)
       .where(created_at >= idle_action_enabled_at)        # cutoff
-      .where(jivo_idle_reminder_count < idle_reminder_limit OR null)
       .limit(BULK_ACTIONS_LIMIT = 100)                     # per inbox per run
+    # NOTE: attempt count is NOT a scope filter — at-limit conversations must still be
+    # selected so escalation can fire. It's a per-conversation branch (below).
 
-  For each eligible conversation:
+  For each selected conversation:
     if attempts >= idle_reminder_limit:
       apply on_limit_action (handoff | resolve | none); stop
+      # handoff/resolve leave the pending scope; 'none' stays but is a cheap no-op each run
     elsif idle_use_ai:
+      if no NEW customer message since last AI check: skip (no call)   # skip-loop guard
       result = AI call (idle_prompt + conversation context)   # COUNT: sent/skipped
       if result.should_follow_up: post result.message; increment count
-      else: skip (no message); (count as skipped)
+      else: record last-checked marker (no message, no count bump)
     else:
       post idle_message; increment count                       # no AI call
 ```
+
+**Attempt spacing is automatic:** every message bump `last_activity_at` (`Message#set_conversation_activity`), so a sent follow-up resets the idle timer → the next attempt can't fire until another full `idle_timeout_minutes` passes. No extra spacing logic needed.
+
+**Escalation timing matches the ask** ("check 2 times, handoff on the 3rd"): with limit=2, cycles 1–2 send follow-ups (count→2), cycle 3 sees `attempts >= limit` → handoff. This is why attempt count is a per-conversation branch, not a scope filter.
+
+**Skip-loop guard (AI mode):** a skip sends no message, so `last_activity_at` is *not* bumped → the chat would re-qualify and re-call the AI every run for no reason. Guard with a "last checked" marker (mirror `Jivo::ContactEnrichmentService`'s `jivo_contact_enriched_message_id`): only call the AI when a **new incoming customer message** exists since the last check. Skips then cost ≤1 call until the customer says something new.
 
 AI call JSON contract (reuse V1 handler pattern, `response_format: json_object`):
 ```json
@@ -142,11 +151,11 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - **Deviations from sketch:** controller permit intentionally **not** added — the cutoff is system-managed, not user-settable. Added the backfill safety net (sketch said "skip filter if blank"; we instead self-heal to "now" to stay safe).
 - **Done when:** flipping the toggle on stamps the timestamp; the job ignores older conversations. ✓
 
-### Phase 1 — Eligibility pipeline refactor  ·  Status: ☐
+### Phase 1 — Eligibility pipeline refactor  ·  Status: ✅ (omni-dev)
 - **Goal:** one clean Layer-1 scope shared by all modes.
-- Extract eligibility into a single query incl. timeout, cutoff, attempt-limit, `BULK_ACTIONS_LIMIT`.
-- Centralize attempt count read/increment helpers.
-- **Done when:** job selects exactly the conversations defined in §5 Layer 1.
+- Eligibility scope (pending + idle + cutoff + `BULK_ACTIONS_LIMIT`) already centralized in `idle_conversations` (Phase 0). Attempt count is intentionally NOT in the scope (see §5 note).
+- Centralized attempt count via `ATTEMPT_COUNT_KEY` constant + `attempt_count` / `increment_attempt` helpers (renamed from `increment_reminder_count`); `reminder_limit_reached?` now uses `attempt_count`. Behavior unchanged.
+- **Done when:** job selects exactly the conversations in §5 Layer 1 and attempt count has one source of truth. ✓
 
 ### Phase 2 — Static follow-up loop + escalation  ·  Status: ☐
 - **Goal:** ship the free path end-to-end (no AI), proves scheduling + cutoff + limit.
