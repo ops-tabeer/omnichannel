@@ -119,28 +119,36 @@
           "HELP": "Routes replies through the agent runner with built-in tools (FAQ lookup, handoff, notes, labels). Off = legacy direct OpenAI path."
         },
         "FEATURE_IDLE_ACTION": {
-          "LABEL": "Idle conversation action"
+          "LABEL": "Idle follow-up",
+          "HELP": "When a bot conversation goes quiet, follow up automatically, then hand off once the limit is reached."
         },
         "IDLE_TIMEOUT": {
-          "LABEL": "Idle timeout minutes",
+          "LABEL": "Idle timeout (minutes)",
           "PLACEHOLDER": "60"
         },
-        "IDLE_ACTION": {
-          "LABEL": "Idle action",
+        "IDLE_REMINDER_LIMIT": {
+          "LABEL": "Max follow-up attempts",
+          "PLACEHOLDER": "3",
+          "HELP_TEXT": "How many times to follow up before handing off."
+        },
+        "ON_LIMIT_ACTION": {
+          "LABEL": "After the limit",
           "OPTIONS": {
-            "HANDOFF": "Handoff to agent",
-            "RESOLVE": "Resolve conversation",
-            "REMINDER": "Send reminder only"
+            "HANDOFF": "Hand off to an agent",
+            "NONE": "Do nothing"
           }
         },
-        "IDLE_MESSAGE": {
-          "LABEL": "Idle message",
-          "PLACEHOLDER": "Leave blank to use the default message"
+        "IDLE_USE_AI": {
+          "LABEL": "Use AI to write the follow-up",
+          "HELP": "AI decides whether to follow up, hand off, or wait, and writes the message from your instruction. Off = send the fixed message below."
         },
-        "IDLE_REMINDER_LIMIT": {
-          "LABEL": "Reminder limit",
-          "PLACEHOLDER": "3",
-          "HELP_TEXT": "Maximum number of reminder messages to send per conversation before stopping."
+        "IDLE_PROMPT": {
+          "LABEL": "AI instruction",
+          "PLACEHOLDER": "e.g. If the customer hasn't shared a phone number, ask for it. If they already have, hand off to an agent."
+        },
+        "IDLE_MESSAGE": {
+          "LABEL": "Follow-up message",
+          "PLACEHOLDER": "Leave blank to use the default message"
         },
         "CANCEL": "Cancel",
         "CREATE": "Create",

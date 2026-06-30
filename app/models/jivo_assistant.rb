@@ -176,17 +176,28 @@ class JivoAssistant < ApplicationRecord
 
   private
 
-  # Stamp the cutoff only on a false->true transition of feature_idle_action, so
-  # re-enabling later restarts the window and other config edits don't touch it.
+  # Manage the system-owned cutoff. Stamp fresh only on a false->true transition of
+  # feature_idle_action (re-enabling restarts the window). The Settings form replaces the
+  # whole config without this key, so when it's still enabled, carry the existing value
+  # forward instead of letting an unrelated save wipe it.
   def stamp_idle_action_enabled_at
     return unless will_save_change_to_config?
 
     old_config, new_config = changes_to_save['config']
-    was_enabled = ActiveModel::Type::Boolean.new.cast(old_config&.dig('feature_idle_action'))
-    now_enabled = ActiveModel::Type::Boolean.new.cast(new_config&.dig('feature_idle_action'))
-    return unless now_enabled && !was_enabled
 
-    self.idle_action_enabled_at = Time.current.iso8601
+    if idle_action_just_enabled?(old_config, new_config)
+      self.idle_action_enabled_at = Time.current.iso8601
+    elsif idle_action_enabled_at.blank?
+      self.idle_action_enabled_at = old_config&.dig('idle_action_enabled_at')
+    end
+  end
+
+  def idle_action_just_enabled?(old_config, new_config)
+    config_flag(new_config, 'feature_idle_action') && !config_flag(old_config, 'feature_idle_action')
+  end
+
+  def config_flag(config_hash, key)
+    ActiveModel::Type::Boolean.new.cast(config_hash&.dig(key))
   end
 
   def avatar_size_within_limit

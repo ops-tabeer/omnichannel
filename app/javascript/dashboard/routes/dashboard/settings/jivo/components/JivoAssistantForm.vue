@@ -50,9 +50,11 @@ const form = ref({
     feature_v2_agent: props.assistant.config?.feature_v2_agent || false,
     feature_idle_action: props.assistant.config?.feature_idle_action || false,
     idle_timeout_minutes: props.assistant.config?.idle_timeout_minutes || 60,
-    idle_action: props.assistant.config?.idle_action || 'handoff',
-    idle_message: props.assistant.config?.idle_message || '',
     idle_reminder_limit: props.assistant.config?.idle_reminder_limit || 3,
+    on_limit_action: props.assistant.config?.on_limit_action || 'handoff',
+    idle_use_ai: props.assistant.config?.idle_use_ai || false,
+    idle_prompt: props.assistant.config?.idle_prompt || '',
+    idle_message: props.assistant.config?.idle_message || '',
   },
 });
 
@@ -263,18 +265,19 @@ const submit = () => {
           </div>
         </div>
 
-        <!--
-          Temporarily hidden — idle reassignment is handled at the inbox
-          level (Settings → Inbox → Collaborators). Re-enable when the
-          per-assistant idle action UI is ready for prod.
         <div class="space-y-3 pt-3 border-t border-n-weak">
           <h3 class="text-sm font-medium text-n-slate-12">
             {{ t('JIVO.ASSISTANTS.FORM.GROUPS.IDLE') }}
           </h3>
           <div class="flex items-center justify-between gap-4">
-            <label class="text-sm text-n-slate-12">
-              {{ t('JIVO.ASSISTANTS.FORM.FEATURE_IDLE_ACTION.LABEL') }}
-            </label>
+            <div>
+              <label class="text-sm text-n-slate-12">
+                {{ t('JIVO.ASSISTANTS.FORM.FEATURE_IDLE_ACTION.LABEL') }}
+              </label>
+              <p class="text-xs text-n-slate-11 mt-0.5">
+                {{ t('JIVO.ASSISTANTS.FORM.FEATURE_IDLE_ACTION.HELP') }}
+              </p>
+            </div>
             <ToggleSwitch v-model="form.config.feature_idle_action" />
           </div>
 
@@ -290,27 +293,63 @@ const submit = () => {
               :placeholder="t('JIVO.ASSISTANTS.FORM.IDLE_TIMEOUT.PLACEHOLDER')"
             />
 
+            <Input
+              v-model="form.config.idle_reminder_limit"
+              :label="t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.LABEL')"
+              type="number"
+              min="1"
+              :placeholder="
+                t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.PLACEHOLDER')
+              "
+              :help-text="
+                t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.HELP_TEXT')
+              "
+            />
+
             <div>
               <label class="block text-sm font-medium text-n-slate-12 mb-1">
-                {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.LABEL') }}
+                {{ t('JIVO.ASSISTANTS.FORM.ON_LIMIT_ACTION.LABEL') }}
               </label>
               <select
-                v-model="form.config.idle_action"
+                v-model="form.config.on_limit_action"
                 class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
               >
                 <option value="handoff">
-                  {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.OPTIONS.HANDOFF') }}
+                  {{
+                    t('JIVO.ASSISTANTS.FORM.ON_LIMIT_ACTION.OPTIONS.HANDOFF')
+                  }}
                 </option>
-                <option value="resolve">
-                  {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.OPTIONS.RESOLVE') }}
-                </option>
-                <option value="reminder">
-                  {{ t('JIVO.ASSISTANTS.FORM.IDLE_ACTION.OPTIONS.REMINDER') }}
+                <option value="none">
+                  {{ t('JIVO.ASSISTANTS.FORM.ON_LIMIT_ACTION.OPTIONS.NONE') }}
                 </option>
               </select>
             </div>
 
-            <div>
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm text-n-slate-12">
+                  {{ t('JIVO.ASSISTANTS.FORM.IDLE_USE_AI.LABEL') }}
+                </label>
+                <p class="text-xs text-n-slate-11 mt-0.5">
+                  {{ t('JIVO.ASSISTANTS.FORM.IDLE_USE_AI.HELP') }}
+                </p>
+              </div>
+              <ToggleSwitch v-model="form.config.idle_use_ai" />
+            </div>
+
+            <div v-if="form.config.idle_use_ai">
+              <label class="block text-sm font-medium text-n-slate-12 mb-1">
+                {{ t('JIVO.ASSISTANTS.FORM.IDLE_PROMPT.LABEL') }}
+              </label>
+              <textarea
+                v-model="form.config.idle_prompt"
+                rows="3"
+                :placeholder="t('JIVO.ASSISTANTS.FORM.IDLE_PROMPT.PLACEHOLDER')"
+                class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
+              />
+            </div>
+
+            <div v-else>
               <label class="block text-sm font-medium text-n-slate-12 mb-1">
                 {{ t('JIVO.ASSISTANTS.FORM.IDLE_MESSAGE.LABEL') }}
               </label>
@@ -323,23 +362,8 @@ const submit = () => {
                 class="w-full px-3 py-2 border border-n-weak rounded-md bg-n-alpha-black2 text-n-slate-12 focus:outline-none focus:ring-2 focus:ring-n-brand"
               />
             </div>
-
-            <Input
-              v-if="form.config.idle_action === 'reminder'"
-              v-model="form.config.idle_reminder_limit"
-              :label="t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.LABEL')"
-              type="number"
-              min="1"
-              :placeholder="
-                t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.PLACEHOLDER')
-              "
-              :help-text="
-                t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.HELP_TEXT')
-              "
-            />
           </div>
         </div>
-        -->
       </div>
 
       <div v-show="currentTab === 'advanced'" class="space-y-4">

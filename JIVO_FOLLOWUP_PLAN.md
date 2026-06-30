@@ -189,12 +189,11 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - ✅ Dropped `resolve` everywhere (`on_limit_action` = `handoff`/`none`; removed `IDLE_ACTION_RESOLVE` + dead `idle_resolve` string).
 - **Done when:** prompt "if no number ask for it, if number present hand off" → missing-number chats get an AI nudge, number-present chats hand off, and a chat is never AI-called more than `limit` times before handoff. ✓ (still UI-hidden until Phase 4)
 
-### Phase 4 — Settings UI (un-hide + finalize)  ·  Status: ☐
-- **Goal:** expose the feature to admins.
-- Un-comment `JivoAssistantForm.vue` L266-342; add controls for `idle_use_ai`, `idle_prompt`, `on_limit_action`.
-- AI toggle reveals `idle_prompt` (AI ON) vs `idle_message` (AI OFF).
-- Add new i18n strings to `jivo.json` (and `en.yml` for any backend strings). English only.
-- **Done when:** admin can configure everything in Settings → JIVO → Behavior; saves persist.
+### Phase 4 — Settings UI (un-hide + finalize)  ·  Status: ✅ (omni-dev)
+- ✅ Replaced the commented block in `JivoAssistantForm.vue` with live controls: master toggle (`feature_idle_action`) + help, `idle_timeout_minutes`, `idle_reminder_limit`, `on_limit_action` select (handoff/none), `idle_use_ai` toggle, and AI toggle reveals `idle_prompt` (AI ON) vs `idle_message` (AI OFF). Form `config` initializes the new keys; dropped legacy `idle_action`.
+- ✅ New i18n in `jivo.json` (`FEATURE_IDLE_ACTION.HELP`, `IDLE_TIMEOUT`, `IDLE_REMINDER_LIMIT`, `ON_LIMIT_ACTION`, `IDLE_USE_AI`, `IDLE_PROMPT`, `IDLE_MESSAGE`); removed `IDLE_ACTION`.
+- ✅ Hardened the cutoff callback to **preserve `idle_action_enabled_at`** across form saves (the controller replaces the whole `config` and the form doesn't carry the system-managed key).
+- **Done when:** admin can configure everything in Settings → JIVO → Behavior; saves persist; enabling stamps the cutoff. ✓
 
 ### Phase 5 — Guardrails & polish  ·  Status: ☐
 - **Goal:** production hardening.
