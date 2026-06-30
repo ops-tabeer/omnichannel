@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_21_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_01_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -940,6 +940,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_21_120000) do
     t.jsonb "settings", default: {}
   end
 
+  create_table "jivo_ai_usages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "period", null: false
+    t.integer "follow_up_count", default: 0, null: false
+    t.integer "handoff_count", default: 0, null: false
+    t.integer "wait_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "period"], name: "index_jivo_ai_usages_on_account_id_and_period", unique: true
+  end
+
   create_table "jivo_assistant_responses", force: :cascade do |t|
     t.string "question", null: false
     t.text "answer", null: false
@@ -1445,6 +1456,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_21_120000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "jivo_ai_usages", "accounts"
   add_foreign_key "jivo_assistant_responses", "accounts"
   add_foreign_key "jivo_assistant_responses", "jivo_assistants"
   add_foreign_key "jivo_assistants", "accounts"

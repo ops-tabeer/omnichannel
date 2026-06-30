@@ -206,15 +206,12 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - Skipped (optional, low value): extra activity-message wording for follow-ups — they already render as visible outgoing messages.
 - **Done when:** misconfig/AI errors degrade gracefully; no double-acting with reassignment. ✓
 
-### Phase 6 — Super Admin monthly AI-call usage counter  ·  Status: ☐  ·  **(LAST)**
+### Phase 6 — Super Admin monthly AI-call usage counter  ·  Status: ✅ (omni-dev)  ·  **(LAST)**
 - **Goal:** at-a-glance per-account monthly usage ("credits").
-- Count **AI calls** only (Phase 3 path), broken down by action (`follow_up` / `handoff` / `wait`). Static mode not counted.
-- **Storage (scalable):** monthly aggregate row, e.g. table `jivo_ai_usages`
-  `(account_id, period 'YYYY-MM', kind 'follow_up', follow_up_count, handoff_count, wait_count, timestamps)`,
-  unique on `(account_id, period, kind)`, atomic upsert/increment at call time.
-  (Simpler alt: increment `account.custom_attributes`; less scalable, avoid.)
-- **Display:** add the current-month count to the Super Admin → Accounts view.
-- **Done when:** each AI follow-up call increments the right monthly row; Super Admin shows e.g. "JIVO follow-up AI calls (2026-07): 312 — 190 follow-up / 80 handoff / 42 wait".
+- ✅ Counts **AI calls** only — recorded in the job's `ai_follow_up` (the single AI chokepoint), so static mode is never counted. Broken down by the returned action (`follow_up` / `handoff` / `wait`).
+- ✅ **Storage:** migration `20260701000000_create_jivo_ai_usages` → table `jivo_ai_usages` `(account_id, period 'YYYY-MM', follow_up_count, handoff_count, wait_count, timestamps)`, **unique on `(account_id, period)`** (one aggregate row per account-month; the three counts are columns, not separate `kind` rows). `JivoAiUsage.record_action(account, action)` does `find_or_create_by` + atomic SQL `update_all` increment; unknown actions are ignored.
+- ✅ **Display:** `app/views/super_admin/accounts/_jivo_ai_usage.html.erb` rendered at the bottom of the Super Admin account show page (mirrors the `_seed_data`/`_reset_cache` partials) — shows current-month total + per-action breakdown.
+- **Done when:** each AI follow-up call increments the right monthly row; Super Admin shows e.g. "JIVO idle follow-up AI calls (2026-07): 312 — 190 follow-up / 80 handoff / 42 wait". ✓
 
 ---
 

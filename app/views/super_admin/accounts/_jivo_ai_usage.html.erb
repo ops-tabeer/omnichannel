@@ -1,0 +1,15 @@
+<section class="main-content__body">
+  <hr/>
+  <% usage = JivoAiUsage.current_month_for(account) %>
+  <h3 class="pb-2 font-semibold">JIVO idle follow-up AI calls (<%= JivoAiUsage.current_period %>)</h3>
+  <% if usage&.total&.positive? %>
+    <p>
+      <%= usage.total %> total —
+      <%= usage.follow_up_count %> follow-up /
+      <%= usage.handoff_count %> handoff /
+      <%= usage.wait_count %> wait
+    </p>
+  <% else %>
+    <p>No AI follow-up calls this month.</p>
+  <% end %>
+</section>

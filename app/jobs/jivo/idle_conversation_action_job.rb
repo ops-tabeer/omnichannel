@@ -64,6 +64,7 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   # hand off in the same run if this wait reaches the limit). Any failure degrades to wait.
   def ai_follow_up(conversation, assistant)
     result = Jivo::Tasks::IdleFollowUpService.new(assistant: assistant, conversation: conversation).perform
+    JivoAiUsage.record_action(conversation.account, result[:action])
 
     case result[:action]
     when 'follow_up'
