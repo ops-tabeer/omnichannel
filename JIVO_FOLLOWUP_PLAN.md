@@ -157,11 +157,15 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - Centralized attempt count via `ATTEMPT_COUNT_KEY` constant + `attempt_count` / `increment_attempt` helpers (renamed from `increment_reminder_count`); `reminder_limit_reached?` now uses `attempt_count`. Behavior unchanged.
 - **Done when:** job selects exactly the conversations in §5 Layer 1 and attempt count has one source of truth. ✓
 
-### Phase 2 — Static follow-up loop + escalation  ·  Status: ☐
+### Phase 2 — Static follow-up loop + escalation  ·  Status: ✅ (omni-dev)
 - **Goal:** ship the free path end-to-end (no AI), proves scheduling + cutoff + limit.
-- Behavior: post `idle_message` each cycle; increment count; on limit → `on_limit_action`.
-- Add `on_limit_action` config (`handoff` default / `resolve` / `none`); map legacy `idle_action`.
-- **Done when:** an eligible pending chat gets up to N static nudges, then handoff; nothing fires before cutoff.
+- `apply_idle_action` rewritten: if `attempt_count >= idle_reminder_limit_value` → `escalate`, else `send_follow_up` (post static `idle_message`, `increment_attempt`).
+- `escalate` → `on_limit_action_value`: `handoff` (default) / `resolve` / `none` (no-op).
+- Added `on_limit_action` config (store_accessor + controller permit + `on_limit_action_value` with legacy `idle_action` fallback + `ON_LIMIT_ACTION_NONE`/`ON_LIMIT_ACTIONS`/`DEFAULT_ON_LIMIT_ACTION`).
+- `default_idle_message` simplified to the check-in text (follow-up is always a nudge now).
+- Removed dead code: `idle_action_value`, `IDLE_ACTIONS`, `IDLE_ACTION_REMINDER`.
+- Spacing is automatic (sent message bumps `last_activity_at`); limit=2 → 2 nudges then handoff on cycle 3.
+- **Done when:** an eligible pending chat gets up to N static nudges, then escalates; nothing fires before cutoff. ✓ (still UI-hidden until Phase 4)
 
 ### Phase 3 — AI follow-up mode  ·  Status: ☐
 - **Goal:** prompt-driven, scenario-aware follow-up.

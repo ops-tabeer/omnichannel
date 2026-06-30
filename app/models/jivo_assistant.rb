@@ -42,7 +42,8 @@ class JivoAssistant < ApplicationRecord
 
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                  :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
-                 :idle_reminder_limit, :feature_v2_agent, :feature_citation, :idle_action_enabled_at
+                 :idle_reminder_limit, :feature_v2_agent, :feature_citation, :idle_action_enabled_at,
+                 :on_limit_action
 
   # System-managed cutoff: stamp the moment the idle action is switched on so the job
   # only ever acts on conversations created after enabling (never the pre-enable backlog).
@@ -50,10 +51,13 @@ class JivoAssistant < ApplicationRecord
 
   IDLE_ACTION_HANDOFF = 'handoff'.freeze
   IDLE_ACTION_RESOLVE = 'resolve'.freeze
-  IDLE_ACTION_REMINDER = 'reminder'.freeze
-  IDLE_ACTIONS = [IDLE_ACTION_HANDOFF, IDLE_ACTION_RESOLVE, IDLE_ACTION_REMINDER].freeze
   DEFAULT_IDLE_TIMEOUT_MINUTES = 60
   DEFAULT_IDLE_REMINDER_LIMIT = 3
+
+  # What to do once the follow-up attempts are exhausted.
+  ON_LIMIT_ACTION_NONE = 'none'.freeze
+  ON_LIMIT_ACTIONS = [IDLE_ACTION_HANDOFF, IDLE_ACTION_RESOLVE, ON_LIMIT_ACTION_NONE].freeze
+  DEFAULT_ON_LIMIT_ACTION = IDLE_ACTION_HANDOFF
 
   NON_VISION_MODEL_PATTERNS = [
     /\Agpt-3\.5/i,
@@ -104,16 +108,21 @@ class JivoAssistant < ApplicationRecord
     idle_timeout_minutes.to_i.positive? ? idle_timeout_minutes.to_i : DEFAULT_IDLE_TIMEOUT_MINUTES
   end
 
-  def idle_action_value
-    IDLE_ACTIONS.include?(idle_action) ? idle_action : IDLE_ACTION_HANDOFF
-  end
-
   def idle_message_text
     idle_message.presence || default_idle_message
   end
 
   def idle_reminder_limit_value
     idle_reminder_limit.to_i.positive? ? idle_reminder_limit.to_i : DEFAULT_IDLE_REMINDER_LIMIT
+  end
+
+  # Escalation after the follow-up limit is hit. Falls back to a legacy idle_action of
+  # handoff/resolve, else the default (handoff).
+  def on_limit_action_value
+    return on_limit_action if ON_LIMIT_ACTIONS.include?(on_limit_action)
+    return idle_action if [IDLE_ACTION_HANDOFF, IDLE_ACTION_RESOLVE].include?(idle_action)
+
+    DEFAULT_ON_LIMIT_ACTION
   end
 
   def idle_action_enabled_at_value
@@ -188,15 +197,10 @@ class JivoAssistant < ApplicationRecord
     errors.add(:avatar, "is too large (max #{AVATAR_MAX_BYTES / 1.megabyte} MB)")
   end
 
+  # The follow-up is always a check-in nudge now; escalation (handoff/resolve) is a
+  # separate step after the limit, so the default message is the reminder text.
   def default_idle_message
-    case idle_action_value
-    when IDLE_ACTION_RESOLVE
-      I18n.t('conversations.jivo.idle_resolve', default: I18n.t('conversations.activity.auto_resolution_message'))
-    when IDLE_ACTION_REMINDER
-      I18n.t('conversations.jivo.idle_reminder',
-             default: 'Just checking in. Please reply when you are ready to continue.')
-    else
-      handoff_message_text
-    end
+    I18n.t('conversations.jivo.idle_reminder',
+           default: 'Just checking in. Please reply when you are ready to continue.')
   end
 end

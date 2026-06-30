@@ -69,7 +69,7 @@ class Api::V1::Accounts::Jivo::AssistantsController < Api::V1::Accounts::BaseCon
       guardrails: [],
       config: [:openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
-               :idle_reminder_limit, :feature_v2_agent, :feature_citation]
+               :idle_reminder_limit, :feature_v2_agent, :feature_citation, :on_limit_action]
     )
     config_attrs = attrs[:config]
     config_attrs&.delete(:openai_api_key) if config_attrs && (!Current.account.jivo_byo_key_allowed || config_attrs[:openai_api_key].blank?)

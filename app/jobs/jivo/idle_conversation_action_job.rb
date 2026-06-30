@@ -43,19 +43,14 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     scope.limit(Limits::BULK_ACTIONS_LIMIT)
   end
 
+  # Follow up until the attempt limit is hit, then escalate. The attempt count is checked
+  # per conversation (not in the scope) so the limit-reaching run can trigger escalation.
   def apply_idle_action(conversation, assistant)
-    return if reminder_limit_reached?(conversation, assistant)
-
     I18n.with_locale(conversation.account.locale) do
-      create_outgoing_message(conversation, assistant)
-
-      case assistant.idle_action_value
-      when JivoAssistant::IDLE_ACTION_RESOLVE
-        conversation.resolved!
-      when JivoAssistant::IDLE_ACTION_HANDOFF
-        handoff_to_agent(conversation)
-      when JivoAssistant::IDLE_ACTION_REMINDER
-        increment_attempt(conversation)
+      if attempt_count(conversation) >= assistant.idle_reminder_limit_value
+        escalate(conversation, assistant)
+      else
+        send_follow_up(conversation, assistant)
       end
     end
   rescue StandardError => e
@@ -63,10 +58,19 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     ChatwootExceptionTracker.new(e, account: conversation.account).capture_exception
   end
 
-  def reminder_limit_reached?(conversation, assistant)
-    return false unless assistant.idle_action_value == JivoAssistant::IDLE_ACTION_REMINDER
+  def send_follow_up(conversation, assistant)
+    create_outgoing_message(conversation, assistant)
+    increment_attempt(conversation)
+  end
 
-    attempt_count(conversation) >= assistant.idle_reminder_limit_value
+  def escalate(conversation, assistant)
+    case assistant.on_limit_action_value
+    when JivoAssistant::IDLE_ACTION_HANDOFF
+      handoff_to_agent(conversation)
+    when JivoAssistant::IDLE_ACTION_RESOLVE
+      conversation.resolved!
+    end
+    # ON_LIMIT_ACTION_NONE: leave it pending; nothing to do.
   end
 
   # Follow-up attempts already made on this conversation. Read/incremented here so the
