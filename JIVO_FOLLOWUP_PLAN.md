@@ -134,12 +134,13 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 > Commit on `omni-dev`; merge to `omni-main2` for prod. Ruby-only phases need no migration
 > unless stated; Phase 6 adds a migration.
 
-### Phase 0 — Cutoff foundation  ·  Status: ☐
+### Phase 0 — Cutoff foundation  ·  Status: ✅ (omni-dev)
 - **Goal:** never act on pre-enable conversations.
-- Add `idle_action_enabled_at` to `store_accessor` + controller permits.
-- Set it automatically when `feature_idle_action` transitions false→true (model callback).
-- Add `created_at >= idle_action_enabled_at` to the job's `idle_conversations` scope (skip filter if blank, to preserve current behavior until set).
-- **Done when:** flipping the toggle on stamps the timestamp; the job ignores older conversations.
+- Added `idle_action_enabled_at` to `store_accessor` (`app/models/jivo_assistant.rb`).
+- `before_save :stamp_idle_action_enabled_at` — stamps only on a **false→true** transition of `feature_idle_action` (re-enabling restarts the window; other edits don't touch it). Helper `idle_action_enabled_at_value` parses it.
+- Job `idle_conversations` now filters `conversations.created_at >= cutoff`; `backfill_cutoff` stamps "now" for any enabled assistant missing a cutoff (safety net so a console/pre-existing enable can't blast the backlog).
+- **Deviations from sketch:** controller permit intentionally **not** added — the cutoff is system-managed, not user-settable. Added the backfill safety net (sketch said "skip filter if blank"; we instead self-heal to "now" to stay safe).
+- **Done when:** flipping the toggle on stamps the timestamp; the job ignores older conversations. ✓
 
 ### Phase 1 — Eligibility pipeline refactor  ·  Status: ☐
 - **Goal:** one clean Layer-1 scope shared by all modes.

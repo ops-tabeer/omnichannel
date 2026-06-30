@@ -4,8 +4,9 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   def perform
     JivoInbox.includes(:jivo_assistant, :inbox).find_each do |jivo_inbox|
       assistant = jivo_inbox.jivo_assistant
-      next unless assistant.idle_action_enabled?
+      next unless assistant&.idle_action_enabled?
 
+      backfill_cutoff(assistant)
       process_inbox(jivo_inbox.inbox, assistant)
     end
   ensure
@@ -13,6 +14,15 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   end
 
   private
+
+  # Safety net: an assistant enabled without a cutoff (e.g. set before this existed or
+  # via console) must not act on the pre-enable backlog. Stamp "now" so only newer
+  # conversations qualify from here on.
+  def backfill_cutoff(assistant)
+    return if assistant.idle_action_enabled_at_value
+
+    assistant.update!(idle_action_enabled_at: Time.current.iso8601)
+  end
 
   def process_inbox(inbox, assistant)
     Current.executed_by = assistant
@@ -23,10 +33,12 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   end
 
   def idle_conversations(inbox, assistant)
-    inbox.conversations
-         .pending
-         .where('last_activity_at < ?', assistant.idle_timeout_minutes_value.minutes.ago)
-         .limit(Limits::BULK_ACTIONS_LIMIT)
+    cutoff = assistant.idle_action_enabled_at_value
+    scope = inbox.conversations
+                 .pending
+                 .where('last_activity_at < ?', assistant.idle_timeout_minutes_value.minutes.ago)
+    scope = scope.where('conversations.created_at >= ?', cutoff) if cutoff
+    scope.limit(Limits::BULK_ACTIONS_LIMIT)
   end
 
   def apply_idle_action(conversation, assistant)

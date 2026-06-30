@@ -42,7 +42,11 @@ class JivoAssistant < ApplicationRecord
 
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                  :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
-                 :idle_reminder_limit, :feature_v2_agent, :feature_citation
+                 :idle_reminder_limit, :feature_v2_agent, :feature_citation, :idle_action_enabled_at
+
+  # System-managed cutoff: stamp the moment the idle action is switched on so the job
+  # only ever acts on conversations created after enabling (never the pre-enable backlog).
+  before_save :stamp_idle_action_enabled_at
 
   IDLE_ACTION_HANDOFF = 'handoff'.freeze
   IDLE_ACTION_RESOLVE = 'resolve'.freeze
@@ -112,6 +116,14 @@ class JivoAssistant < ApplicationRecord
     idle_reminder_limit.to_i.positive? ? idle_reminder_limit.to_i : DEFAULT_IDLE_REMINDER_LIMIT
   end
 
+  def idle_action_enabled_at_value
+    return if idle_action_enabled_at.blank?
+
+    Time.zone.parse(idle_action_enabled_at.to_s)
+  rescue ArgumentError
+    nil
+  end
+
   def available_name
     name
   end
@@ -155,6 +167,19 @@ class JivoAssistant < ApplicationRecord
   end
 
   private
+
+  # Stamp the cutoff only on a false->true transition of feature_idle_action, so
+  # re-enabling later restarts the window and other config edits don't touch it.
+  def stamp_idle_action_enabled_at
+    return unless will_save_change_to_config?
+
+    old_config, new_config = changes_to_save['config']
+    was_enabled = ActiveModel::Type::Boolean.new.cast(old_config&.dig('feature_idle_action'))
+    now_enabled = ActiveModel::Type::Boolean.new.cast(new_config&.dig('feature_idle_action'))
+    return unless now_enabled && !was_enabled
+
+    self.idle_action_enabled_at = Time.current.iso8601
+  end
 
   def avatar_size_within_limit
     return unless avatar.attached?
