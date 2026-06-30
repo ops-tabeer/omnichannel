@@ -53,6 +53,7 @@
 #  index_conversations_on_team_id                          (team_id)
 #  index_conversations_on_uuid                             (uuid) UNIQUE
 #  index_conversations_on_waiting_since                    (waiting_since)
+#  index_conversations_pending_on_inbox_last_activity      (inbox_id,last_activity_at) WHERE (status = 2)
 #
 
 class Conversation < ApplicationRecord
