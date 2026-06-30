@@ -178,8 +178,7 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - **Done when:** an eligible pending chat gets up to N static nudges, then escalates; nothing fires before cutoff. ✓ (still UI-hidden until Phase 4)
 
 ### Phase 3 — AI follow-up mode  ·  Status: 🔧 in progress (omni-dev)
-- ✅ **Shared handoff extracted** — `Jivo::HandoffService.new(conversation:, assistant:, reason:).perform` (optional private note → `ai_handoff` → `bot_handoff!` → OOO). **Used by the idle job only** for now; idle escalation passes `conversations.jivo.idle_handoff_reason`.
-- ⏭️ **Deferred (later):** refactor **both** V1 (`ConversationHandlerService#perform_handoff`) **and** V2 (`Jivo::Tools::HandoffTool#trigger_handoff`) to delegate to `Jivo::HandoffService`. They keep their own logic for now (temporary duplication is intentional).
+- ✅ **Shared handoff extracted** — `Jivo::HandoffService.new(conversation:, assistant:, reason:).perform` (optional private note → `ai_handoff` → `bot_handoff!` → OOO). The V2 `HandoffTool` and the idle job now both use it; idle escalation passes `conversations.jivo.idle_handoff_reason`. V1 conversation handler still has its own `perform_handoff` — refactor to this service later.
 - **Goal:** prompt-driven, scenario-aware follow-up with action set `follow_up`/`handoff`/`wait`.
 - Add `idle_use_ai` + `idle_prompt` (store_accessor + controller permit).
 - New service (e.g. `Jivo::Tasks::IdleFollowUpService`) — reuse `OpenaiMessageBuilderService` for context + the V1 JSON pattern. Returns `{action, message}` (§5 contract). On error/invalid → no action this run.
