@@ -57,13 +57,18 @@ conversation phases → clean baton-pass, not a conflict (see §6).
 
 1. **One feature, optional AI switch** (not two separate modes):
    - **Shared eligibility** (Layer 1, deterministic, free) runs for every mode.
-   - **AI ON** → `idle_prompt`; the AI decides *whether* to follow up (scenario) and *what* to say (Layer 2 AI call).
+   - **AI ON** → `idle_prompt`; the AI returns an **action** + message (see decision 7).
    - **AI OFF** → `idle_message`; send fixed text every attempt. **Zero AI calls.**
-2. **Counting stays in code** (`jivo_idle_reminder_count`); the AI only decides skip/message — never counts attempts.
-3. **On limit reached** → `on_limit_action`: `handoff` (default) / `resolve` / `none`.
+2. **Counting stays in code** (`jivo_idle_reminder_count`); the AI only decides the action/message — never counts attempts.
+3. **On limit reached (deterministic backstop, no AI)** → `on_limit_action`: `handoff` (default) / `none`. `resolve` dropped (no auto-closing). `none` = admin opt-out of escalation.
+7. **AI action set = `follow_up` / `handoff` / `wait`** (resolve dropped):
+   - `follow_up` → send the message, increment attempt count.
+   - `handoff` → escalate to a human now (e.g. the prompt says "if the number is already present, hand off"). Solves the "skip but don't orphan" edge case.
+   - `wait` → do nothing this cycle; it's the customer's turn. Legitimately stays `pending` until they reply (guarded so it doesn't re-call the AI without a new customer message). Not an orphan.
+   - On AI error/invalid output → safe fallback: take no action this run and retry later (bounded by the attempt-limit backstop), so a broken AI can't act wrongly or loop on cost.
 4. **Enabled-since cutoff**: only act on conversations **created after** the feature was enabled (`idle_action_enabled_at`). Mirrors `auto_reassignment_enabled_since`.
 5. **Runs before handoff** (`pending`); inbox idle reassignment runs after handoff. Escalation = handoff = the baton-pass.
-6. **Usage counter** (Super Admin, per account, per month) tracks **AI calls** split `sent` vs `skipped` (a skip still costs a call). Static mode = no AI call = nothing counted. **Final phase.**
+6. **Usage counter** (Super Admin, per account, per month) tracks **AI calls** (each call = cost), optionally broken down by action (`follow_up` / `handoff` / `wait`). Static mode = no AI call = nothing counted. **Final phase.**
 
 ---
 
@@ -79,8 +84,8 @@ Keep existing keys for back-compat; add new ones.
 | `idle_message` | string | existing | Static follow-up text (AI OFF) |
 | `idle_use_ai` | bool | **new** | Use AI to generate/decide the follow-up |
 | `idle_prompt` | string | **new** | AI instruction (AI ON) |
-| `on_limit_action` | enum | **new** | After limit: `handoff` (default) / `resolve` / `none` |
-| `idle_action_enabled_at` | iso8601 | **new** | Cutoff timestamp; auto-set when `feature_idle_action` flips false→true |
+| `on_limit_action` | enum | **new (Phase 2)** | Deterministic backstop after limit: `handoff` (default) / `none`. `resolve` dropped. |
+| `idle_action_enabled_at` | iso8601 | **new (Phase 0)** | Cutoff timestamp; auto-set when `feature_idle_action` flips false→true (system-managed) |
 
 Back-compat mapping for the legacy `idle_action` (`handoff`/`resolve`/`reminder`): treat
 `reminder` as the follow-up loop; fold `handoff`/`resolve` into `on_limit_action`. Provide
@@ -103,26 +108,31 @@ For each JIVO inbox whose assistant has feature_idle_action = true:
 
   For each selected conversation:
     if attempts >= idle_reminder_limit:
-      apply on_limit_action (handoff | resolve | none); stop
-      # handoff/resolve leave the pending scope; 'none' stays but is a cheap no-op each run
+      apply on_limit_action (handoff | none); stop          # deterministic backstop, no AI
+      # handoff leaves the pending scope; 'none' stays but is a cheap no-op each run
     elsif idle_use_ai:
-      if no NEW customer message since last AI check: skip (no call)   # skip-loop guard
-      result = AI call (idle_prompt + conversation context)   # COUNT: sent/skipped
-      if result.should_follow_up: post result.message; increment count
-      else: record last-checked marker (no message, no count bump)
+      if no NEW customer message since last AI check: do nothing (no call)   # skip-loop guard
+      result = AI call (idle_prompt + conversation context)   # COUNT this call
+      case result.action:
+        when 'follow_up': post result.message; increment count
+        when 'handoff':   escalate (handoff); stop
+        when 'wait':      record last-checked marker (no message, no count bump)
+        else (error/invalid): no action this run; retry later (bounded by backstop)
     else:
       post idle_message; increment count                       # no AI call
 ```
 
-**Attempt spacing is automatic:** every message bump `last_activity_at` (`Message#set_conversation_activity`), so a sent follow-up resets the idle timer → the next attempt can't fire until another full `idle_timeout_minutes` passes. No extra spacing logic needed.
+**Attempt spacing is automatic:** every message bumps `last_activity_at` (`Message#set_conversation_activity`), so a sent follow-up resets the idle timer → the next attempt can't fire until another full `idle_timeout_minutes` passes. No extra spacing logic needed.
 
 **Escalation timing matches the ask** ("check 2 times, handoff on the 3rd"): with limit=2, cycles 1–2 send follow-ups (count→2), cycle 3 sees `attempts >= limit` → handoff. This is why attempt count is a per-conversation branch, not a scope filter.
 
-**Skip-loop guard (AI mode):** a skip sends no message, so `last_activity_at` is *not* bumped → the chat would re-qualify and re-call the AI every run for no reason. Guard with a "last checked" marker (mirror `Jivo::ContactEnrichmentService`'s `jivo_contact_enriched_message_id`): only call the AI when a **new incoming customer message** exists since the last check. Skips then cost ≤1 call until the customer says something new.
+**Skip-loop guard (AI mode):** a `wait` sends no message, so `last_activity_at` is *not* bumped → the chat would re-qualify and re-call the AI every run for no reason. Guard with a "last checked" marker (mirror `Jivo::ContactEnrichmentService`'s `jivo_contact_enriched_message_id`): only call the AI when a **new incoming customer message** exists since the last check. `wait` then costs ≤1 call until the customer says something new.
+
+**Orphan safety:** the "number already present, no nudge needed" case → the prompt tells the AI to return `handoff`, not `wait`, so the chat doesn't sit forever. And the deterministic attempt-limit → `handoff` backstop catches any AI error / endless `wait`.
 
 AI call JSON contract (reuse V1 handler pattern, `response_format: json_object`):
 ```json
-{ "should_follow_up": true, "message": "<customer-facing follow-up, in customer's language>" }
+{ "action": "follow_up | handoff | wait", "message": "<follow-up text, in customer's language; required only for follow_up>" }
 ```
 System prompt = `idle_prompt` + reuse the existing language rule ("reply in the customer's
 language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
@@ -168,12 +178,15 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - **Done when:** an eligible pending chat gets up to N static nudges, then escalates; nothing fires before cutoff. ✓ (still UI-hidden until Phase 4)
 
 ### Phase 3 — AI follow-up mode  ·  Status: ☐
-- **Goal:** prompt-driven, scenario-aware follow-up.
-- Add `idle_use_ai` + `idle_prompt`.
-- New service `Jivo::Tasks::IdleFollowUpService` (or reuse `Jivo::ConversationHandlerService`/`OpenaiMessageBuilderService` + JSON contract in §5). Returns `{should_follow_up, message}`.
-- AI ON → call per eligible chat; send or skip; static path unchanged when AI OFF.
+- **Goal:** prompt-driven, scenario-aware follow-up with action set `follow_up`/`handoff`/`wait`.
+- Add `idle_use_ai` + `idle_prompt` (store_accessor + controller permit).
+- New service (e.g. `Jivo::Tasks::IdleFollowUpService`) — reuse `OpenaiMessageBuilderService` for context + the V1 JSON pattern. Returns `{action, message}` (§5 contract). On error/invalid → no action this run.
+- Loop branches on the action: `follow_up` → send + count; `handoff` → escalate; `wait` → record checked-marker only.
+- **Skip-loop guard:** add a "last checked" marker (e.g. `jivo_idle_followup_checked_id`); only call the AI when a new incoming message exists since it.
+- **Align with Phase 2:** drop `resolve` from `on_limit_action`/`escalate` (backstop = `handoff`/`none`); remove now-unused `IDLE_ACTION_RESOLVE` if dead.
+- Static path unchanged when AI OFF.
 - Reuse language + brevity rules from `Jivo::Prompts::V1ConversationPrompt`.
-- **Done when:** with a prompt like "if no phone number, ask for it", chats missing a number get an AI message; chats that already have one are skipped.
+- **Done when:** prompt "if no number ask for it, if number present hand off" → missing-number chats get an AI nudge, number-present chats hand off, nothing re-calls the AI without a new customer message.
 
 ### Phase 4 — Settings UI (un-hide + finalize)  ·  Status: ☐
 - **Goal:** expose the feature to admins.
@@ -191,13 +204,13 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 
 ### Phase 6 — Super Admin monthly AI-call usage counter  ·  Status: ☐  ·  **(LAST)**
 - **Goal:** at-a-glance per-account monthly usage ("credits").
-- Count **AI calls** only (Phase 3 path), split `sent` vs `skipped`. Static mode not counted.
+- Count **AI calls** only (Phase 3 path), broken down by action (`follow_up` / `handoff` / `wait`). Static mode not counted.
 - **Storage (scalable):** monthly aggregate row, e.g. table `jivo_ai_usages`
-  `(account_id, period 'YYYY-MM', kind 'follow_up', sent_count, skipped_count, timestamps)`,
+  `(account_id, period 'YYYY-MM', kind 'follow_up', follow_up_count, handoff_count, wait_count, timestamps)`,
   unique on `(account_id, period, kind)`, atomic upsert/increment at call time.
   (Simpler alt: increment `account.custom_attributes`; less scalable, avoid.)
 - **Display:** add the current-month count to the Super Admin → Accounts view.
-- **Done when:** each AI follow-up call increments the right monthly row; Super Admin shows e.g. "JIVO follow-up AI calls (2026-07): 312 — 190 sent / 122 skipped".
+- **Done when:** each AI follow-up call increments the right monthly row; Super Admin shows e.g. "JIVO follow-up AI calls (2026-07): 312 — 190 follow-up / 80 handoff / 42 wait".
 
 ---
 
