@@ -180,9 +180,9 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 ### Phase 3 — AI follow-up mode  ·  Status: 🔧 in progress (omni-dev)
 - ✅ **Shared handoff extracted** — `Jivo::HandoffService.new(conversation:, assistant:, reason:).perform` (optional private note → `ai_handoff` → `bot_handoff!` → OOO). The V2 `HandoffTool` and the idle job now both use it; idle escalation passes `conversations.jivo.idle_handoff_reason`. V1 conversation handler still has its own `perform_handoff` — refactor to this service later.
 - **Goal:** prompt-driven, scenario-aware follow-up with action set `follow_up`/`handoff`/`wait`.
-- Add `idle_use_ai` + `idle_prompt` (store_accessor + controller permit).
-- New service (e.g. `Jivo::Tasks::IdleFollowUpService`) — reuse `OpenaiMessageBuilderService` for context + the V1 JSON pattern. Returns `{action, message}` (§5 contract). On error/invalid → no action this run.
-- Loop branches on the action: `follow_up` → send + count; `handoff` → escalate; `wait` → record checked-marker only.
+- ✅ Added `idle_use_ai` + `idle_prompt` (store_accessor + controller permit + `idle_use_ai_enabled?`).
+- ✅ Built `Jivo::Tasks::IdleFollowUpService < Jivo::Tasks::BaseTaskService` — reuses `OpenaiMessageBuilderService` for context + JSON response. Returns `{success, action, message}`; any failure/invalid → safe `wait`. Not yet wired into the job.
+- ⏭️ Loop branches on the action: `follow_up` → send + count; `handoff` → escalate; `wait` → record checked-marker only.
 - **Skip-loop guard:** add a "last checked" marker (e.g. `jivo_idle_followup_checked_id`); only call the AI when a new incoming message exists since it.
 - **Align with Phase 2:** drop `resolve` from `on_limit_action`/`escalate` (backstop = `handoff`/`none`); remove now-unused `IDLE_ACTION_RESOLVE` if dead.
 - Static path unchanged when AI OFF.

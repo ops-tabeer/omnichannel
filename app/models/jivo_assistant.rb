@@ -43,7 +43,7 @@ class JivoAssistant < ApplicationRecord
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                  :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
                  :idle_reminder_limit, :feature_v2_agent, :feature_citation, :idle_action_enabled_at,
-                 :on_limit_action
+                 :on_limit_action, :idle_use_ai, :idle_prompt
 
   # System-managed cutoff: stamp the moment the idle action is switched on so the job
   # only ever acts on conversations created after enabling (never the pre-enable backlog).
@@ -93,6 +93,10 @@ class JivoAssistant < ApplicationRecord
 
   def idle_action_enabled?
     ActiveModel::Type::Boolean.new.cast(feature_idle_action)
+  end
+
+  def idle_use_ai_enabled?
+    ActiveModel::Type::Boolean.new.cast(idle_use_ai)
   end
 
   def feature_v2_agent_enabled?
