@@ -257,6 +257,7 @@ en:
       handoff: 'Transferring to another agent for further assistance.'
       idle_reminder: 'Just checking in. Please reply when you are ready to continue.'
       idle_handoff_reason: 'Auto-handed off after the idle follow-up limit was reached.'
+      idle_ai_handoff_reason: 'Auto-handed off by JIVO idle follow-up.'
     messages:
       instagram_story_content: '%{story_sender} mentioned you in the story: '
       instagram_deleted_story_content: This story is no longer available.

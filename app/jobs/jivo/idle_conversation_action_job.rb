@@ -69,7 +69,7 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     when 'follow_up'
       post_follow_up(conversation, assistant, result[:message])
     when 'handoff'
-      handoff(conversation, assistant)
+      handoff(conversation, assistant, ai_handoff_reason)
     else # 'wait' (and any safe fallback)
       increment_attempt(conversation)
       escalate(conversation, assistant) if attempt_count(conversation) >= assistant.idle_reminder_limit_value
@@ -83,17 +83,23 @@ class Jivo::IdleConversationActionJob < ApplicationJob
 
   # Deterministic backstop once the limit is hit: handoff (default) or leave pending (none).
   def escalate(conversation, assistant)
-    handoff(conversation, assistant) if assistant.on_limit_action_value == JivoAssistant::IDLE_ACTION_HANDOFF
+    handoff(conversation, assistant, limit_handoff_reason) if assistant.on_limit_action_value == JivoAssistant::IDLE_ACTION_HANDOFF
   end
 
-  # Direct handoff — used by the AI 'handoff' action and the limit backstop.
-  def handoff(conversation, assistant)
-    Jivo::HandoffService.new(conversation: conversation, assistant: assistant, reason: handoff_reason).perform
+  # Direct handoff — used by the AI 'handoff' action and the limit backstop. The reason
+  # is the private note posted on the conversation, so it must reflect why we handed off.
+  def handoff(conversation, assistant, reason)
+    Jivo::HandoffService.new(conversation: conversation, assistant: assistant, reason: reason).perform
   end
 
-  def handoff_reason
+  def limit_handoff_reason
     I18n.t('conversations.jivo.idle_handoff_reason',
            default: 'Auto-handed off after the idle follow-up limit was reached.')
+  end
+
+  def ai_handoff_reason
+    I18n.t('conversations.jivo.idle_ai_handoff_reason',
+           default: 'Auto-handed off by JIVO idle follow-up.')
   end
 
   # Follow-up attempts already made on this conversation. Read/incremented here so the
