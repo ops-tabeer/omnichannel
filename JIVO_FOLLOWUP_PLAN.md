@@ -204,6 +204,10 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
   - Boot crash fixed — `Jivo::HandoffService` `pattr_initialize` optional arg used the nested-array form `[:reason, nil]`, which attr_extras 7.1.0 misparses (empty attribute name → eager-load `NameError` → 502). Changed to the hash form `{ reason: nil }` to match the codebase convention.
   - Misleading handoff note fixed — the job posted the same "limit was reached" private note for every handoff. Now AI-decided handoffs use `idle_ai_handoff_reason` ("Auto-handed off by JIVO idle follow-up.") and only the limit backstop uses `idle_handoff_reason`.
 - Skipped (optional, low value): extra activity-message wording for follow-ups — they already render as visible outgoing messages.
+- **Post-review hardening (from /code-review high):**
+  - **Wait/error spacing** — a `wait` sends no message, so `last_activity_at` never advanced and the every-10-min cron re-called the AI (and counted an attempt) each tick. Added a `jivo_idle_checked_at` marker + `recently_checked?` guard so the AI runs at most once per `idle_timeout_minutes` per conversation (first detection stays fast; only re-checks are spaced). Mirrors `Jivo::ContactEnrichmentService`'s marker pattern.
+  - **Error ≠ wait** — a hard AI failure returns `{success:false}` (no action); the job now has an explicit `when 'wait'` and a separate `else` that takes no action (no attempt, no escalate, just logs), so an OpenAI outage can't march conversations to handoff.
+  - **Atomic usage upsert** — `JivoAiUsage.record_action` replaced `find_or_create_by` + `update_all` with a single `upsert_all(... on_duplicate: increment)` so concurrent/overlapping runs can't race the unique `(account_id, period)` index or lose counts.
 - **Done when:** misconfig/AI errors degrade gracefully; no double-acting with reassignment. ✓
 
 ### Phase 6 — Super Admin monthly AI-call usage counter  ·  Status: ✅ (omni-dev)  ·  **(LAST)**

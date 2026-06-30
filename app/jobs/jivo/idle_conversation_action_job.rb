@@ -2,6 +2,7 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   queue_as :scheduled_jobs
 
   ATTEMPT_COUNT_KEY = 'jivo_idle_reminder_count'.freeze
+  CHECKED_AT_KEY = 'jivo_idle_checked_at'.freeze
 
   def perform
     JivoInbox.includes(:jivo_assistant, :inbox).find_each do |jivo_inbox|
@@ -61,8 +62,14 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   end
 
   # AI decides: follow_up (send + count), handoff (escalate now), or wait (count, and
-  # hand off in the same run if this wait reaches the limit). Any failure degrades to wait.
+  # hand off in the same run if this wait reaches the limit). A `wait` sends no message, so
+  # the idle timer isn't reset by it — the checked-at marker spaces the next AI call by the
+  # idle timeout (instead of every cron tick). A hard AI failure has no action and is left
+  # untouched so an outage can't march conversations to handoff.
   def ai_follow_up(conversation, assistant)
+    return if recently_checked?(conversation, assistant)
+
+    stamp_checked_at(conversation)
     result = Jivo::Tasks::IdleFollowUpService.new(assistant: assistant, conversation: conversation).perform
     JivoAiUsage.record_action(conversation.account, result[:action],
                               input_tokens: result[:input_tokens], output_tokens: result[:output_tokens])
@@ -72,10 +79,25 @@ class Jivo::IdleConversationActionJob < ApplicationJob
       post_follow_up(conversation, assistant, result[:message])
     when 'handoff'
       handoff(conversation, assistant, ai_handoff_reason)
-    else # 'wait' (and any safe fallback)
+    when 'wait'
       increment_attempt(conversation)
       escalate(conversation, assistant) if attempt_count(conversation) >= assistant.idle_reminder_limit_value
+    else # AI errored / returned nothing actionable — take no action this run, retry later
+      Rails.logger.warn("[JIVO] Idle AI returned no actionable result for conversation #{conversation.id}")
     end
+  end
+
+  # True once the AI has already run on this conversation within the idle window. Mirrors how
+  # a sent follow-up self-spaces via last_activity_at, for the no-message wait/error path.
+  def recently_checked?(conversation, assistant)
+    checked_at = conversation.custom_attributes[CHECKED_AT_KEY]
+    checked_at.present? && Time.zone.parse(checked_at) > assistant.idle_timeout_minutes_value.minutes.ago
+  end
+
+  def stamp_checked_at(conversation)
+    conversation.update!(
+      custom_attributes: conversation.custom_attributes.merge(CHECKED_AT_KEY => Time.current.iso8601)
+    )
   end
 
   def post_follow_up(conversation, assistant, content)

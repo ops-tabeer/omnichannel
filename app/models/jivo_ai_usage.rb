@@ -34,12 +34,21 @@ class JivoAiUsage < ApplicationRecord
     column = ACTION_COLUMNS[action.to_s]
     return unless column
 
-    usage = find_or_create_by(account_id: account.id, period: current_period)
-    # Atomic SQL increment so concurrent runs can't clobber each other's counts.
+    now = Time.current
+    row = { account_id: account.id, period: current_period, input_tokens: input_tokens.to_i,
+            output_tokens: output_tokens.to_i, created_at: now, updated_at: now }.merge(column => 1)
+    # Single atomic upsert: insert the month row or increment it in place, so concurrent
+    # runs can't race the unique (account_id, period) index or clobber each other's counts.
     # rubocop:disable Rails/SkipsModelValidations
-    where(id: usage.id).update_all(
-      "#{column} = #{column} + 1, input_tokens = input_tokens + #{input_tokens.to_i}, " \
-      "output_tokens = output_tokens + #{output_tokens.to_i}, updated_at = now()"
+    upsert_all(
+      [row],
+      unique_by: %i[account_id period],
+      on_duplicate: Arel.sql(
+        "#{column} = jivo_ai_usages.#{column} + EXCLUDED.#{column}, " \
+        'input_tokens = jivo_ai_usages.input_tokens + EXCLUDED.input_tokens, ' \
+        'output_tokens = jivo_ai_usages.output_tokens + EXCLUDED.output_tokens, ' \
+        'updated_at = EXCLUDED.updated_at'
+      )
     )
     # rubocop:enable Rails/SkipsModelValidations
   end
