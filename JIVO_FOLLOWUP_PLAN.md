@@ -195,12 +195,16 @@ language") + brevity guidelines from `Jivo::Prompts::V1ConversationPrompt`.
 - ✅ Hardened the cutoff callback to **preserve `idle_action_enabled_at`** across form saves (the controller replaces the whole `config` and the form doesn't carry the system-managed key).
 - **Done when:** admin can configure everything in Settings → JIVO → Behavior; saves persist; enabling stamps the cutoff. ✓
 
-### Phase 5 — Guardrails & polish  ·  Status: ☐
+### Phase 5 — Guardrails & polish  ·  Status: ✅ (omni-dev)
 - **Goal:** production hardening.
-- Per-conversation failure isolation (already in job `rescue`), logging, sane defaults/validation (timeout ≥ 1, limit ≥ 1).
-- Confirm clean handoff baton-pass with inbox reassignment (§6).
-- Optional: activity-message wording for follow-ups.
-- **Done when:** misconfig/AI errors degrade gracefully; no double-acting with reassignment.
+- ✅ Per-conversation failure isolation (job `rescue` + `ChatwootExceptionTracker`); AI errors degrade to safe `wait` in `IdleFollowUpService`.
+- ✅ Validation: UI `min="1"` on timeout & reminder-limit inputs; model `*_value` helpers fall back to defaults on any non-positive value.
+- ✅ **Baton-pass verified — no conflict.** Idle job scope is `.pending`; `AutoAssignment::IdleReassignmentService` is `.open.assigned.where(taken_at: nil)` + `ai_handoff=true`. `pending`(2)/`open`(0) are disjoint enum values; `Jivo::HandoffService` sets `ai_handoff=true` then `bot_handoff!`→`open!`, so a conversation leaves the idle scope already tagged for reassignment. Sequential, no overlap; agent "Take" (`taken_at`) is the permanent stop.
+- **Session fixes folded in here:**
+  - Boot crash fixed — `Jivo::HandoffService` `pattr_initialize` optional arg used the nested-array form `[:reason, nil]`, which attr_extras 7.1.0 misparses (empty attribute name → eager-load `NameError` → 502). Changed to the hash form `{ reason: nil }` to match the codebase convention.
+  - Misleading handoff note fixed — the job posted the same "limit was reached" private note for every handoff. Now AI-decided handoffs use `idle_ai_handoff_reason` ("Auto-handed off by JIVO idle follow-up.") and only the limit backstop uses `idle_handoff_reason`.
+- Skipped (optional, low value): extra activity-message wording for follow-ups — they already render as visible outgoing messages.
+- **Done when:** misconfig/AI errors degrade gracefully; no double-acting with reassignment. ✓
 
 ### Phase 6 — Super Admin monthly AI-call usage counter  ·  Status: ☐  ·  **(LAST)**
 - **Goal:** at-a-glance per-account monthly usage ("credits").
