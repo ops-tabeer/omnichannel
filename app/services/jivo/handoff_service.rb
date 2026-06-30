@@ -1,5 +1,5 @@
 class Jivo::HandoffService
-  pattr_initialize [:conversation!, :assistant!, [:reason, nil]]
+  pattr_initialize [:conversation!, :assistant!, { reason: nil }]
 
   # Single source of truth for a JIVO handoff: optional private reason note, mark
   # ai_handoff (so inbox idle reassignment can take over), flip to open via
