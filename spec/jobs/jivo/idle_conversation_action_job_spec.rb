@@ -232,6 +232,88 @@ RSpec.describe Jivo::IdleConversationActionJob do
       expect(Jivo::HandoffService).to have_received(:new)
         .with(hash_including(conversation: conversation, reason: I18n.t('conversations.jivo.idle_ai_handoff_reason')))
     end
+
+    it 'posts the limit handoff reason for the backstop (TC-53)' do
+      pending_idle(attempt: 3)
+      run!
+      expect(Jivo::HandoffService).to have_received(:new)
+        .with(hash_including(reason: I18n.t('conversations.jivo.idle_handoff_reason')))
+    end
+  end
+
+  describe 'edge cases' do
+    it 'treats a conversation created exactly at the cutoff as eligible (TC-17)' do
+      cutoff = assistant.idle_action_enabled_at_value
+      conversation = pending_idle(created_at: cutoff)
+      expect { run! }.to change { outgoing_count(conversation) }.by(1)
+    end
+
+    it 'backfills a missing cutoff and spares the existing backlog that run (TC-18)' do
+      # update_columns bypasses the preserve-cutoff callback to model a console-enabled
+      # assistant that genuinely never got a cutoff stamped.
+      assistant.update_columns(config: assistant.config.merge('idle_action_enabled_at' => nil))
+      conversation = pending_idle(created_at: 1.hour.ago)
+      expect { run! }.not_to(change { outgoing_count(conversation) })
+      expect(assistant.reload.idle_action_enabled_at_value).to be_within(5.seconds).of(Time.current)
+    end
+
+    it 'processes at most BULK_ACTIONS_LIMIT conversations per inbox per run (TC-19)' do
+      stub_const('Limits::BULK_ACTIONS_LIMIT', 2)
+      conversations = Array.new(3) { pending_idle }
+      run!
+      processed = conversations.count { |c| outgoing_count(c) == 1 }
+      expect(processed).to eq(2)
+    end
+
+    it 'only touches the enabled inbox across multiple inboxes (TC-21)' do
+      disabled = create(:jivo_inbox, account: account)
+      enabled_conversation = pending_idle
+      disabled_conversation = pending_idle(disabled.inbox)
+      run!
+      expect(outgoing_count(enabled_conversation)).to eq(1)
+      expect(outgoing_count(disabled_conversation)).to eq(0)
+    end
+
+    it 'does not send a second static follow-up on an immediate re-run (TC-26)' do
+      conversation = pending_idle
+      run!
+      expect { run! }.not_to(change { outgoing_count(conversation) }) # message bumped last_activity_at
+    end
+
+    it 'runs the static loop to escalation across cycles (TC-25)' do
+      enable_idle!(assistant, 'idle_reminder_limit' => 2)
+      conversation = pending_idle
+      run!                                                   # attempt 1
+      conversation.update_columns(last_activity_at: 2.hours.ago)
+      run!                                                   # attempt 2
+      conversation.update_columns(last_activity_at: 2.hours.ago)
+      run!                                                   # at limit → escalate
+      expect(attempts(conversation)).to eq(2)
+      expect(Jivo::HandoffService).to have_received(:new).with(hash_including(conversation: conversation))
+    end
+
+    it 're-checks after a customer reply makes the marker stale (TC-43)' do
+      enable_idle!(assistant, 'idle_use_ai' => true, 'idle_prompt' => 'x')
+      stub_ai(action: 'wait')
+      # Model the post-reply state: last_activity (70m ago) is newer than the marker (90m ago)
+      # and older than the timeout — so the marker is stale and the AI should re-check.
+      pending_idle(checked_at: 90.minutes.ago, last_activity: 70.minutes.ago)
+      run!
+      expect(Jivo::Tasks::IdleFollowUpService).to have_received(:new)
+    end
+  end
+
+  describe 'baton-pass to inbox reassignment (TC-79)' do
+    before { allow(Jivo::HandoffService).to receive(:new).and_call_original }
+
+    it 'leaves a handed-off conversation open and flagged for reassignment' do
+      allow(MessageTemplates::Template::OutOfOffice).to receive(:perform_if_applicable)
+      conversation = pending_idle(attempt: 3)
+      run!
+      conversation.reload
+      expect(conversation.status).to eq('open')
+      expect(conversation.custom_attributes['ai_handoff']).to be(true)
+    end
   end
 end
 # rubocop:enable Rails/SkipsModelValidations, RSpec/AnyInstance
