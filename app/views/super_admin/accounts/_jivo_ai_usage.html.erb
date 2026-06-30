@@ -1,6 +1,7 @@
 <section class="main-content__body">
   <hr/>
   <% usage = JivoAiUsage.current_month_for(account) %>
+  <% model = JivoAssistant.find_by(account_id: account.id)&.model %>
   <h3 class="pb-2 font-semibold">JIVO idle follow-up AI calls (<%= JivoAiUsage.current_period %>)</h3>
   <% if usage&.total&.positive? %>
     <p>
@@ -9,6 +10,13 @@
       <%= usage.handoff_count %> handoff /
       <%= usage.wait_count %> wait
     </p>
+    <p>
+      Tokens: <%= number_with_delimiter(usage.input_tokens) %> in /
+      <%= number_with_delimiter(usage.output_tokens) %> out ·
+      est. ≈ <%= number_to_currency(usage.estimated_cost(model), precision: 4) %>
+      (<%= model.presence || 'default' %> rates)
+    </p>
+    <p class="text-color-muted">Idle follow-up only — not total account AI spend. Prices are approximate.</p>
   <% else %>
     <p>No AI follow-up calls this month.</p>
   <% end %>

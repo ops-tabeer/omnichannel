@@ -16,14 +16,15 @@ class Jivo::Tasks::IdleFollowUpService < Jivo::Tasks::BaseTaskService
   end
 
   def build_result(response)
+    usage = token_usage(response)
     content = response.dig('choices', 0, 'message', 'content').to_s
     parsed = JSON.parse(content)
     action = parsed['action'].to_s
-    return wait_result unless ACTIONS.include?(action)
+    return wait_result.merge(usage) unless ACTIONS.include?(action)
 
-    { success: true, action: action, message: parsed['message'].to_s.strip }
+    { success: true, action: action, message: parsed['message'].to_s.strip }.merge(usage)
   rescue JSON::ParserError
-    wait_result
+    wait_result.merge(usage)
   end
 
   private

@@ -34,6 +34,13 @@ class Jivo::Tasks::BaseTaskService
     { success: true, message: content }
   end
 
+  # Prompt/completion token counts from the OpenAI response, for usage/cost tracking.
+  # Reusable by any task that wants to record what a call consumed.
+  def token_usage(response)
+    usage = response['usage'] || {}
+    { input_tokens: usage['prompt_tokens'].to_i, output_tokens: usage['completion_tokens'].to_i }
+  end
+
   def temperature
     0.4
   end
