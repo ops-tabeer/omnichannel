@@ -71,8 +71,8 @@ class Jivo::IdleConversationActionJob < ApplicationJob
 
     stamp_checked_at(conversation)
     result = Jivo::Tasks::IdleFollowUpService.new(assistant: assistant, conversation: conversation).perform
-    JivoAiUsage.record_action(conversation.account, result[:action],
-                              input_tokens: result[:input_tokens], output_tokens: result[:output_tokens])
+    JivoAiUsage.record_action(conversation.account, result[:action], model: assistant.model,
+                                                                     input_tokens: result[:input_tokens], output_tokens: result[:output_tokens])
 
     case result[:action]
     when 'follow_up'
