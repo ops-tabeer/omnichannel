@@ -66,11 +66,16 @@ class Jivo::IdleConversationActionJob < ApplicationJob
   def escalate(conversation, assistant)
     case assistant.on_limit_action_value
     when JivoAssistant::IDLE_ACTION_HANDOFF
-      handoff_to_agent(conversation)
+      Jivo::HandoffService.new(conversation: conversation, assistant: assistant, reason: handoff_reason).perform
     when JivoAssistant::IDLE_ACTION_RESOLVE
       conversation.resolved!
     end
     # ON_LIMIT_ACTION_NONE: leave it pending; nothing to do.
+  end
+
+  def handoff_reason
+    I18n.t('conversations.jivo.idle_handoff_reason',
+           default: 'Auto-handed off after the idle follow-up limit was reached.')
   end
 
   # Follow-up attempts already made on this conversation. Read/incremented here so the
@@ -94,17 +99,5 @@ class Jivo::IdleConversationActionJob < ApplicationJob
       content: assistant.idle_message_text,
       private: false
     )
-  end
-
-  def handoff_to_agent(conversation)
-    conversation.update!(custom_attributes: conversation.custom_attributes.merge('ai_handoff' => true))
-    conversation.bot_handoff!
-    send_out_of_office_message_if_applicable(conversation)
-  end
-
-  def send_out_of_office_message_if_applicable(conversation)
-    return if conversation.campaign.present?
-
-    MessageTemplates::Template::OutOfOffice.perform_if_applicable(conversation)
   end
 end

@@ -22,26 +22,6 @@ class Jivo::Tools::HandoffTool < Jivo::Tools::BasePublicTool
   private
 
   def trigger_handoff(conversation, reason)
-    if reason.present?
-      conversation.messages.create!(
-        message_type: :outgoing,
-        private: true,
-        sender: @assistant,
-        account: conversation.account,
-        inbox: conversation.inbox,
-        content: reason
-      )
-    end
-
-    conversation.update!(custom_attributes: conversation.custom_attributes.merge('ai_handoff' => true))
-    conversation.bot_handoff!
-
-    send_out_of_office_message_if_applicable(conversation)
-  end
-
-  def send_out_of_office_message_if_applicable(conversation)
-    return if conversation.campaign.present?
-
-    ::MessageTemplates::Template::OutOfOffice.perform_if_applicable(conversation)
+    Jivo::HandoffService.new(conversation: conversation, assistant: @assistant, reason: reason).perform
   end
 end
