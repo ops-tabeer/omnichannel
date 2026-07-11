@@ -67,6 +67,17 @@ export const getters = {
     return currentAccount.role;
   },
 
+  getCurrentUserAssignmentAllowed($state, $getters) {
+    const { accounts = [] } = $state.currentUser;
+    const [currentAccount = {}] = accounts.filter(
+      account => account.id === $getters.getCurrentAccountId
+    );
+    return (
+      currentAccount.role === 'administrator' ||
+      currentAccount.assignment_allowed
+    );
+  },
+
   getCurrentCustomRoleId($state, $getters) {
     const { accounts = [] } = $state.currentUser;
     const [currentAccount = {}] = accounts.filter(

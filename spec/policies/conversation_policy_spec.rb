@@ -33,6 +33,37 @@ RSpec.describe ConversationPolicy, type: :policy do
     end
   end
 
+  permissions :assign? do
+    context 'when user is an administrator' do
+      it 'allows assignment' do
+        expect(subject).to permit(administrator_context, conversation)
+      end
+    end
+
+    context 'when user is a plain agent' do
+      it 'denies assignment' do
+        expect(subject).not_to permit(agent_context, conversation)
+      end
+    end
+
+    context 'when agent is allow-listed to assign' do
+      before { agent.account_users.find_by(account: account).update!(assignment_allowed: true) }
+
+      it 'allows assignment' do
+        expect(subject).to permit(agent_context, conversation)
+      end
+    end
+
+    context 'when user is an agent bot' do
+      let(:agent_bot) { create(:agent_bot, account: account) }
+      let(:agent_bot_context) { { user: agent_bot, account: account, account_user: nil } }
+
+      it 'allows assignment' do
+        expect(subject).to permit(agent_bot_context, conversation)
+      end
+    end
+  end
+
   permissions :show? do
     context 'when user is an administrator' do
       it 'allows access' do

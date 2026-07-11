@@ -98,7 +98,7 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   end
 
   def should_assign_conversation?
-    @conversation.status == 'open' && Current.user.is_a?(User) && Current.user&.agent?
+    @conversation.status == 'open' && Current.user.is_a?(User) && Current.user.agent? && Current.account_user&.assignment_allowed?
   end
 
   def toggle_priority

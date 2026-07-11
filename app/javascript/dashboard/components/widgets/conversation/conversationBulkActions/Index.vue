@@ -55,6 +55,8 @@ defineOptions({
 
 const attrs = useAttrs();
 
+const canAssignConversations = useMapGetter('getCurrentUserAssignmentAllowed');
+
 const {
   selectedConversations,
   onAssignAgent,
@@ -187,11 +189,13 @@ onUnmounted(() => {
             @update="onUpdateConversations"
           />
           <BulkAgentActions
+            v-if="canAssignConversations"
             :selected-inboxes="selectedInboxes"
             :conversation-count="conversations.length"
             @select="onAssignAgent"
           />
           <BulkTeamActions
+            v-if="canAssignConversations"
             :conversation-count="conversations.length"
             @select="onAssignTeam"
           />

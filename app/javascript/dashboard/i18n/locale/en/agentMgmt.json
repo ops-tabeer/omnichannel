@@ -82,6 +82,10 @@
           "PLACEHOLDER": "Please select an availability status",
           "ERROR": "Availability is required"
         },
+        "ASSIGNMENT_ALLOWED": {
+          "LABEL": "Can assign conversations",
+          "HELP": "Allow this agent to self-assign and manually assign conversations. When off, only administrators and allowed agents can assign."
+        },
         "SUBMIT": "Edit Agent"
       },
       "BUTTON_TEXT": "Edit",

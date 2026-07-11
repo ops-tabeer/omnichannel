@@ -66,6 +66,7 @@ export default {
       currentChat: 'getSelectedChat',
       currentUser: 'getCurrentUser',
       teams: 'teams/getTeams',
+      canAssignConversations: 'getCurrentUserAssignmentAllowed',
     }),
     hasAnAssignedTeam() {
       return !!this.currentChat?.meta?.team;
@@ -149,6 +150,9 @@ export default {
       },
     },
     showSelfAssign() {
+      if (!this.canAssignConversations) {
+        return false;
+      }
       if (!this.assignedAgent) {
         return true;
       }
@@ -231,6 +235,7 @@ export default {
         </template>
       </ContactDetailsItem>
       <MultiselectDropdown
+        v-if="canAssignConversations"
         :options="agentsList"
         :selected-item="assignedAgent"
         :multiselector-title="$t('AGENT_MGMT.MULTI_SELECTOR.TITLE.AGENT')"
@@ -243,6 +248,13 @@ export default {
         "
         @select="onClickAssignAgent"
       />
+      <div v-else class="px-2 py-1 text-sm text-n-slate-12">
+        {{
+          assignedAgent
+            ? assignedAgent.name
+            : $t('CONVERSATION_SIDEBAR.NOT_ASSIGNED')
+        }}
+      </div>
     </div>
     <div>
       <ContactDetailsItem
@@ -250,6 +262,7 @@ export default {
         :title="$t('CONVERSATION_SIDEBAR.TEAM_LABEL')"
       />
       <MultiselectDropdown
+        v-if="canAssignConversations"
         :options="teamsList"
         :selected-item="assignedTeam"
         :multiselector-title="$t('AGENT_MGMT.MULTI_SELECTOR.TITLE.TEAM')"
@@ -262,6 +275,13 @@ export default {
         "
         @select="onClickAssignTeam"
       />
+      <div v-else class="px-2 py-1 text-sm text-n-slate-12">
+        {{
+          assignedTeam
+            ? assignedTeam.name
+            : $t('CONVERSATION_SIDEBAR.NOT_ASSIGNED')
+        }}
+      </div>
     </div>
     <div>
       <ContactDetailsItem compact :title="$t('CONVERSATION.PRIORITY.TITLE')" />

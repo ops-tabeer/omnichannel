@@ -140,6 +140,16 @@ RSpec.describe 'Agents API', type: :request do
         expect(response_data['auto_offline']).to be(false)
         expect(other_agent.account_users.first.role).to eq('administrator')
       end
+
+      it 'updates the assignment_allowed flag on the account user' do
+        put "/api/v1/accounts/#{account.id}/agents/#{other_agent.id}",
+            params: { assignment_allowed: true },
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(other_agent.account_users.first.assignment_allowed).to be(true)
+      end
     end
   end
 

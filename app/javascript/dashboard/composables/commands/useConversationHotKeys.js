@@ -150,6 +150,9 @@ export function useConversationHotKeys() {
   const { agentsList } = useAgentsList();
 
   const currentChat = useMapGetter('getSelectedChat');
+  const canAssignConversations = useMapGetter(
+    'getCurrentUserAssignmentAllowed'
+  );
   const replyMode = useMapGetter('draftMessages/getReplyEditorMode');
   const contextMenuChatId = useMapGetter('getContextMenuChatId');
   const teams = useMapGetter('teams/getTeams');
@@ -376,8 +379,9 @@ export function useConversationHotKeys() {
     const defaultConversationHotKeys = [
       ...statusActions.value,
       ...conversationAdditionalActions.value,
-      ...assignAgentActions.value,
-      ...assignTeamActions.value,
+      ...(canAssignConversations.value
+        ? [...assignAgentActions.value, ...assignTeamActions.value]
+        : []),
       ...labelActions.value,
       ...assignPriorityActions.value,
     ];

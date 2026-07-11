@@ -41,6 +41,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
 
       before do
         create(:inbox_member, inbox: conversation.inbox, user: agent)
+        agent.account_users.find_by(account: account).update!(assignment_allowed: true)
       end
 
       it 'assigns a user to the conversation' do
@@ -142,6 +143,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
       before do
         create(:inbox_member, inbox: conversation.inbox, user: agent)
         conversation.update!(assignee: agent)
+        agent.account_users.find_by(account: account).update!(assignment_allowed: true)
       end
 
       it 'unassigns the assignee from the conversation' do
@@ -167,6 +169,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
       before do
         conversation.update!(team: team)
         create(:inbox_member, inbox: conversation.inbox, user: agent)
+        agent.account_users.find_by(account: account).update!(assignment_allowed: true)
       end
 
       it 'unassigns the team from the conversation' do
@@ -178,6 +181,87 @@ RSpec.describe 'Conversation Assignment API', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(conversation.reload.team).to be_nil
+      end
+    end
+
+    context 'when an agent is not allow-listed to assign' do
+      let(:agent) { create(:user, account: account, role: :agent) }
+
+      before do
+        create(:inbox_member, inbox: conversation.inbox, user: agent)
+      end
+
+      it 'blocks self-assignment' do
+        post api_v1_account_conversation_assignments_url(account_id: account.id, conversation_id: conversation.display_id),
+             params: { assignee_id: agent.id },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(conversation.reload.assignee).to be_nil
+      end
+
+      it 'blocks manual assignment to another agent' do
+        other_agent = create(:user, account: account, role: :agent)
+        create(:inbox_member, inbox: conversation.inbox, user: other_agent)
+
+        post api_v1_account_conversation_assignments_url(account_id: account.id, conversation_id: conversation.display_id),
+             params: { assignee_id: other_agent.id },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(conversation.reload.assignee).to be_nil
+      end
+
+      it 'blocks team assignment' do
+        team = create(:team, account: account)
+
+        post api_v1_account_conversation_assignments_url(account_id: account.id, conversation_id: conversation.display_id),
+             params: { team_id: team.id },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(conversation.reload.team).to be_nil
+      end
+    end
+
+    context 'when an agent is allow-listed to assign' do
+      let(:agent) { create(:user, account: account, role: :agent) }
+
+      before do
+        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        agent.account_users.find_by(account: account).update!(assignment_allowed: true)
+      end
+
+      it 'allows self-assignment' do
+        post api_v1_account_conversation_assignments_url(account_id: account.id, conversation_id: conversation.display_id),
+             params: { assignee_id: agent.id },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(conversation.reload.assignee).to eq(agent)
+      end
+    end
+
+    context 'when an administrator assigns' do
+      let(:administrator) { create(:user, account: account, role: :administrator) }
+      let(:agent) { create(:user, account: account, role: :agent) }
+
+      before do
+        create(:inbox_member, inbox: conversation.inbox, user: agent)
+      end
+
+      it 'allows assignment even without the allow-list flag' do
+        post api_v1_account_conversation_assignments_url(account_id: account.id, conversation_id: conversation.display_id),
+             params: { assignee_id: agent.id },
+             headers: administrator.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(conversation.reload.assignee).to eq(agent)
       end
     end
   end

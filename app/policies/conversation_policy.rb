@@ -18,6 +18,14 @@ class ConversationPolicy < ApplicationPolicy
     administrator? || assigned_to_user?
   end
 
+  # Manual assign/reassign (self or to another agent) is restricted to admins and
+  # explicitly allow-listed agents, so sales agents can't grab conversations the AI is
+  # handling. Agent bots (automation) are allowed. Other automated flows (round-robin,
+  # auto-assignment, handoff) run in system context and never reach this policy.
+  def assign?
+    administrator? || agent_bot? || account_user&.assignment_allowed?
+  end
+
   private
 
   def agent_can_view_conversation?

@@ -533,7 +533,8 @@ RSpec.describe 'Conversations API', type: :request do
         expect(conversation.reload.status).to eq('open')
       end
 
-      it 'self assign if agent changes the conversation status to open' do
+      it 'self assign if an allow-listed agent changes the conversation status to open' do
+        agent.account_users.find_by(account: account).update!(assignment_allowed: true)
         conversation.update!(status: 'pending')
         post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/toggle_status",
              headers: agent.create_new_auth_token,
@@ -541,6 +542,16 @@ RSpec.describe 'Conversations API', type: :request do
         expect(response).to have_http_status(:success)
         expect(conversation.reload.status).to eq('open')
         expect(conversation.reload.assignee_id).to eq(agent.id)
+      end
+
+      it 'does not self assign if a non-allow-listed agent changes the conversation status to open' do
+        conversation.update!(status: 'pending', assignee_id: nil)
+        post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/toggle_status",
+             headers: agent.create_new_auth_token,
+             as: :json
+        expect(response).to have_http_status(:success)
+        expect(conversation.reload.status).to eq('open')
+        expect(conversation.reload.assignee_id).to be_nil
       end
 
       it 'disbale self assign if admin changes the conversation status to open' do

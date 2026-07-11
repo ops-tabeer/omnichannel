@@ -38,6 +38,10 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  assignmentAllowed: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['close']);
@@ -50,6 +54,7 @@ const { t } = useI18n();
 const agentName = ref(props.name);
 const agentAvailability = ref(props.availability);
 const selectedRoleId = ref(props.customRoleId || props.type);
+const agentAssignmentAllowed = ref(props.assignmentAllowed);
 const agentCredentials = ref({ email: props.email });
 
 const rules = {
@@ -135,6 +140,12 @@ const editAgent = async () => {
       payload.custom_role_id = null;
     }
 
+    // Only plain agents are gated on assignment; admins can always assign.
+    payload.assignment_allowed =
+      selectedRole.value.name === 'agent'
+        ? agentAssignmentAllowed.value
+        : false;
+
     await store.dispatch('agents/update', payload);
     useAlert(t('AGENT_MGMT.EDIT.API.SUCCESS_MESSAGE'));
     emit('close');
@@ -181,6 +192,20 @@ const resetPassword = async () => {
             {{ $t('AGENT_MGMT.EDIT.FORM.AGENT_TYPE.ERROR') }}
           </span>
         </label>
+      </div>
+
+      <div v-if="selectedRole && selectedRole.name === 'agent'" class="w-full">
+        <label class="flex items-center gap-2">
+          <input
+            v-model="agentAssignmentAllowed"
+            type="checkbox"
+            class="!m-0"
+          />
+          <span>{{ $t('AGENT_MGMT.EDIT.FORM.ASSIGNMENT_ALLOWED.LABEL') }}</span>
+        </label>
+        <p class="text-sm text-n-slate-11 mt-1">
+          {{ $t('AGENT_MGMT.EDIT.FORM.ASSIGNMENT_ALLOWED.HELP') }}
+        </p>
       </div>
 
       <div class="w-full">
