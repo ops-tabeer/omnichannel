@@ -521,6 +521,7 @@ RSpec.describe 'Conversations API', type: :request do
       end
 
       it 'toggles the conversation status to open from pending' do
+        agent.account_users.find_by(account: account).update!(assignment_allowed: true)
         conversation.update!(status: 'pending')
 
         post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/toggle_status",
@@ -544,14 +545,23 @@ RSpec.describe 'Conversations API', type: :request do
         expect(conversation.reload.assignee_id).to eq(agent.id)
       end
 
-      it 'does not self assign if a non-allow-listed agent changes the conversation status to open' do
+      it 'blocks a non-allow-listed agent from moving a conversation to open' do
         conversation.update!(status: 'pending', assignee_id: nil)
         post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/toggle_status",
              headers: agent.create_new_auth_token,
              as: :json
-        expect(response).to have_http_status(:success)
-        expect(conversation.reload.status).to eq('open')
+        expect(response).to have_http_status(:unauthorized)
+        expect(conversation.reload.status).to eq('pending')
         expect(conversation.reload.assignee_id).to be_nil
+      end
+
+      it 'still lets a non-allow-listed agent resolve (only opening is blocked)' do
+        post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/toggle_status",
+             headers: agent.create_new_auth_token,
+             params: { status: 'resolved' },
+             as: :json
+        expect(response).to have_http_status(:success)
+        expect(conversation.reload.status).to eq('resolved')
       end
 
       it 'disbale self assign if admin changes the conversation status to open' do

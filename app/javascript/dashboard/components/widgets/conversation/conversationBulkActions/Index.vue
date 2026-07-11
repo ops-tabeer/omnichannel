@@ -184,7 +184,7 @@ onUnmounted(() => {
           />
           <BulkUpdateActions
             :show-resolve="!showResolvedAction"
-            :show-reopen="!showOpenAction"
+            :show-reopen="!showOpenAction && canAssignConversations"
             :show-snooze="!showSnoozedAction"
             @update="onUpdateConversations"
           />

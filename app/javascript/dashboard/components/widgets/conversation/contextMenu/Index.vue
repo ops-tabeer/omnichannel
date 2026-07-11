@@ -302,7 +302,11 @@ export default {
     <template v-if="isAllowed([MENU.STATUS, MENU.SNOOZE])">
       <template v-for="option in statusMenuConfig">
         <MenuItem
-          v-if="show(option.key) && isAllowed([MENU.STATUS])"
+          v-if="
+            show(option.key) &&
+            isAllowed([MENU.STATUS]) &&
+            (option.key !== STATUS_TYPE.OPEN || canAssignConversations)
+          "
           :key="option.key"
           :option="option"
           variant="icon"

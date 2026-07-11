@@ -3,7 +3,11 @@ import { ref, computed } from 'vue';
 import { useAlert } from 'dashboard/composables';
 import { useToggle } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
-import { useStore, useStoreGetters } from 'dashboard/composables/store';
+import {
+  useStore,
+  useStoreGetters,
+  useMapGetter,
+} from 'dashboard/composables/store';
 import { useEmitter } from 'dashboard/composables/emitter';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import { useConversationRequiredAttributes } from 'dashboard/composables/useConversationRequiredAttributes';
@@ -41,6 +45,9 @@ const closeDropdown = () => toggleDropdown(false);
 const openDropdown = () => toggleDropdown(true);
 
 const currentChat = computed(() => getters.getSelectedChat.value);
+
+// Only admins and allow-listed agents may move a conversation (back) to open.
+const canReopen = useMapGetter('getCurrentUserAssignmentAllowed');
 
 const isOpen = computed(
   () => currentChat.value.status === wootConstants.STATUS_TYPE.OPEN
@@ -121,6 +128,7 @@ const handleResolveWithAttributes = ({ attributes, context }) => {
 };
 
 const onCmdOpenConversation = () => {
+  if (!canReopen.value) return;
   toggleStatus(wootConstants.STATUS_TYPE.OPEN);
 };
 
@@ -194,7 +202,7 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
         @click="onCmdResolveConversation"
       />
       <Button
-        v-else-if="isResolved"
+        v-else-if="isResolved && canReopen"
         :label="t('CONVERSATION.HEADER.REOPEN_ACTION')"
         size="sm"
         color="slate"
@@ -204,7 +212,7 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
         @click="onCmdOpenConversation"
       />
       <Button
-        v-else-if="showOpenButton"
+        v-else-if="showOpenButton && canReopen"
         :label="t('CONVERSATION.HEADER.OPEN_ACTION')"
         size="sm"
         color="slate"

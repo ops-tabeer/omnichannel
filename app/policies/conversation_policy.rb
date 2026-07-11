@@ -23,10 +23,23 @@ class ConversationPolicy < ApplicationPolicy
   # handling. Agent bots (automation) are allowed. Other automated flows (round-robin,
   # auto-assignment, handoff) run in system context and never reach this policy.
   def assign?
-    administrator? || agent_bot? || account_user&.assignment_allowed?
+    assignment_privileged?
+  end
+
+  # Moving a conversation (back) to open is restricted to the same allow-list, so a
+  # restricted agent can't reopen/interrupt an AI- or manager-controlled conversation.
+  # Resolving, snoozing and marking pending stay open to any agent.
+  def reopen?
+    assignment_privileged?
   end
 
   private
+
+  # Shared allow-list for assignment and reopen: admins, agent bots (automation),
+  # and agents explicitly flagged as allowed.
+  def assignment_privileged?
+    administrator? || agent_bot? || account_user&.assignment_allowed?
+  end
 
   def agent_can_view_conversation?
     inbox_access? || team_access?
