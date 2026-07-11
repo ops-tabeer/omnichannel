@@ -20,7 +20,10 @@ development:
 
 test:
   <<: *default
-  database: "<%= ENV.fetch('POSTGRES_DATABASE', 'chatwoot_test') %>"
+  # Tests purge/rebuild this database, so it must never point at a data-carrying DB.
+  # Prefer a dedicated POSTGRES_DATABASE_TEST (set it locally in .env); fall back to
+  # the previous behavior so CI and existing setups are unaffected.
+  database: "<%= ENV.fetch('POSTGRES_DATABASE_TEST') { ENV.fetch('POSTGRES_DATABASE', 'chatwoot_test') } %>"
   username: "<%= ENV.fetch('POSTGRES_USERNAME', 'postgres') %>"
   password: "<%= ENV.fetch('POSTGRES_PASSWORD', '') %>"
 
