@@ -197,7 +197,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
              headers: agent.create_new_auth_token,
              as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
         expect(conversation.reload.assignee).to be_nil
       end
 
@@ -210,7 +210,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
              headers: agent.create_new_auth_token,
              as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
         expect(conversation.reload.assignee).to be_nil
       end
 
@@ -222,7 +222,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
              headers: agent.create_new_auth_token,
              as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
         expect(conversation.reload.team).to be_nil
       end
     end

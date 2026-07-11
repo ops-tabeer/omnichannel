@@ -550,7 +550,7 @@ RSpec.describe 'Conversations API', type: :request do
         post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/toggle_status",
              headers: agent.create_new_auth_token,
              as: :json
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
         expect(conversation.reload.status).to eq('pending')
         expect(conversation.reload.assignee_id).to be_nil
       end

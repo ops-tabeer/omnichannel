@@ -27,6 +27,12 @@ module RequestExceptionHandler
     render json: { error: message }, status: :unauthorized
   end
 
+  # Use for authorization failures (logged-in but not allowed). Unlike 401, the dashboard
+  # does not treat 403 as an expired session, so the user is not logged out.
+  def render_forbidden(message)
+    render json: { error: message }, status: :forbidden
+  end
+
   def render_not_found_error(message)
     render json: { error: message }, status: :not_found
   end
