@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useMapGetter } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
@@ -14,6 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'close']);
 const { t } = useI18n();
+const assistants = useMapGetter('jivoAssistants/getAssistants');
 
 const form = ref({
   title: props.customTool.title || '',
@@ -28,6 +30,7 @@ const form = ref({
   enabled:
     props.customTool.enabled === undefined ? true : props.customTool.enabled,
   rate_limit_per_minute: props.customTool.rate_limit_per_minute ?? null,
+  assistant_ids: [...(props.customTool.assistant_ids || [])],
 });
 
 const isValid = computed(
@@ -272,6 +275,29 @@ const submit = () => {
         :placeholder="t('JIVO.CUSTOM_TOOLS.FORM.RATE_LIMIT.PLACEHOLDER')"
         :help-text="t('JIVO.CUSTOM_TOOLS.FORM.RATE_LIMIT.HELP')"
       />
+
+      <div>
+        <label class="block text-sm font-medium text-n-slate-12 mb-2">
+          {{ t('JIVO.CUSTOM_TOOLS.FORM.ASSISTANTS.LABEL') }}
+        </label>
+        <div class="space-y-1">
+          <label
+            v-for="assistant in assistants"
+            :key="assistant.id"
+            class="flex items-center gap-2 text-sm text-n-slate-12"
+          >
+            <input
+              v-model="form.assistant_ids"
+              type="checkbox"
+              :value="assistant.id"
+            />
+            {{ assistant.name }}
+          </label>
+        </div>
+        <p class="text-xs text-n-slate-11 mt-1">
+          {{ t('JIVO.CUSTOM_TOOLS.FORM.ASSISTANTS.HELP') }}
+        </p>
+      </div>
 
       <div class="flex items-center justify-between gap-4">
         <label class="text-sm text-n-slate-12">

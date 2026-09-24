@@ -56,9 +56,10 @@ const handleSave = async data => {
 };
 
 onMounted(async () => {
-  if (mode.value === 'edit') {
-    await store.dispatch('jivoCustomTools/get');
-  }
+  await Promise.all([
+    store.dispatch('jivoAssistants/get'),
+    mode.value === 'edit' && store.dispatch('jivoCustomTools/get'),
+  ]);
   isReady.value = true;
 });
 </script>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_11_154407) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_25_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1002,6 +1002,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_11_154407) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "rate_limit_per_minute"
+    t.bigint "assistant_ids", default: [], null: false, array: true
     t.index ["account_id", "slug"], name: "index_jivo_custom_tools_on_account_id_and_slug", unique: true
     t.index ["account_id"], name: "index_jivo_custom_tools_on_account_id"
   end

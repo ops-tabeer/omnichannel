@@ -3,6 +3,7 @@
 # Table name: jivo_custom_tools
 #
 #  id                    :bigint           not null, primary key
+#  assistant_ids         :bigint           default([]), not null, is an Array
 #  auth_config           :jsonb
 #  auth_type             :string           default("none")
 #  description           :text
@@ -65,6 +66,8 @@ class JivoCustomTool < ApplicationRecord
                  attribute_resolver: ->(record) { record.param_schema }
 
   scope :enabled, -> { where(enabled: true) }
+  # No assistant_ids means the tool is shared by every assistant in the account.
+  scope :for_assistant, ->(assistant) { where('cardinality(assistant_ids) = 0 OR ? = ANY(assistant_ids)', assistant.id) }
 
   def to_tool_metadata
     {

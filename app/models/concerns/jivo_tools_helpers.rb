@@ -49,7 +49,7 @@ module JivoToolsHelpers
     klass = self.class.resolve_tool_class(tool_id)
     return klass.new(assistant) if klass
 
-    custom = assistant.account.jivo_custom_tools.enabled.find_by(slug: tool_id)
+    custom = assistant.account.jivo_custom_tools.enabled.for_assistant(assistant).find_by(slug: tool_id)
     custom&.tool(assistant)
   end
 end

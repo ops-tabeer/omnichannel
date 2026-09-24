@@ -138,7 +138,7 @@ class JivoAssistant < ApplicationRecord
 
   def available_agent_tools
     tools = self.class.built_in_agent_tools.dup
-    tools.concat(account.jivo_custom_tools.enabled.map(&:to_tool_metadata))
+    tools.concat(account.jivo_custom_tools.enabled.for_assistant(self).map(&:to_tool_metadata))
     tools
   end
 

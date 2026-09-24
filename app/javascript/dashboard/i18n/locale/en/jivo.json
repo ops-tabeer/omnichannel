@@ -507,6 +507,10 @@
           "PLACEHOLDER": "Leave empty for no limit",
           "HELP": "Per-account cap. The agent gets a friendly message when this tool exceeds the limit."
         },
+        "ASSISTANTS": {
+          "LABEL": "Available to",
+          "HELP": "Only the selected assistants can call this tool. Leave all unchecked to make it available to every assistant."
+        },
         "CANCEL": "Cancel",
         "CREATE": "Create",
         "SAVE": "Save"

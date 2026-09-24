@@ -9,6 +9,7 @@ json.auth_config resource.auth_config
 json.param_schema resource.param_schema
 json.request_template resource.request_template
 json.response_template resource.response_template
+json.assistant_ids resource.assistant_ids
 json.enabled resource.enabled
 json.rate_limit_per_minute resource.rate_limit_per_minute
 json.account_id resource.account_id
