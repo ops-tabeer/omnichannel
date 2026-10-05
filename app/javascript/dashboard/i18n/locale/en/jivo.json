@@ -131,6 +131,11 @@
           "PLACEHOLDER": "3",
           "HELP_TEXT": "How many times to follow up before handing off."
         },
+        "IDLE_LAST_FOLLOW_UP_HOURS": {
+          "LABEL": "Last follow-up after (hours since customer's last message)",
+          "PLACEHOLDER": "Leave empty to use the idle timeout",
+          "HELP_TEXT": "Holds the final follow-up until this many hours after the customer last wrote. Keep it at 23 or less for Messenger and WhatsApp, which only allow replies within 24 hours."
+        },
         "ON_LIMIT_ACTION": {
           "LABEL": "After the limit",
           "OPTIONS": {

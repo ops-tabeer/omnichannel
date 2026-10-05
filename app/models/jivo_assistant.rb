@@ -43,7 +43,7 @@ class JivoAssistant < ApplicationRecord
   store_accessor :config, :openai_api_key, :openai_model, :system_prompt, :handoff_message, :temperature, :product_name,
                  :feature_memory, :feature_faq, :feature_idle_action, :idle_timeout_minutes, :idle_action, :idle_message,
                  :idle_reminder_limit, :feature_v2_agent, :feature_citation, :idle_action_enabled_at,
-                 :on_limit_action, :idle_use_ai, :idle_prompt
+                 :on_limit_action, :idle_use_ai, :idle_prompt, :idle_last_follow_up_hours
 
   # System-managed cutoff: stamp the moment the idle action is switched on so the job
   # only ever acts on conversations created after enabling (never the pre-enable backlog).
@@ -117,6 +117,11 @@ class JivoAssistant < ApplicationRecord
 
   def idle_reminder_limit_value
     idle_reminder_limit.to_i.positive? ? idle_reminder_limit.to_i : DEFAULT_IDLE_REMINDER_LIMIT
+  end
+
+  # Hold the last follow-up until N hours after the customer's last message; nil = no hold.
+  def idle_last_follow_up_hours_value
+    idle_last_follow_up_hours.to_i.positive? ? idle_last_follow_up_hours.to_i : nil
   end
 
   # Escalation after the follow-up limit is hit: handoff (default) or none.

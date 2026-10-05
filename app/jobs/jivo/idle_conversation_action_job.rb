@@ -50,6 +50,8 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     I18n.with_locale(conversation.account.locale) do
       if attempt_count(conversation) >= assistant.idle_reminder_limit_value
         escalate(conversation, assistant)
+      elsif last_follow_up_not_due?(conversation, assistant)
+        nil
       elsif assistant.idle_use_ai_enabled?
         ai_follow_up(conversation, assistant)
       else
@@ -85,6 +87,16 @@ class Jivo::IdleConversationActionJob < ApplicationJob
     else # AI errored / returned nothing actionable — take no action this run, retry later
       Rails.logger.warn("[JIVO] Idle AI returned no actionable result for conversation #{conversation.id}")
     end
+  end
+
+  # The last follow-up can be held until N hours after the customer's last message, so it
+  # lands "next day" while staying inside Meta's 24h reply window (Messenger/WhatsApp).
+  def last_follow_up_not_due?(conversation, assistant)
+    hours = assistant.idle_last_follow_up_hours_value
+    return false unless hours && attempt_count(conversation) == assistant.idle_reminder_limit_value - 1
+
+    last_customer_at = conversation.messages.incoming.maximum(:created_at) || conversation.last_activity_at
+    last_customer_at > hours.hours.ago
   end
 
   # True once the AI has already run on this conversation within the idle window. Mirrors how

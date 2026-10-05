@@ -51,6 +51,8 @@ const form = ref({
     feature_idle_action: props.assistant.config?.feature_idle_action || false,
     idle_timeout_minutes: props.assistant.config?.idle_timeout_minutes || 60,
     idle_reminder_limit: props.assistant.config?.idle_reminder_limit || 3,
+    idle_last_follow_up_hours:
+      props.assistant.config?.idle_last_follow_up_hours || '',
     on_limit_action: props.assistant.config?.on_limit_action || 'handoff',
     idle_use_ai: props.assistant.config?.idle_use_ai || false,
     idle_prompt: props.assistant.config?.idle_prompt || '',
@@ -303,6 +305,20 @@ const submit = () => {
               "
               :help-text="
                 t('JIVO.ASSISTANTS.FORM.IDLE_REMINDER_LIMIT.HELP_TEXT')
+              "
+            />
+
+            <Input
+              v-model="form.config.idle_last_follow_up_hours"
+              :label="t('JIVO.ASSISTANTS.FORM.IDLE_LAST_FOLLOW_UP_HOURS.LABEL')"
+              type="number"
+              min="1"
+              max="23"
+              :placeholder="
+                t('JIVO.ASSISTANTS.FORM.IDLE_LAST_FOLLOW_UP_HOURS.PLACEHOLDER')
+              "
+              :help-text="
+                t('JIVO.ASSISTANTS.FORM.IDLE_LAST_FOLLOW_UP_HOURS.HELP_TEXT')
               "
             />
 
