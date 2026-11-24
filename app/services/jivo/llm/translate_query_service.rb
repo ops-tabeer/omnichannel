@@ -4,7 +4,7 @@ class Jivo::Llm::TranslateQueryService
   include Redis::RedisKeys
 
   OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'.freeze
-  MODEL = 'gpt-4.1-nano'.freeze
+  MODEL = 'gpt-4.1-mini'.freeze
   REQUEST_TIMEOUT = 30
   CACHE_TTL = 7.days
 
